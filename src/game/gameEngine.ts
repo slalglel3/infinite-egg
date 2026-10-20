@@ -26,11 +26,11 @@ export class GameEngine {
   public gameOverReason: 'CRACKED' | 'FALL' | null = null;
   private screenShake: number = 0;
 
-  // 점프 판정용
+  // 점프 판정용 (절벽 끝점과의 거리)
   private isCurrentJumpMisjump: boolean = false;
-  private jumpOptimalHeight: number = 0;
+  private jumpDistanceToEdge: number = 0;
 
-  // 콜백 (연출 완료 후 모달 띄우기용)
+  // 콜백
   public onGameOver?: (stats: GameStats, reason: 'CRACKED' | 'FALL') => void;
 
   constructor(userLevel: number = 1) {
@@ -151,12 +151,14 @@ export class GameEngine {
 
     sound.playJump();
 
-    if (!currentSeg || currentSeg.type !== 'GAP') {
-      this.isCurrentJumpMisjump = true;
-      this.jumpOptimalHeight = this.egg.y;
-    } else {
+    // 윗길 절벽 끝점(도약점)까지 남은 거리 측정 (피드백 3 해결)
+    if (currentSeg && currentSeg.type === 'GAP') {
+      const distToEdge = Math.hypot(currentSeg.endX - this.egg.x, currentSeg.endY - this.egg.y);
+      this.jumpDistanceToEdge = distToEdge;
       this.isCurrentJumpMisjump = false;
-      this.jumpOptimalHeight = currentSeg.endY;
+    } else {
+      this.isCurrentJumpMisjump = true;
+      this.jumpDistanceToEdge = 999;
     }
   }
 
@@ -182,7 +184,7 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 코너 끝점에 아주 가깝게 도달했을 때 누른 경우: 퍼펙트 턴!
+      // 코너 끝점 38px 이내 도달 시: 퍼펙트 턴! (대미지 0)
       if (distToTurn <= 38) {
         this.egg.direction = newDir;
         this.egg.currentSegmentIndex = turnSegIndex + 1;
@@ -195,7 +197,7 @@ export class GameEngine {
         return;
       }
 
-      // 코너 도달 전에 너무 일찍 누른 경우 (기획 6-2 수직 낙하 드롭)
+      // 너무 일찍 누른 경우 (수직 낙하 드롭)
       this.egg.direction = newDir;
       this.egg.state = 'DROPPING_TURN';
       this.egg.dropStartY = this.egg.y;
@@ -204,7 +206,7 @@ export class GameEngine {
 
       this.egg.currentSegmentIndex = turnSegIndex + 1;
     } else {
-      // 코너가 없는 곳에서 방향 전환을 누른 경우 -> 추락 연출 시작!
+      // 코너가 없는 곳에서 방향 전환 누름 -> 추락 시퀀스 시작
       this.egg.direction = newDir;
       this.startFallSequence((newDir === 'RIGHT_DOWN' ? 1 : -1) * 110);
     }
@@ -216,19 +218,15 @@ export class GameEngine {
   public update(dt: number): void {
     if (!this.isRunning) return;
 
-    // 화면 쉐이크 감쇄
     if (this.screenShake > 0) {
       this.screenShake = Math.max(0, this.screenShake - dt * 25);
     }
 
-    // 찌그러짐 탄성 복원
     this.egg.squishX += (1 - this.egg.squishX) * dt * 10;
     this.egg.squishY += (1 - this.egg.squishY) * dt * 10;
 
-    // 파티클 업데이트
     this.updateParticles(dt);
 
-    // 사망 연출 시퀀스 진행
     if (this.egg.state === 'SURPRISED_FALL') {
       this.egg.deathTimer += dt;
       if (this.egg.deathTimer >= 0.32) {
@@ -268,7 +266,6 @@ export class GameEngine {
       return;
     }
 
-    // 통계 거리 및 속도 계산
     const currentMeters = Math.floor(this.egg.y / GAME_CONSTANTS.PIXELS_PER_METER);
     this.stats.distanceMeters = Math.max(this.stats.distanceMeters, currentMeters);
 
@@ -279,7 +276,6 @@ export class GameEngine {
     );
     this.stats.speed = targetSpeed;
 
-    // 상태별 이동
     switch (this.egg.state) {
       case 'ROLLING':
         this.updateRolling(dt);
@@ -292,10 +288,7 @@ export class GameEngine {
         break;
     }
 
-    // 카메라 추적
     this.updateCamera(dt);
-
-    // 맵 무한 생성
     this.ensureMapSegments();
   }
 
@@ -311,9 +304,8 @@ export class GameEngine {
 
     this.egg.x += dx;
     this.egg.y += dy;
-    this.egg.jumpArcOffset = 0; // 구를 때는 지면 착지
+    this.egg.jumpArcOffset = 0;
 
-    // 물리적 회전 방향
     const rollAngle = (moveDist / GAME_CONSTANTS.EGG_RADIUS_X);
     if (this.egg.direction === 'RIGHT_DOWN') {
       this.egg.rotation += rollAngle;
@@ -323,7 +315,6 @@ export class GameEngine {
 
     this.egg.expression = 'NORMAL';
 
-    // 먼지 파티클
     if (Math.random() < 0.28) {
       this.particles.push({
         x: this.egg.x - dx * 0.7,
@@ -355,15 +346,14 @@ export class GameEngine {
     const pastEndY = this.egg.y >= currentSeg.endY;
     if (pastEndY) {
       if (currentSeg.type === 'GAP') {
-        // 갭인데 점프를 전혀 안 뛰고 끝까지 굴러감 -> 절벽 추락사!
+        // 점프를 안 뛰고 갭의 끝자락을 지나쳐버림 -> 절벽 추락사!
         this.startFallSequence(dirSign * this.stats.speed * 0.6);
         return;
       } else if (currentSeg.type === 'TURN') {
-        // 코너인데 방향 전환을 안 누르고 지나침 -> 추락사!
+        // 코너를 지나침 -> 추락사!
         this.startFallSequence(dirSign * this.stats.speed);
         return;
       } else {
-        // 다음 세그먼트로 이동
         this.egg.currentSegmentIndex++;
         const nextSeg = this.segments[this.egg.currentSegmentIndex];
         if (nextSeg) {
@@ -373,35 +363,32 @@ export class GameEngine {
     }
   }
 
-  // 2. 점프 상태 (JUMPING) - 시각적 솟구침 및 세그먼트 전진
+  // 2. 점프 상태 (JUMPING) - 공중 포물선 솟구침
   private updateJumping(dt: number): void {
     const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
     this.egg.jumpProgress += dt / GAME_CONSTANTS.JUMP_DURATION_SEC;
 
-    // 수평/사선 전진 이동
     const forwardStep = (GAME_CONSTANTS.JUMP_DISTANCE_FORWARD * dt) / GAME_CONSTANTS.JUMP_DURATION_SEC;
     this.egg.x += dirSign * forwardStep * GAME_CONSTANTS.SLOPE_COS;
     this.egg.y += forwardStep * GAME_CONSTANTS.SLOPE_SIN;
 
-    // [핵심 해결 1] 공중으로 시원하게 솟구치는 포물선 오프셋 계산!
+    // 공중 솟구침 오프셋 계산
     const p = Math.min(1, this.egg.jumpProgress);
     this.egg.jumpArcOffset = Math.sin(p * Math.PI) * this.egg.jumpPeakHeight;
     
-    // 점프 중 공중제비 회전
     if (this.egg.direction === 'RIGHT_DOWN') {
       this.egg.rotation += dt * 10;
     } else {
       this.egg.rotation -= dt * 10;
     }
 
-    // 점프 완료 시 착지 판정
     if (this.egg.jumpProgress >= 1) {
       this.egg.jumpArcOffset = 0;
       this.handleJumpLanding();
     }
   }
 
-  // 3. 점프 착지 판정 및 세그먼트 자동 갱신 (핵심 해결 3)
+  // 3. 점프 착지 판정 (피드백 2, 3, 4 완벽 해결!)
   private handleJumpLanding(): void {
     // 착지한 현재 (x, y) 좌표에 위치한 실제 도로 세그먼트를 탐색!
     let landedIndex = -1;
@@ -409,10 +396,10 @@ export class GameEngine {
       const seg = this.segments[i];
       if (seg.type === 'TURN') continue;
 
-      const minX = Math.min(seg.startX, seg.endX) - 30;
-      const maxX = Math.max(seg.startX, seg.endX) + 30;
-      const minY = Math.min(seg.startY, seg.endY) - 20;
-      const maxY = Math.max(seg.startY, seg.endY) + 35;
+      const minX = Math.min(seg.startX, seg.endX) - 35;
+      const maxX = Math.max(seg.startX, seg.endX) + 35;
+      const minY = Math.min(seg.startY, seg.endY) - 25;
+      const maxY = Math.max(seg.startY, seg.endY) + 45;
 
       if (this.egg.x >= minX && this.egg.x <= maxX && this.egg.y >= minY && this.egg.y <= maxY) {
         landedIndex = i;
@@ -421,31 +408,35 @@ export class GameEngine {
     }
 
     if (landedIndex !== -1) {
-      // [성공 착지] 실제 도로 세그먼트 위에 안전하게 착지!
+      // [성공 착지] 실제 도로 세그먼트 위에 안전하게 안착!
       const landedSeg = this.segments[landedIndex];
       this.egg.currentSegmentIndex = landedIndex;
       this.egg.direction = landedSeg.direction;
       this.egg.state = 'ROLLING';
 
       if (this.isCurrentJumpMisjump) {
-        // 일반 도로에서 불필요하게 헛점프를 뛴 경우
+        // 일반 도로에서 불필요하게 헛점프한 경우
         const damage = GAME_CONSTANTS.MISJUMP_DAMAGE;
         this.applyDamage(damage, 'MISJUMP!');
       } else {
-        // 끊어진 길(GAP)을 뛰어넘어 아랫길에 착지한 경우!
-        const heightDiff = Math.abs(this.egg.y - this.jumpOptimalHeight);
-        const damage = Math.max(0, Math.floor(heightDiff * GAME_CONSTANTS.DAMAGE_PER_HEIGHT_PIXEL));
-
-        if (damage <= 2) {
+        // [피드백 3 해결] 갭 도약 성공 시 도약 타이밍에 따른 정밀 판정:
+        // 도약 절벽 끝점 48px 이내에서 뛰었으면 무조건 대미지 0 (PERFECT!)
+        if (this.jumpDistanceToEdge <= 48) {
           sound.playPerfect();
           this.stats.perfectLandings++;
-          this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT!', '#10b981');
+          this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT JUMP!', '#10b981');
+        } else if (this.jumpDistanceToEdge <= 85) {
+          // 약간 일찍 도약한 경우 (소폭 대미지 2~4 HP)
+          const damage = Math.max(2, Math.floor((this.jumpDistanceToEdge - 48) * 0.12));
+          this.applyDamage(damage, `EARLY -${damage}HP`);
         } else {
-          this.applyDamage(damage, `-${damage} HP`);
+          // 너무 일찍 도약한 경우 (높이차 충격 6~10 HP)
+          const damage = Math.max(6, Math.floor((this.jumpDistanceToEdge - 48) * 0.2));
+          this.applyDamage(damage, `TOO EARLY! -${damage}HP`);
         }
       }
     } else {
-      // 도로를 벗어나 갭의 허공이나 절벽 밖으로 떨어짐 -> 추락!
+      // 도로를 벗어난 경우 추락
       const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
       this.startFallSequence(dirSign * 60);
     }
@@ -497,7 +488,6 @@ export class GameEngine {
     }
   }
 
-  // 대미지 적용 및 파손 체크
   private applyDamage(damage: number, label: string): void {
     this.egg.hp = Math.max(0, this.egg.hp - damage);
     this.stats.hp = this.egg.hp;
@@ -515,13 +505,11 @@ export class GameEngine {
       this.egg.flashDamage = false;
     }, 120);
 
-    // 내구도 0 도달 시 바닥 깨짐 연출 발동
     if (this.egg.hp <= 0) {
       this.startCrackedSequence();
     }
   }
 
-  // 추락 시퀀스 시작
   private startFallSequence(vx: number): void {
     this.egg.state = 'SURPRISED_FALL';
     this.egg.expression = 'SURPRISED';
@@ -532,7 +520,6 @@ export class GameEngine {
     sound.playSurpriseBoing();
   }
 
-  // 계란 파괴 시퀀스 시작
   private startCrackedSequence(): void {
     this.egg.state = 'DEAD_CRACKED';
     this.egg.jumpArcOffset = 0;
