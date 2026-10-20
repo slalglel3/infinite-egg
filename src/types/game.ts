@@ -51,6 +51,7 @@ export interface Egg {
   jumpStartX: number;
   jumpProgress: number;    // 0 ~ 1
   jumpPeakHeight: number;
+  jumpArcOffset: number;   // 공중 솟구침 시각적 오프셋 (픽셀)
   // 낙하/드롭 관련
   dropStartY: number;
   // 사망 연출 타이머

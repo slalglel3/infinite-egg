@@ -11,29 +11,29 @@ export const GAME_CONSTANTS = {
   STEP_LENGTH: 70,
 
   // 도로(아스팔트) 외형 치수
-  ROAD_WIDTH: 36,        // 도로 트랙의 전체 폭
+  ROAD_WIDTH: 38,        // 도로 트랙의 전체 폭
   CURB_WIDTH: 5,         // 도로 양쪽 연석(Curb) 폭
 
-  // 달걀 치수
-  EGG_RADIUS_X: 16,
-  EGG_RADIUS_Y: 22,
+  // 통통하고 사랑스러운 황금비율 달걀 치수 (가로 36px, 세로 48px, 비율 1 : 1.33)
+  EGG_RADIUS_X: 18,
+  EGG_RADIUS_Y: 24,
 
-  // 기본 속도 및 가속 곡선 (초반에도 시원시원한 속도감)
-  INITIAL_SPEED: 280,    // 픽셀/초
-  MAX_SPEED: 780,        // 최고 속도
+  // 기본 속도 및 가속 곡선
+  INITIAL_SPEED: 260,    // 픽셀/초
+  MAX_SPEED: 760,        // 최고 속도
   SPEED_INCREASE_INTERVAL_M: 80,
   SPEED_INCREASE_STEP: 25,
 
-  // 점프 물리 (경쾌한 고정 점프)
-  JUMP_DURATION_SEC: 0.44,   // 체공 시간 (더 빠르고 경쾌하게)
-  JUMP_PEAK_PIXELS: 50,     // 점프 최고 높이
-  JUMP_DISTANCE_FORWARD: 175,// 점프 전진 거리
+  // 점프 물리 (눈에 확실하게 보이는 고정 포물선 점프)
+  JUMP_DURATION_SEC: 0.50,   // 체공 시간 0.5초
+  JUMP_PEAK_PIXELS: 65,     // 공중으로 65픽셀 시원하게 솟구침!
+  JUMP_DISTANCE_FORWARD: 190,// 점프 전진 거리
 
   // 내구도
   BASE_HP: 100,
   HP_PER_LEVEL: 0.05,
-  DAMAGE_PER_HEIGHT_PIXEL: 0.32,
-  MISJUMP_DAMAGE: 15,
+  DAMAGE_PER_HEIGHT_PIXEL: 0.28,
+  MISJUMP_DAMAGE: 12,
   BANDAGE_HEAL_HP: 25,
 
   // 경험치 공식
@@ -41,7 +41,6 @@ export const GAME_CONSTANTS = {
 
   // 색상 팔레트: 자연(Nature) & 아스팔트(Asphalt) 테마
   COLORS: {
-    // 하늘 & 자연
     SKY_TOP: '#38bdf8',
     SKY_BOTTOM: '#e0f2fe',
     MOUNTAIN_FAR: '#93c5fd',
@@ -49,14 +48,12 @@ export const GAME_CONSTANTS = {
     GRASS_BASE: '#4ade80',
     GRASS_DARK: '#22c55e',
     
-    // 아스팔트 도로
     ROAD_SURFACE: '#334155',
     ROAD_DARK: '#1e293b',
-    ROAD_LINE: '#facc15', // 중앙 황색 점선
+    ROAD_LINE: '#facc15',
     CURB_RED: '#ef4444',
     CURB_WHITE: '#f8fafc',
 
-    // 달걀 본체
     EGG_BASE: '#fef08a',
     EGG_SHADOW: '#f59e0b',
     EGG_LINE: '#b45309',

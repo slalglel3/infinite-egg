@@ -28,74 +28,82 @@ export class EggRenderer {
 
   // 1. 살아있는 달걀 그리기
   public drawEgg(ctx: CanvasRenderingContext2D, egg: Egg): void {
-    ctx.save();
-    ctx.translate(egg.x, egg.y);
-
-    // 회전 (우하향일 때는 시계방향, 좌하향일 때는 반시계방향 회전)
-    ctx.rotate(egg.rotation);
-
-    // 착지 시 찌그러짐 탄성
-    ctx.scale(egg.squishX, egg.squishY);
-
     const rx = GAME_CONSTANTS.EGG_RADIUS_X;
     const ry = GAME_CONSTANTS.EGG_RADIUS_Y;
+    const jumpOffset = egg.jumpArcOffset || 0;
 
-    // A. 바닥 그림자 (달걀 아래 은은한 음영)
+    // A. 도로 바닥 그림자 (계란이 점프해도 그림자는 도로 표면에 유지!)
+    ctx.save();
+    ctx.translate(egg.x, egg.y);
+    const shadowScale = Math.max(0.4, 1 - jumpOffset / 120);
+    const shadowAlpha = Math.max(0.12, 0.32 - jumpOffset / 200);
     ctx.beginPath();
-    ctx.ellipse(2, 4, rx * 0.9, ry * 0.95, 0, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(180, 83, 9, 0.18)';
+    ctx.ellipse(0, 4, rx * shadowScale, 6 * shadowScale, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(15, 23, 42, ${shadowAlpha})`;
     ctx.fill();
+    ctx.restore();
 
-    // B. 완벽한 기하학 달걀 곡선 (True Oval Egg Path)
+    // B. 공중으로 점프한 달걀 본체 그리기
+    ctx.save();
+    // [중요] 점프 높이(jumpOffset)를 Y좌표에 완벽히 반영!
+    ctx.translate(egg.x, egg.y - jumpOffset);
+
+    // 회전 (우하향: 시계방향, 좌하향: 반시계방향)
+    ctx.rotate(egg.rotation);
+
+    // 착지 시 탄성
+    ctx.scale(egg.squishX, egg.squishY);
+
+    // 기하학적으로 완벽한 유선형 황금비율 달걀 패스
     this.createTrueEggPath(ctx, rx, ry);
 
     if (egg.flashDamage) {
       ctx.fillStyle = '#f87171';
     } else {
-      // 신선하고 매끄러운 달걀 그라데이션
-      const grad = ctx.createRadialGradient(-rx * 0.35, -ry * 0.4, 2, 0, ry * 0.1, ry * 1.2);
+      // 자연산 유기농 황금빛 달걀 그라데이션
+      const grad = ctx.createRadialGradient(-rx * 0.35, -ry * 0.35, 2, 0, ry * 0.1, ry * 1.25);
       grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.25, '#fffbeb');
-      grad.addColorStop(0.65, '#fde68a');
+      grad.addColorStop(0.2, '#fffbeb');
+      grad.addColorStop(0.65, '#fef08a');
       grad.addColorStop(0.9, '#f59e0b');
-      grad.addColorStop(1, '#d97706');
+      grad.addColorStop(1, '#b45309');
       ctx.fillStyle = grad;
     }
     ctx.fill();
 
-    // C. 섬세한 껍질 외곽선
-    ctx.strokeStyle = '#b45309';
+    // 매끄러운 껍질 외곽선
+    ctx.strokeStyle = '#92400e';
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
-    // D. 실시간 금(Crack) 렌더링
+    // 실시간 금(Crack) 렌더링
     this.drawCracks(ctx, egg.hp, egg.maxHp);
 
-    // E. 달걀 표정 그리기 (상황에 따른 표정 변화)
+    // 달걀 표정 그리기
     this.drawFace(ctx, egg, rx, ry);
 
-    // F. 상단 유광 하이라이트 (매끄러운 달걀 광택)
+    // 상단 유광 하이라이트 (맑은 빛 반사)
     ctx.beginPath();
-    ctx.ellipse(-rx * 0.35, -ry * 0.45, rx * 0.3, ry * 0.45, -0.3, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.ellipse(-rx * 0.35, -ry * 0.45, rx * 0.3, ry * 0.42, -0.3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.fill();
 
     ctx.restore();
   }
 
-  // 기하학적으로 완벽한 유선형 달걀 패스 (단 하나의 각진 곳도 없는 부드러운 곡면)
-  private createTrueEggPath(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
+  // 완벽한 황금비율 달걀 곡선 (단 1개의 각진 곳도 없는 3차 스플라인)
+  public createTrueEggPath(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
     ctx.beginPath();
-    // 상단 뾰족한 곡선 정점 (0, -ry)
+    // 상단 좁고 둥근 정점 (0, -ry)
     ctx.moveTo(0, -ry);
     // 우상단 -> 우측 허리
-    ctx.bezierCurveTo(rx * 0.85, -ry, rx * 1.15, -ry * 0.2, rx * 1.1, ry * 0.4);
-    // 우측 허리 -> 하단 둥근 엉덩이 (0, ry)
-    ctx.bezierCurveTo(rx * 1.05, ry * 0.85, rx * 0.6, ry, 0, ry);
-    // 하단 엉덩이 -> 좌측 허리
-    ctx.bezierCurveTo(-rx * 0.6, ry, -rx * 1.05, ry * 0.85, -rx * 1.1, ry * 0.4);
-    // 좌측 허리 -> 상단 정점
-    ctx.bezierCurveTo(-rx * 1.15, -ry * 0.2, -rx * 0.85, -ry, 0, -ry);
+    ctx.bezierCurveTo(rx * 0.85, -ry * 0.9, rx * 1.15, -ry * 0.1, rx * 1.05, ry * 0.35);
+    // 우하단 -> 하단 둥근 둔단 (0, ry)
+    ctx.bezierCurveTo(rx * 0.95, ry * 0.85, rx * 0.55, ry, 0, ry);
+    // 좌하단 -> 좌측 허리
+    ctx.bezierCurveTo(-rx * 0.55, ry, -rx * 0.95, ry * 0.85, -rx * 1.05, ry * 0.35);
+    // 좌상단 -> 상단 정점 (0, -ry)
+    ctx.bezierCurveTo(-rx * 1.15, -ry * 0.1, -rx * 0.85, -ry * 0.9, 0, -ry);
     ctx.closePath();
   }
 
@@ -107,8 +115,7 @@ export class EggRenderer {
     ctx.save();
 
     if (egg.expression === 'SURPRISED') {
-      // 😱 추락 직전 경악 표정 (눈알이 튀어나오고 입이 떡 벌어짐)
-      // 왼쪽 눈
+      // 😱 추락 직전 경악 표정
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(-eyeDist, eyeY - 2, 6, 0, Math.PI * 2);
@@ -118,19 +125,17 @@ export class EggRenderer {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 검은 눈동자 (작게 떨림)
       ctx.fillStyle = '#78350f';
       ctx.beginPath();
       ctx.arc(-eyeDist + 1, eyeY - 2, 2.2, 0, Math.PI * 2);
       ctx.arc(eyeDist - 1, eyeY - 2, 2.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // 떡 벌어진 입 (O 모양)
       ctx.beginPath();
       ctx.ellipse(0, eyeY + 8, 4.5, 6, 0, 0, Math.PI * 2);
       ctx.fillStyle = '#78350f';
       ctx.fill();
-      ctx.fillStyle = '#f87171'; // 입 속 혀
+      ctx.fillStyle = '#f87171';
       ctx.beginPath();
       ctx.arc(0, eyeY + 11, 3, 0, Math.PI);
       ctx.fill();
@@ -139,47 +144,42 @@ export class EggRenderer {
       ctx.strokeStyle = '#78350f';
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
-      // 왼쪽 눈 >
       ctx.beginPath();
       ctx.moveTo(-eyeDist - 3, eyeY - 3);
       ctx.lineTo(-eyeDist + 2, eyeY);
       ctx.lineTo(-eyeDist - 3, eyeY + 3);
       ctx.stroke();
-      // 오른쪽 눈 <
       ctx.beginPath();
       ctx.moveTo(eyeDist + 3, eyeY - 3);
       ctx.lineTo(eyeDist - 2, eyeY);
       ctx.lineTo(eyeDist + 3, eyeY + 3);
       ctx.stroke();
     } else if (egg.expression === 'DIZZY') {
-      // 😵 데굴데굴 어지러운 골뱅이 눈
+      // 😵 골뱅이 눈
       ctx.strokeStyle = '#78350f';
       ctx.lineWidth = 1.8;
       this.drawSpiral(ctx, -eyeDist, eyeY, 4.5);
       this.drawSpiral(ctx, eyeDist, eyeY, 4.5);
-      // 입 (물결치듯 비틀림)
       ctx.beginPath();
       ctx.moveTo(-4, eyeY + 7);
       ctx.quadraticCurveTo(0, eyeY + 4, 4, eyeY + 7);
       ctx.stroke();
     } else {
-      // 😊 평소의 귀여운 표정
-      // 눈동자
+      // 😊 사랑스럽고 귀여운 평소 표정
       ctx.fillStyle = '#78350f';
       ctx.beginPath();
       ctx.arc(-eyeDist, eyeY, 3, 0, Math.PI * 2);
       ctx.arc(eyeDist, eyeY, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // 눈망울 하이라이트
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(-eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
       ctx.arc(eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // 핑크빛 볼터치
-      ctx.fillStyle = 'rgba(251, 113, 133, 0.6)';
+      // 볼터치
+      ctx.fillStyle = 'rgba(251, 113, 133, 0.65)';
       ctx.beginPath();
       ctx.ellipse(-eyeDist - 3, eyeY + 5, 3.5, 2, 0, 0, Math.PI * 2);
       ctx.ellipse(eyeDist + 3, eyeY + 5, 3.5, 2, 0, 0, Math.PI * 2);
@@ -242,7 +242,7 @@ export class EggRenderer {
     ctx.stroke();
   }
 
-  // 2. 바닥에 깨진 계란(Fried/Broken Splat) 그리기 (요구사항 8)
+  // 2. 바닥에 깨진 계란(Fried Splat) 그리기
   public drawEggSplat(ctx: CanvasRenderingContext2D, splat: EggSplat): void {
     ctx.save();
     ctx.translate(splat.x, splat.y);
@@ -250,7 +250,7 @@ export class EggRenderer {
 
     const r = splat.radius;
 
-    // A. 바닥에 찰방 퍼진 흰자 웅덩이 (Egg White Splat)
+    // 흰자 웅덩이
     ctx.beginPath();
     ctx.moveTo(-r * 1.2, -r * 0.4);
     ctx.bezierCurveTo(-r * 1.4, -r * 1.1, -r * 0.3, -r * 1.3, r * 0.5, -r * 1.1);
@@ -259,7 +259,6 @@ export class EggRenderer {
     ctx.bezierCurveTo(-r * 1.3, r * 1.1, -r * 1.5, r * 0.3, -r * 1.2, -r * 0.4);
     ctx.closePath();
 
-    // 흰자 유광 그라데이션
     const whiteGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, r * 1.4);
     whiteGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
     whiteGrad.addColorStop(0.7, 'rgba(254, 240, 138, 0.6)');
@@ -271,7 +270,7 @@ export class EggRenderer {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // B. 탱글탱글 살아있는 노른자 (Golden Yolk)
+    // 황금빛 노른자
     const yolkGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, r * 0.55);
     yolkGrad.addColorStop(0, '#fef08a');
     yolkGrad.addColorStop(0.3, '#f59e0b');
@@ -292,7 +291,7 @@ export class EggRenderer {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.fill();
 
-    // C. 주변에 흩뿌려진 깨진 껍질 조각들
+    // 껍질 조각
     for (const frag of splat.shellFragments) {
       ctx.save();
       ctx.translate(frag.offsetX, frag.offsetY);
