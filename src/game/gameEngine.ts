@@ -1,4 +1,4 @@
-import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection } from '../types/game';
+import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection, EggSplat } from '../types/game';
 import { GAME_CONSTANTS } from './constants';
 import { MapGenerator } from './mapGenerator';
 import { EggRenderer } from './eggRenderer';
@@ -11,6 +11,7 @@ export class GameEngine {
   public egg: Egg;
   public segments: SlopeSegment[] = [];
   public particles: Particle[] = [];
+  public splats: EggSplat[] = [];
   public stats: GameStats;
 
   // 카메라 및 뷰포트
@@ -29,7 +30,7 @@ export class GameEngine {
   private isCurrentJumpMisjump: boolean = false;
   private jumpOptimalHeight: number = 0;
 
-  // 콜백
+  // 콜백 (연출이 완전히 끝난 후 모달 띄우기용)
   public onGameOver?: (stats: GameStats, reason: 'CRACKED' | 'FALL') => void;
 
   constructor(userLevel: number = 1) {
@@ -46,12 +47,14 @@ export class GameEngine {
       rotation: 0,
       direction: 'RIGHT_DOWN',
       state: 'ROLLING',
+      expression: 'NORMAL',
       currentSegmentIndex: 0,
       jumpStartY: 0,
       jumpStartX: 0,
       jumpProgress: 0,
       jumpPeakHeight: GAME_CONSTANTS.JUMP_PEAK_PIXELS,
       dropStartY: 0,
+      deathTimer: 0,
       maxHp,
       hp: maxHp,
       squishX: 1,
@@ -86,18 +89,20 @@ export class GameEngine {
 
     this.egg = {
       x: firstSeg.startX,
-      y: firstSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 5,
+      y: firstSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4,
       vx: 0,
       vy: 0,
       rotation: 0,
       direction: firstSeg.direction,
       state: 'ROLLING',
+      expression: 'NORMAL',
       currentSegmentIndex: 0,
       jumpStartY: 0,
       jumpStartX: 0,
       jumpProgress: 0,
       jumpPeakHeight: GAME_CONSTANTS.JUMP_PEAK_PIXELS,
       dropStartY: 0,
+      deathTimer: 0,
       maxHp,
       hp: maxHp,
       squishX: 1,
@@ -117,6 +122,7 @@ export class GameEngine {
     };
 
     this.particles = [];
+    this.splats = [];
     this.cameraX = this.egg.x;
     this.cameraY = this.egg.y;
     this.isRunning = true;
@@ -142,24 +148,13 @@ export class GameEngine {
 
     sound.playJump();
 
-    // 헛점프 여부 판정: 현재 세그먼트가 끊어진 길(GAP)이 아닌 일반 길이거나,
-    // GAP의 끝자락이 아직 너무 멀리 남았을 때
     if (!currentSeg || currentSeg.type !== 'GAP') {
       this.isCurrentJumpMisjump = true;
       this.jumpOptimalHeight = this.egg.y;
     } else {
-      // 갭 세그먼트인 경우
-      // 이상적인 점프 지점은 세그먼트 끝점(endX, endY) 부근
       const distToEnd = Math.hypot(currentSeg.endX - this.egg.x, currentSeg.endY - this.egg.y);
-      if (distToEnd > 130) {
-        // 너무 일찍 점프한 경우 (낙하 높이차 발생 페널티)
-        this.isCurrentJumpMisjump = false;
-        this.jumpOptimalHeight = currentSeg.endY;
-      } else {
-        // 완벽에 가까운 점프 타이밍
-        this.isCurrentJumpMisjump = false;
-        this.jumpOptimalHeight = currentSeg.endY;
-      }
+      this.isCurrentJumpMisjump = false;
+      this.jumpOptimalHeight = currentSeg.endY;
     }
   }
 
@@ -171,7 +166,6 @@ export class GameEngine {
     const currentSeg = this.segments[this.egg.currentSegmentIndex];
     if (!currentSeg) return;
 
-    // 현재 세그먼트 또는 바로 다음 세그먼트가 TURN인지 확인
     let turnSegIndex = -1;
     for (let i = this.egg.currentSegmentIndex; i < Math.min(this.segments.length, this.egg.currentSegmentIndex + 3); i++) {
       if (this.segments[i].type === 'TURN') {
@@ -186,12 +180,12 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 코너 끝점에 아주 가깝게 도달했을 때 누른 경우: 퍼펙트 턴! (높이차 0)
-      if (distToTurn <= 35) {
+      // 코너 끝점에 아주 가깝게 도달했을 때 누른 경우: 퍼펙트 턴!
+      if (distToTurn <= 38) {
         this.egg.direction = newDir;
         this.egg.currentSegmentIndex = turnSegIndex + 1;
         this.egg.x = turnSeg.startX;
-        this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 5;
+        this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
         sound.playTurn();
         sound.playPerfect();
         this.stats.perfectLandings++;
@@ -199,25 +193,18 @@ export class GameEngine {
         return;
       }
 
-      // 코너에 도달하기 전에 너무 일찍 누른 경우 (기획 6-2):
-      // 계란이 윗길에서 즉시 방향을 바꾸며 아랫길로 쿵 떨어짐 (수직 드롭)
+      // 코너 도달 전에 너무 일찍 누른 경우 (기획 6-2 수직 낙하 드롭)
       this.egg.direction = newDir;
       this.egg.state = 'DROPPING_TURN';
       this.egg.dropStartY = this.egg.y;
-      this.egg.vy = 60; // 아래쪽으로 낙하 시작
+      this.egg.vy = 80;
       sound.playTurn();
 
-      // 아랫길 세그먼트 찾기 (코너 다음 세그먼트)
       this.egg.currentSegmentIndex = turnSegIndex + 1;
     } else {
-      // 코너가 전혀 없는 곳에서 엉뚱하게 방향 전환을 누른 경우:
-      // 슬로프를 이탈하여 화면 밖으로 추락!
+      // 엉뚱한 곳에서 방향 전환을 누른 경우 -> 허공 추락 연출 시작!
       this.egg.direction = newDir;
-      this.egg.state = 'DEAD_FALLING';
-      this.egg.vx = (newDir === 'RIGHT_DOWN' ? 1 : -1) * 120;
-      this.egg.vy = 80;
-      sound.playFall();
-      this.triggerGameOver('FALL');
+      this.startFallSequence((newDir === 'RIGHT_DOWN' ? 1 : -1) * 110);
     }
   }
 
@@ -239,18 +226,51 @@ export class GameEngine {
     // 파티클 업데이트
     this.updateParticles(dt);
 
-    // 게임 오버 상태일 때 추락 또는 파편 연출만 진행
-    if (this.isGameOver) {
-      if (this.egg.state === 'DEAD_FALLING') {
-        this.egg.vy += 650 * dt;
-        this.egg.x += this.egg.vx * dt;
-        this.egg.y += this.egg.vy * dt;
+    // 사망 연출 시퀀스 진행
+    if (this.egg.state === 'SURPRISED_FALL') {
+      this.egg.deathTimer += dt;
+      // 공중에서 멈칫 0.3초 후 본격적인 자유낙하로 전환
+      if (this.egg.deathTimer >= 0.32) {
+        this.egg.state = 'DEAD_FALLING';
+        this.egg.vy = 120;
+        sound.playFallWhistle();
       }
-      this.updateCamera(dt);
       return;
     }
 
-    // 속도 계산 (100m마다 가속, 2000m에서 최고 속도 도달)
+    if (this.egg.state === 'DEAD_FALLING') {
+      this.egg.deathTimer += dt;
+      this.egg.vy += 850 * dt;
+      this.egg.y += this.egg.vy * dt;
+      this.egg.x += this.egg.vx * dt;
+      // 빙글빙글 회전
+      this.egg.rotation += 10 * dt;
+
+      // 화면 아래로 완전히 사라지면 모달 등장 (요구사항 7)
+      if (this.egg.deathTimer >= 1.25 && !this.isGameOver) {
+        this.isGameOver = true;
+        this.gameOverReason = 'FALL';
+        if (this.onGameOver) {
+          this.onGameOver(this.stats, 'FALL');
+        }
+      }
+      return;
+    }
+
+    if (this.egg.state === 'DEAD_CRACKED') {
+      this.egg.deathTimer += dt;
+      // 1.3초 동안 깨진 현장을 보여준 후 모달 등장 (요구사항 8)
+      if (this.egg.deathTimer >= 1.35 && !this.isGameOver) {
+        this.isGameOver = true;
+        this.gameOverReason = 'CRACKED';
+        if (this.onGameOver) {
+          this.onGameOver(this.stats, 'CRACKED');
+        }
+      }
+      return;
+    }
+
+    // 통계 거리 및 속도 계산 (100m마다 가속)
     const currentMeters = Math.floor(this.egg.y / GAME_CONSTANTS.PIXELS_PER_METER);
     this.stats.distanceMeters = Math.max(this.stats.distanceMeters, currentMeters);
 
@@ -261,7 +281,7 @@ export class GameEngine {
     );
     this.stats.speed = targetSpeed;
 
-    // 상태별 이동 로직
+    // 상태별 이동
     switch (this.egg.state) {
       case 'ROLLING':
         this.updateRolling(dt);
@@ -272,11 +292,6 @@ export class GameEngine {
       case 'DROPPING_TURN':
         this.updateDroppingTurn(dt);
         break;
-      case 'DEAD_FALLING':
-        this.egg.vy += 650 * dt;
-        this.egg.y += this.egg.vy * dt;
-        this.egg.x += this.egg.vx * dt;
-        break;
     }
 
     // 카메라 추적
@@ -286,7 +301,7 @@ export class GameEngine {
     this.ensureMapSegments();
   }
 
-  // 1. 구르는 상태 (ROLLING)
+  // 1. 구르는 상태 (ROLLING) - 회전 방향 물리 정확성 완벽 보장!
   private updateRolling(dt: number): void {
     const currentSeg = this.segments[this.egg.currentSegmentIndex];
     if (!currentSeg) return;
@@ -299,18 +314,26 @@ export class GameEngine {
     this.egg.x += dx;
     this.egg.y += dy;
 
-    // 데굴데굴 회전각 갱신
-    this.egg.rotation += (dirSign * moveDist) / GAME_CONSTANTS.EGG_RADIUS_X;
+    // [핵심] 회전 방향:
+    // 우하향일 때는 시계방향(+), 좌하향일 때는 반시계방향(-)으로 완벽 회전!
+    const rollAngle = (moveDist / GAME_CONSTANTS.EGG_RADIUS_X);
+    if (this.egg.direction === 'RIGHT_DOWN') {
+      this.egg.rotation += rollAngle;
+    } else {
+      this.egg.rotation -= rollAngle;
+    }
+
+    this.egg.expression = 'NORMAL';
 
     // 간헐적 모래/바람 파티클
-    if (Math.random() < 0.25) {
+    if (Math.random() < 0.28) {
       this.particles.push({
-        x: this.egg.x - dx * 0.8,
-        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 4,
+        x: this.egg.x - dx * 0.7,
+        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 3,
         vx: -dx * 0.3 + (Math.random() - 0.5) * 20,
         vy: -15 - Math.random() * 20,
-        radius: 2 + Math.random() * 2,
-        color: 'rgba(56, 189, 248, 0.5)',
+        radius: 2 + Math.random() * 2.5,
+        color: 'rgba(250, 204, 21, 0.6)',
         alpha: 0.8,
         life: 0,
         maxLife: 0.35,
@@ -321,7 +344,7 @@ export class GameEngine {
     // 아이템 획득 검사
     if (currentSeg.item && !currentSeg.item.collected) {
       const distToItem = Math.hypot(this.egg.x - currentSeg.item.x, this.egg.y - currentSeg.item.y);
-      if (distToItem < 28) {
+      if (distToItem < 30) {
         currentSeg.item.collected = true;
         this.egg.hp = Math.min(this.egg.maxHp, this.egg.hp + GAME_CONSTANTS.BANDAGE_HEAL_HP);
         this.stats.itemsCollected++;
@@ -334,20 +357,12 @@ export class GameEngine {
     const pastEndY = this.egg.y >= currentSeg.endY;
     if (pastEndY) {
       if (currentSeg.type === 'GAP') {
-        // 갭인데 점프를 뛰지 않고 그냥 지나침 ➔ 절벽으로 추락사!
-        this.egg.state = 'DEAD_FALLING';
-        this.egg.vx = dirSign * this.stats.speed * 0.7;
-        this.egg.vy = 80;
-        sound.playFall();
-        this.triggerGameOver('FALL');
+        // 갭인데 점프를 안 뜀 -> 추락 시퀀스 시작!
+        this.startFallSequence(dirSign * this.stats.speed * 0.6);
         return;
       } else if (currentSeg.type === 'TURN') {
-        // 코너인데 방향 전환을 안 누르고 지나침 ➔ 허공 추락사!
-        this.egg.state = 'DEAD_FALLING';
-        this.egg.vx = dirSign * this.stats.speed;
-        this.egg.vy = 80;
-        sound.playFall();
-        this.triggerGameOver('FALL');
+        // 코너인데 방향 전환을 안 누르고 지나침 -> 추락 시퀀스 시작!
+        this.startFallSequence(dirSign * this.stats.speed);
         return;
       } else {
         // 다음 세그먼트로 이동
@@ -365,20 +380,21 @@ export class GameEngine {
     const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
     this.egg.jumpProgress += dt / GAME_CONSTANTS.JUMP_DURATION_SEC;
 
-    // 수평/사선 전진 이동
     const forwardStep = (GAME_CONSTANTS.JUMP_DISTANCE_FORWARD * dt) / GAME_CONSTANTS.JUMP_DURATION_SEC;
     this.egg.x += dirSign * forwardStep * GAME_CONSTANTS.SLOPE_COS;
     this.egg.y += forwardStep * GAME_CONSTANTS.SLOPE_SIN;
 
-    // 포물선 정점 계산
     const p = Math.min(1, this.egg.jumpProgress);
     const arcOffset = Math.sin(p * Math.PI) * this.egg.jumpPeakHeight;
-    const visualY = this.egg.y - arcOffset;
+    
+    // 점프 중에는 공중제비 회전
+    if (this.egg.direction === 'RIGHT_DOWN') {
+      this.egg.rotation += dt * 10;
+    } else {
+      this.egg.rotation -= dt * 10;
+    }
 
-    // 회전은 조금 더 빠르게 공중제비
-    this.egg.rotation += dirSign * dt * 9;
-
-    // 점프 완료 시 착지 판정
+    // 점프 완료 착지 판정
     if (this.egg.jumpProgress >= 1) {
       this.egg.state = 'ROLLING';
       this.handleJumpLanding();
@@ -388,19 +404,22 @@ export class GameEngine {
   // 3. 방향 전환 낙하 상태 (DROPPING_TURN)
   private updateDroppingTurn(dt: number): void {
     const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
-    this.egg.vy += 750 * dt; // 중력 가속
+    this.egg.vy += 780 * dt;
     this.egg.y += this.egg.vy * dt;
     this.egg.x += dirSign * 80 * dt;
 
-    // 목표 아랫길(현재 세그먼트)의 표면 좌표에 닿았는지 확인
+    if (this.egg.direction === 'RIGHT_DOWN') {
+      this.egg.rotation += dt * 6;
+    } else {
+      this.egg.rotation -= dt * 6;
+    }
+
     const targetSeg = this.segments[this.egg.currentSegmentIndex];
     if (targetSeg) {
-      // 아랫길 표면의 예상 Y 좌표 계산
       const segT = (this.egg.x - targetSeg.startX) / (targetSeg.endX - targetSeg.startX);
       if (segT >= 0 && segT <= 1) {
-        const expectedY = targetSeg.startY + segT * (targetSeg.endY - targetSeg.startY) - GAME_CONSTANTS.EGG_RADIUS_Y + 5;
+        const expectedY = targetSeg.startY + segT * (targetSeg.endY - targetSeg.startY) - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
         if (this.egg.y >= expectedY) {
-          // 아랫길에 착지 성공!
           this.egg.y = expectedY;
           this.egg.state = 'ROLLING';
           const dropHeight = this.egg.y - this.egg.dropStartY;
@@ -410,12 +429,8 @@ export class GameEngine {
       }
     }
 
-    // 만약 아랫길을 한참 지나쳐서도 못 닿았다면 추락
     if (this.egg.y - this.egg.dropStartY > 260) {
-      this.egg.state = 'DEAD_FALLING';
-      this.egg.vx = dirSign * 60;
-      sound.playFall();
-      this.triggerGameOver('FALL');
+      this.startFallSequence(dirSign * 60);
     }
   }
 
@@ -425,16 +440,13 @@ export class GameEngine {
     if (!currentSeg) return;
 
     if (this.isCurrentJumpMisjump) {
-      // 6-3. 일반 길에서 헛점프한 경우 페널티
       const damage = GAME_CONSTANTS.MISJUMP_DAMAGE;
       this.applyDamage(damage, 'MISJUMP!');
     } else {
-      // 6-1. 갭 착지 높이차 판정
-      // 이상적 착지 높이와 실제 착지 높이의 차이
       const heightDiff = Math.abs(this.egg.y - this.jumpOptimalHeight);
       const damage = Math.max(0, Math.floor(heightDiff * GAME_CONSTANTS.DAMAGE_PER_HEIGHT_PIXEL));
 
-      if (damage <= 1) {
+      if (damage <= 2) {
         sound.playPerfect();
         this.stats.perfectLandings++;
         this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT!', '#10b981');
@@ -446,7 +458,6 @@ export class GameEngine {
 
   // 방향 전환 드롭 착지 처리
   private handleDropLanding(dropHeight: number): void {
-    // 높이차에 비례한 데미지
     const damage = Math.max(0, Math.floor(dropHeight * GAME_CONSTANTS.DAMAGE_PER_HEIGHT_PIXEL * 0.7));
 
     if (damage <= 2) {
@@ -463,62 +474,85 @@ export class GameEngine {
     this.egg.hp = Math.max(0, this.egg.hp - damage);
     this.stats.hp = this.egg.hp;
 
-    // 찌그러짐 및 화면 흔들림
     this.egg.squishX = 1.35;
     this.egg.squishY = 0.72;
-    this.screenShake = Math.min(12, 3 + damage * 0.4);
+    this.screenShake = Math.min(14, 4 + damage * 0.45);
+    this.egg.expression = 'PAIN';
 
     sound.playImpact(damage);
     this.spawnTextParticle(this.egg.x, this.egg.y - 25, label, '#ef4444');
 
-    // 껍질 점멸
     this.egg.flashDamage = true;
     setTimeout(() => {
       this.egg.flashDamage = false;
     }, 120);
 
-    // 내구도 0 파괴 체크
+    // 내구도 0 도달 시 -> 바닥 깨짐(Fried Splat) 연출 시퀀스 발동! (요구사항 8)
     if (this.egg.hp <= 0) {
-      this.egg.state = 'DEAD_CRACKED';
-      sound.playBreak();
-      const breakParticles = this.eggRenderer.createBreakExplosion(this.egg.x, this.egg.y);
-      this.particles.push(...breakParticles);
-      this.triggerGameOver('CRACKED');
+      this.startCrackedSequence();
     }
   }
 
-  // 게임 오버 처리
-  private triggerGameOver(reason: 'CRACKED' | 'FALL'): void {
-    if (this.isGameOver) return;
-    this.isGameOver = true;
-    this.gameOverReason = reason;
+  // 추락 시퀀스 시작 (요구사항 7: 공중 멈칫 당황 연출 -> 하강 -> 모달)
+  private startFallSequence(vx: number): void {
+    this.egg.state = 'SURPRISED_FALL';
+    this.egg.expression = 'SURPRISED';
+    this.egg.vx = vx;
+    this.egg.vy = -30; // 살짝 띠용 솟구침
+    this.egg.deathTimer = 0;
+    sound.playSurpriseBoing();
+  }
 
-    if (this.onGameOver) {
-      this.onGameOver(this.stats, reason);
+  // 계란 파괴 시퀀스 시작 (요구사항 8: 바닥에 흰자/노른자 퍼지고 껍질 흩뿌려짐)
+  private startCrackedSequence(): void {
+    this.egg.state = 'DEAD_CRACKED';
+    this.egg.deathTimer = 0;
+    sound.playBreakSplat();
+
+    // 1. 슬로프 바닥에 계란 프라이 스플랫 생성
+    const shellFragments = [];
+    const colors = ['#fffbeb', '#fde68a', '#fed7aa', '#f59e0b'];
+    for (let i = 0; i < 9; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 18 + Math.random() * 20;
+      shellFragments.push({
+        offsetX: Math.cos(angle) * dist,
+        offsetY: Math.sin(angle) * dist,
+        size: 5 + Math.random() * 4,
+        rot: Math.random() * Math.PI * 2,
+        color: colors[i % colors.length],
+      });
     }
+
+    this.splats.push({
+      x: this.egg.x,
+      y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 4,
+      rotation: Math.random() * Math.PI * 2,
+      radius: 26,
+      shellFragments,
+    });
+
+    // 2. 비산 파편 파티클
+    const breakParticles = this.eggRenderer.createBreakExplosion(this.egg.x, this.egg.y);
+    this.particles.push(...breakParticles);
   }
 
   // ==========================================
   // 카메라 및 맵 세그먼트 동적 유지
   // ==========================================
   private updateCamera(dt: number): void {
-    // 계란이 화면의 중앙 상단(약 가로 50%, 세로 42%)에 위치하도록 부드럽게 추적
     const targetX = this.egg.x - this.screenWidth * 0.5;
     const targetY = this.egg.y - this.screenHeight * 0.42;
 
-    this.cameraX += (targetX - this.cameraX) * dt * 9;
-    this.cameraY += (targetY - this.cameraY) * dt * 9;
+    this.cameraX += (targetX - this.cameraX) * dt * 8;
+    this.cameraY += (targetY - this.cameraY) * dt * 8;
   }
 
   private ensureMapSegments(): void {
-    // 계란 앞쪽으로 항상 15개 이상의 세그먼트가 있도록 유지
-    while (this.segments.length - this.egg.currentSegmentIndex < 15) {
-      const currentMeters = this.stats.distanceMeters;
-      const nextSeg = this.mapGen.generateNextSegment(currentMeters);
-      this.segments.push(nextSeg);
+    while (this.segments.length - this.egg.currentSegmentIndex < 18) {
+      this.mapGen.generateDynamicPattern(this.segments, this.stats.distanceMeters);
     }
 
-    // 너무 뒤처진 오래된 세그먼트는 메모리 절약을 위해 정리 (현재 인덱스 앞 20개는 보존)
     if (this.egg.currentSegmentIndex > 25) {
       const removeCount = 10;
       this.segments.splice(0, removeCount);
@@ -546,7 +580,7 @@ export class GameEngine {
         p.rotation = (p.rotation || 0) + p.vRot * dt;
       }
       if (p.type === 'SHELL' || p.type === 'YOLK') {
-        p.vy += 450 * dt; // 중력
+        p.vy += 480 * dt;
       }
     }
   }
@@ -568,78 +602,123 @@ export class GameEngine {
   }
 
   // ==========================================
-  // 전체 화면 렌더링
+  // 전체 화면 렌더링 (자연 테마 + 아스팔트 길)
   // ==========================================
   public render(ctx: CanvasRenderingContext2D): void {
     ctx.save();
 
-    // 화면 쉐이크 효과
     if (this.screenShake > 0) {
       const shakeX = (Math.random() - 0.5) * this.screenShake;
       const shakeY = (Math.random() - 0.5) * this.screenShake;
       ctx.translate(shakeX, shakeY);
     }
 
-    // 배경 그라데이션
-    this.drawBackground(ctx);
+    // 1. 청명한 자연 배경 렌더링 (하늘, 구름, 산, 잔디)
+    this.drawNatureBackground(ctx);
 
-    // 카메라 뷰 변환
+    // 카메라 변환
     ctx.translate(-this.cameraX, -this.cameraY);
 
-    // 1. 슬로프(미끄럼틀) 그리기
-    this.drawSlopes(ctx);
+    // 2. 아스팔트 도로 렌더링 (양쪽 연석 + 차선)
+    this.drawAsphaltRoads(ctx);
 
-    // 2. 아이템 그리기
+    // 3. 아이템 렌더링
     this.drawItems(ctx);
 
-    // 3. 계란 그리기 (깨진 상태가 아니거나 파편 연출 중일 때)
+    // 4. 깨진 계란 자국(Splat) 렌더링
+    for (const splat of this.splats) {
+      this.eggRenderer.drawEggSplat(ctx, splat);
+    }
+
+    // 5. 달걀 그리기 (사망 폭발 후에는 숨김)
     if (this.egg.state !== 'DEAD_CRACKED') {
       this.eggRenderer.drawEgg(ctx, this.egg);
     }
 
-    // 4. 파티클 그리기
+    // 6. 파티클 그리기
     this.drawParticles(ctx);
 
     ctx.restore();
   }
 
-  private drawBackground(ctx: CanvasRenderingContext2D): void {
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-    bgGrad.addColorStop(0, GAME_CONSTANTS.COLORS.BG_TOP);
-    bgGrad.addColorStop(1, GAME_CONSTANTS.COLORS.BG_BOTTOM);
-    ctx.fillStyle = bgGrad;
+  // [요구사항 6] 풍성하고 청명한 자연(Nature) 패럴랙스 배경
+  private drawNatureBackground(ctx: CanvasRenderingContext2D): void {
+    // A. 푸른 하늘 그라데이션
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+    skyGrad.addColorStop(0, GAME_CONSTANTS.COLORS.SKY_TOP);
+    skyGrad.addColorStop(0.65, GAME_CONSTANTS.COLORS.SKY_BOTTOM);
+    skyGrad.addColorStop(1, '#ecfdf5');
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
 
-    // 은은한 원경 텍스처 (구름 또는 격자)
-    ctx.strokeStyle = 'rgba(186, 230, 253, 0.4)';
-    ctx.lineWidth = 1;
-    const gridSpacing = 60;
-    const offsetX = -(this.cameraX * 0.2) % gridSpacing;
-    const offsetY = -(this.cameraY * 0.2) % gridSpacing;
+    // B. 패럴랙스 뭉게구름 (느린 스크롤)
+    const cloudOffset = -(this.cameraX * 0.05);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
+    this.drawCloud(ctx, (cloudOffset + 380) % (this.screenWidth + 200) - 100, 140, 42);
+    this.drawCloud(ctx, (cloudOffset + 650) % (this.screenWidth + 200) - 100, 95, 65);
 
+    // C. 원경 푸른 산봉우리 (Far Mountains)
+    ctx.fillStyle = GAME_CONSTANTS.COLORS.MOUNTAIN_FAR;
     ctx.beginPath();
-    for (let x = offsetX; x < this.screenWidth; x += gridSpacing) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, this.screenHeight);
+    const mountainOffsetFar = -(this.cameraX * 0.12) % 320;
+    ctx.moveTo(0, this.screenHeight);
+    for (let x = mountainOffsetFar - 320; x < this.screenWidth + 320; x += 320) {
+      ctx.lineTo(x, this.screenHeight - 210);
+      ctx.lineTo(x + 160, this.screenHeight - 340);
+      ctx.lineTo(x + 320, this.screenHeight - 210);
     }
-    for (let y = offsetY; y < this.screenHeight; y += gridSpacing) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(this.screenWidth, y);
+    ctx.lineTo(this.screenWidth, this.screenHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // D. 중경 초록 언덕 능선 (Mid Hills)
+    ctx.fillStyle = GAME_CONSTANTS.COLORS.MOUNTAIN_MID;
+    ctx.beginPath();
+    const mountainOffsetMid = -(this.cameraX * 0.22) % 240;
+    ctx.moveTo(0, this.screenHeight);
+    for (let x = mountainOffsetMid - 240; x < this.screenWidth + 240; x += 240) {
+      ctx.quadraticCurveTo(x + 120, this.screenHeight - 220, x + 240, this.screenHeight - 140);
     }
-    ctx.stroke();
+    ctx.lineTo(this.screenWidth, this.screenHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // E. 근경 싱그러운 잔디밭 (Foreground Grass)
+    ctx.fillStyle = GAME_CONSTANTS.COLORS.GRASS_BASE;
+    ctx.fillRect(0, this.screenHeight - 120, this.screenWidth, 120);
+
+    // 잔디밭 장식 풀잎 디테일
+    ctx.fillStyle = GAME_CONSTANTS.COLORS.GRASS_DARK;
+    const grassOffset = -(this.cameraX * 0.4) % 60;
+    for (let gx = grassOffset - 60; gx < this.screenWidth + 60; gx += 60) {
+      ctx.beginPath();
+      ctx.arc(gx + 20, this.screenHeight - 110, 14, 0, Math.PI, true);
+      ctx.arc(gx + 40, this.screenHeight - 110, 18, 0, Math.PI, true);
+      ctx.fill();
+    }
   }
 
-  // 슬로프(미끄럼틀) 트랙 렌더링
-  private drawSlopes(ctx: CanvasRenderingContext2D): void {
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+  private drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, scale: number): void {
+    ctx.beginPath();
+    ctx.arc(cx, cy, scale * 0.5, 0, Math.PI * 2);
+    ctx.arc(cx + scale * 0.4, cy - scale * 0.2, scale * 0.45, 0, Math.PI * 2);
+    ctx.arc(cx + scale * 0.8, cy, scale * 0.4, 0, Math.PI * 2);
+    ctx.arc(cx + scale * 0.35, cy + scale * 0.15, scale * 0.35, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // [요구사항 5] 진짜 아스팔트 길(Asphalt Road) 및 연석 렌더링
+  private drawAsphaltRoads(ctx: CanvasRenderingContext2D): void {
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'miter';
 
     for (const seg of this.segments) {
-      // 화면 밖 세그먼트는 컬링(Culling)하여 렌더링 성능 최적화
-      const minX = Math.min(seg.startX, seg.endX) - 50;
-      const maxX = Math.max(seg.startX, seg.endX) + 50;
-      const minY = Math.min(seg.startY, seg.endY) - 50;
-      const maxY = Math.max(seg.startY, seg.endY) + 50;
+      const minX = Math.min(seg.startX, seg.endX) - 80;
+      const maxX = Math.max(seg.startX, seg.endX) + 80;
+      const minY = Math.min(seg.startY, seg.endY) - 80;
+      const maxY = Math.max(seg.startY, seg.endY) + 80;
 
       if (
         maxX < this.cameraX ||
@@ -651,55 +730,72 @@ export class GameEngine {
       }
 
       if (seg.type === 'TURN') {
-        // 코너 회전점 마커 (화살표 또는 둥근 원)
+        // 코너 회전 기둥 마커 (레이싱 서킷 턴 인디케이터)
         ctx.beginPath();
-        ctx.arc(seg.startX, seg.startY, 16, 0, Math.PI * 2);
-        ctx.fillStyle = '#0284c7';
+        ctx.arc(seg.startX, seg.startY, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 3;
         ctx.stroke();
+
+        // 턴 화살표
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('↷', seg.startX, seg.startY);
         continue;
       }
 
-      // 1. 하단 입체 그림자
+      // 1. 도로 하단 3D 콘크리트 그림자
       ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY + 6);
-      ctx.lineTo(seg.endX, seg.endY + 6);
-      ctx.strokeStyle = 'rgba(2, 132, 199, 0.4)';
-      ctx.lineWidth = GAME_CONSTANTS.SLOPE_WIDTH + 6;
+      ctx.moveTo(seg.startX, seg.startY + 8);
+      ctx.lineTo(seg.endX, seg.endY + 8);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
       ctx.stroke();
 
-      // 2. 미끄럼틀 메인 트랙 바디
+      // 2. 도로 양옆 레이싱 연석(Curb - 빨강/흰색 체크무늬)
       ctx.beginPath();
       ctx.moveTo(seg.startX, seg.startY);
       ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = GAME_CONSTANTS.COLORS.SLOPE_MAIN;
-      ctx.lineWidth = GAME_CONSTANTS.SLOPE_WIDTH;
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
       ctx.stroke();
 
-      // 3. 중앙 밝은 하이라이트 레일
+      // 3. 다크 아스팔트 메인 노면
       ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY - 3);
-      ctx.lineTo(seg.endX, seg.endY - 3);
-      ctx.strokeStyle = GAME_CONSTANTS.COLORS.SLOPE_HIGHLIGHT;
-      ctx.lineWidth = 5;
+      ctx.moveTo(seg.startX, seg.startY);
+      ctx.lineTo(seg.endX, seg.endY);
+      ctx.strokeStyle = GAME_CONSTANTS.COLORS.ROAD_SURFACE;
+      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
       ctx.stroke();
 
-      // 4. 끊어진 길(GAP) 끝자락 경고 스트라이프 (아이들도 한눈에 점프 지점을 인지할 수 있게 연출)
+      // 4. 중앙 노란색 차선 (Yellow Dashed Centerline)
+      ctx.save();
+      ctx.setLineDash([12, 10]);
+      ctx.beginPath();
+      ctx.moveTo(seg.startX, seg.startY);
+      ctx.lineTo(seg.endX, seg.endY);
+      ctx.strokeStyle = GAME_CONSTANTS.COLORS.ROAD_LINE;
+      ctx.lineWidth = 3.0;
+      ctx.stroke();
+      ctx.restore();
+
+      // 5. 끊어진 길(GAP) 끝자락 경고 마커
       if (seg.type === 'GAP') {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(seg.endX, seg.endY, 14, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
+        ctx.arc(seg.endX, seg.endY, 15, 0, Math.PI * 2);
+        ctx.fillStyle = '#f97316';
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
-        // 느낌표(!) 마커
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 15px sans-serif';
+        ctx.font = 'black 16px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('!', seg.endX, seg.endY);
@@ -708,7 +804,7 @@ export class GameEngine {
     }
   }
 
-  // 아이템 렌더링 (반창고 등)
+  // 아이템 렌더링
   private drawItems(ctx: CanvasRenderingContext2D): void {
     const time = performance.now() * 0.004;
 
@@ -719,7 +815,6 @@ export class GameEngine {
         ctx.save();
         ctx.translate(seg.item.x, floatY);
 
-        // 반창고 십자가 배경
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.roundRect(-10, -10, 20, 20, 5);
@@ -728,7 +823,6 @@ export class GameEngine {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // 초록색 십자가 마크
         ctx.fillStyle = '#10b981';
         ctx.fillRect(-3, -7, 6, 14);
         ctx.fillRect(-7, -3, 14, 6);
@@ -750,18 +844,19 @@ export class GameEngine {
         ctx.textAlign = 'center';
         ctx.fillText(p.text || '', p.x, p.y);
       } else if (p.type === 'SHELL') {
-        // 계란 껍질 조각 (회전하는 삼각형)
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation || 0);
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.moveTo(0, -p.radius);
         ctx.lineTo(p.radius * 0.9, p.radius * 0.8);
-        ctx.lineTo(-p.radius * 0.8, p.radius * 0.6);
+        ctx.lineTo(-p.radius * 0.8, p.radius * 0.7);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       } else {
-        // 일반 원형 파티클 (노른자, 먼지 등)
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = p.color;

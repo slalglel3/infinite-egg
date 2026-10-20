@@ -13,10 +13,9 @@ export interface SlopeSegment {
   endX: number;
   endY: number;
   length: number;
-  // 끊어진 길(GAP)인 경우 다음 세그먼트 시작점과의 오프셋
+  // 끊어진 길(GAP)인 경우
   gapDistance?: number;
   gapHeight?: number;
-  // 스폰된 아이템
   item?: {
     type: ItemType;
     x: number;
@@ -27,28 +26,35 @@ export interface SlopeSegment {
 }
 
 export type EggState =
-  | 'ROLLING'       // 슬로프 위를 굴러가는 중
-  | 'JUMPING'       // 점프 포물선 비행 중
-  | 'DROPPING_TURN' // 방향 전환을 일찍 눌러서 아랫길로 자유 낙하 중
-  | 'DEAD_FALLING'  // 코너/갭을 지나쳐 맵 밖으로 추락 중
-  | 'DEAD_CRACKED'; // 착지 충격으로 깨진 상태
+  | 'ROLLING'          // 슬로프 위를 굴러가는 중
+  | 'JUMPING'          // 점프 포물선 비행 중
+  | 'DROPPING_TURN'    // 방향 전환을 일찍 눌러서 아랫길로 자유 낙하 중
+  | 'SURPRISED_FALL'   // 추락 직전 공중에 멈춰 당황하는 만화적 연출
+  | 'DEAD_FALLING'     // 화면 아래로 회전하며 추락 중
+  | 'DEAD_CRACKED'     // 착지 충격으로 깨져 흰자/노른자가 퍼지는 연출 중
+  | 'DEAD_OVER';       // 연출 완료 후 게임 종료 상태
+
+export type EggExpression = 'NORMAL' | 'DIZZY' | 'SURPRISED' | 'PAIN';
 
 export interface Egg {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  rotation: number;     // 현재 굴러간 각도 (라디안)
+  rotation: number;        // 현재 구르는 각도 (라디안)
   direction: SlopeDirection;
   state: EggState;
+  expression: EggExpression;
   currentSegmentIndex: number;
   // 점프 관련
   jumpStartY: number;
   jumpStartX: number;
-  jumpProgress: number; // 0 ~ 1
+  jumpProgress: number;    // 0 ~ 1
   jumpPeakHeight: number;
-  // 낙하(드롭) 관련
+  // 낙하/드롭 관련
   dropStartY: number;
+  // 사망 연출 타이머
+  deathTimer: number;
   // 체력(내구도)
   maxHp: number;
   hp: number;
@@ -56,7 +62,21 @@ export interface Egg {
   squishX: number;
   squishY: number;
   flashDamage: boolean;
-  crackLevel: number;   // 0(멀쩡) ~ 4(파괴 직전)
+  crackLevel: number;      // 0(멀쩡) ~ 4(파괴 직전)
+}
+
+export interface EggSplat {
+  x: number;
+  y: number;
+  rotation: number;
+  radius: number;
+  shellFragments: Array<{
+    offsetX: number;
+    offsetY: number;
+    size: number;
+    rot: number;
+    color: string;
+  }>;
 }
 
 export interface Particle {

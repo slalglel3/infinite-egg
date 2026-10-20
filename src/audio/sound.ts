@@ -1,9 +1,7 @@
 // Web Audio API 기반 오프라인 사운드 신디사이저
-// 외부 사운드 파일 다운로드 0%, 메모리 누수 0, 0ms 반응 지연
 
 class SoundSynthesizer {
   private ctx: AudioContext | null = null;
-  private isEnabled: boolean = true;
   private isMuted: boolean = false;
 
   private initContext() {
@@ -31,7 +29,7 @@ class SoundSynthesizer {
     return this.isMuted;
   }
 
-  // 1. 점프 사운드 (경쾌하게 위로 솟아오르는 뿅! 사운드)
+  // 1. 점프 사운드 (경쾌한 뿅!)
   public playJump() {
     if (this.isMuted) return;
     this.initContext();
@@ -43,18 +41,18 @@ class SoundSynthesizer {
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(750, now + 0.12);
+    osc.frequency.exponentialRampToValueAtTime(780, now + 0.11);
 
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.15);
+    osc.stop(now + 0.13);
   }
 
-  // 2. 방향 전환 사운드 (빠른 바람 스위시 쉭-!)
+  // 2. 방향 전환 사운드 (빠른 쉭-!)
   public playTurn() {
     if (this.isMuted) return;
     this.initContext();
@@ -65,19 +63,19 @@ class SoundSynthesizer {
     const now = this.ctx.currentTime;
 
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+    osc.frequency.setValueAtTime(480, now);
+    osc.frequency.exponentialRampToValueAtTime(240, now + 0.07);
 
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+    gain.gain.setValueAtTime(0.22, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.1);
+    osc.stop(now + 0.09);
   }
 
-  // 3. 퍼펙트 착지 (높이차 0 착지 시 맑고 상쾌한 팅-!)
+  // 3. 퍼펙트 착지 (상쾌한 팅-!)
   public playPerfect() {
     if (this.isMuted) return;
     this.initContext();
@@ -90,11 +88,11 @@ class SoundSynthesizer {
 
     osc1.type = 'sine';
     osc2.type = 'sine';
-    osc1.frequency.setValueAtTime(1046.5, now); // C6
-    osc2.frequency.setValueAtTime(1318.5, now); // E6
+    osc1.frequency.setValueAtTime(1046.5, now);
+    osc2.frequency.setValueAtTime(1318.5, now);
 
     gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
     osc1.connect(gain);
     osc2.connect(gain);
@@ -102,87 +100,114 @@ class SoundSynthesizer {
 
     osc1.start(now);
     osc2.start(now);
-    osc1.stop(now + 0.23);
-    osc2.stop(now + 0.23);
+    osc1.stop(now + 0.22);
+    osc2.stop(now + 0.22);
   }
 
-  // 4. 낙하 충격 및 금가는 소리 (높이차 충격: 쿵! + 껍질 틱!)
+  // 4. 낙하 충격음
   public playImpact(damage: number) {
     if (this.isMuted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    // 쿵 저음
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.14);
 
-    const volume = Math.min(0.7, 0.2 + damage * 0.03);
+    const volume = Math.min(0.7, 0.2 + damage * 0.035);
     gain.gain.setValueAtTime(volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.17);
-
-    // 대미지가 크면 껍질 금가는 틱! 소리 추가
-    if (damage >= 4) {
-      const snap = this.ctx.createOscillator();
-      const snapGain = this.ctx.createGain();
-      snap.type = 'square';
-      snap.frequency.setValueAtTime(1200, now + 0.02);
-      snap.frequency.exponentialRampToValueAtTime(300, now + 0.06);
-
-      snapGain.gain.setValueAtTime(0.2, now + 0.02);
-      snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
-
-      snap.connect(snapGain);
-      snapGain.connect(this.ctx.destination);
-      snap.start(now + 0.02);
-      snap.stop(now + 0.08);
-    }
+    osc.stop(now + 0.16);
   }
 
-  // 5. 계란 파괴 사운드 (내구도 0: 파삭-! 와장창)
-  public playBreak() {
+  // 5. 허공 추락 직전 깜짝 당황 사운드 (만화 띠용-!)
+  public playSurpriseBoing() {
     if (this.isMuted) return;
     this.initContext();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    
-    // 복합 파열음
-    const freqs = [180, 420, 850, 1400];
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(250, now);
+    osc.frequency.exponentialRampToValueAtTime(620, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(380, now + 0.28);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.35);
+  }
+
+  // 6. 허공 낙하 비명 사운드 (휘이이익- 하강)
+  public playFallWhistle() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(850, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.85);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.9);
+  }
+
+  // 7. 계란 파괴 사운드 (파삭-! 와장창)
+  public playBreakSplat() {
+    if (this.isMuted) return;
+    this.initContext();
+    if (!this.ctx) return;
+
+    const now = this.ctx.currentTime;
+    const freqs = [160, 380, 720, 1200];
     freqs.forEach((freq, idx) => {
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
-      const startTime = now + idx * 0.025;
+      const startTime = now + idx * 0.02;
 
       osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
       osc.frequency.setValueAtTime(freq, startTime);
-      osc.frequency.exponentialRampToValueAtTime(60, startTime + 0.28);
+      osc.frequency.exponentialRampToValueAtTime(50, startTime + 0.32);
 
-      gain.gain.setValueAtTime(0.35, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+      gain.gain.setValueAtTime(0.4, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
 
       osc.connect(gain);
       gain.connect(this.ctx!.destination);
       osc.start(startTime);
-      osc.stop(startTime + 0.32);
+      osc.stop(startTime + 0.38);
     });
   }
 
-  // 6. 회복 아이템 획득 (산뜻한 아르페지오 띠링!)
+  // 8. 회복 아이템
   public playHeal() {
     if (this.isMuted) return;
     this.initContext();
     if (!this.ctx) return;
 
-    const notes = [587.33, 739.99, 880.0, 1174.66]; // D5, F#5, A5, D6
+    const notes = [587.33, 739.99, 880.0, 1174.66];
     notes.forEach((freq, idx) => {
       const startTime = this.ctx!.currentTime + idx * 0.06;
       const osc = this.ctx!.createOscillator();
@@ -198,29 +223,6 @@ class SoundSynthesizer {
       osc.start(startTime);
       osc.stop(startTime + 0.2);
     });
-  }
-
-  // 7. 허공 추락 사운드 (휘이이익 하강음)
-  public playFall() {
-    if (this.isMuted) return;
-    this.initContext();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(90, now + 0.55);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.6);
   }
 }
 

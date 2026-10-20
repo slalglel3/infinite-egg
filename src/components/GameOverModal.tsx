@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { GameStats, UserProgress } from '../types/game';
-import { RotateCcw, Trophy, Award, HeartHandshake, Sparkles } from 'lucide-react';
+import { RotateCcw, Trophy, Sparkles } from 'lucide-react';
 
 interface GameOverModalProps {
   stats: GameStats;
@@ -21,7 +21,6 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   onRestart,
 }) => {
   useEffect(() => {
-    // 신기록 달성 시 콘페티 폭죽 효과
     if (isNewRecord && stats.distanceMeters > 0) {
       confetti({
         particleCount: 80,
@@ -29,11 +28,28 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         origin: { y: 0.6 },
       });
     }
-  }, [isNewRecord, stats.distanceMeters]);
+
+    // 스페이스바 / 엔터키로 즉시 재시작 지원
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        onRestart();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isNewRecord, stats.distanceMeters, onRestart]);
 
   return (
-    <div className="absolute inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-5 z-30 animate-in fade-in">
-      <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-4 text-center">
+    <div
+      onClick={onRestart}
+      className="absolute inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-5 z-50 animate-in fade-in cursor-pointer select-none"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-4 text-center cursor-default"
+      >
         {/* 상단: 상태 및 일러스트 */}
         <div className="flex flex-col items-center">
           {reason === 'CRACKED' ? (
@@ -66,7 +82,6 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
         {/* 이번 판 기록 통계 박스 */}
         <div className="w-full bg-amber-50/80 rounded-2xl p-4 border border-amber-200 flex flex-col gap-2.5">
-          {/* 하강 고도 */}
           <div className="flex justify-between items-baseline border-b border-amber-200/60 pb-2">
             <span className="text-xs font-bold text-gray-600">하강 높이</span>
             <div className="flex items-baseline gap-1">
@@ -77,7 +92,6 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             </div>
           </div>
 
-          {/* 퍼펙트 착지 및 아이템 */}
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-white/80 p-2 rounded-xl flex flex-col items-center">
               <span className="text-gray-500 font-semibold">퍼펙트 착지</span>
@@ -93,7 +107,6 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             </div>
           </div>
 
-          {/* 획득 경험치 및 레벨업 */}
           <div className="flex items-center justify-between text-xs font-bold pt-1 text-gray-700">
             <div className="flex items-center gap-1 text-amber-700">
               <Sparkles size={14} />
@@ -107,14 +120,19 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        {/* 다시 도전하기 버튼 */}
+        {/* 다시 도전하기 큰 버튼 */}
         <button
+          type="button"
           onClick={onRestart}
-          className="w-full h-14 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-500 border-2 border-white shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-white font-extrabold text-lg select-none"
+          className="w-full h-15 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-500 border-2 border-white shadow-[0_6px_20px_rgba(245,158,11,0.5)] active:scale-95 transition-all flex items-center justify-center gap-2 text-white font-black text-lg select-none cursor-pointer"
         >
-          <RotateCcw size={20} />
+          <RotateCcw size={22} className="stroke-[3]" />
           <span>다시 도전하기!</span>
         </button>
+
+        <p className="text-[11px] text-gray-400 font-medium">
+          화면 아무 곳이나 탭하거나 스페이스바를 눌러도 바로 시작됩니다.
+        </p>
       </div>
     </div>
   );

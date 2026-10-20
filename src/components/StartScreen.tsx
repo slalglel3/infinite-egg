@@ -26,7 +26,7 @@ export const StartScreen: React.FC<StartScreenProps> = ({ progress, onStart }) =
               </radialGradient>
             </defs>
             <path
-              d="M 50 10 C 20 10 8 55 8 80 C 8 105 28 115 50 115 C 72 115 92 105 92 80 C 92 55 80 10 50 10 Z"
+              d="M 50 8 C 32 8 18 36 17 65 C 16 92 29 114 50 114 C 71 114 84 92 83 65 C 82 36 68 8 50 8 Z"
               fill="url(#titleEggGrad)"
               stroke="#b45309"
               strokeWidth="3.5"

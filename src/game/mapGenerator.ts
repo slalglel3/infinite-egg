@@ -6,7 +6,6 @@ export class MapGenerator {
   private currentX: number = 0;
   private currentY: number = 0;
   private currentDirection: SlopeDirection = 'RIGHT_DOWN';
-  private straightCountInCurrentDir: number = 0;
   private lastItemMeter: number = 0;
 
   constructor() {
@@ -18,65 +17,98 @@ export class MapGenerator {
     this.currentX = startX;
     this.currentY = startY;
     this.currentDirection = 'RIGHT_DOWN';
-    this.straightCountInCurrentDir = 0;
     this.lastItemMeter = 0;
   }
 
-  // 초기 시작 맵 세그먼트 생성 (약 20개 세그먼트)
+  // 게임 시작 시 맵 초기화 (처음부터 턴과 점프가 즉시 등장!)
   public generateInitialMap(): SlopeSegment[] {
     const segments: SlopeSegment[] = [];
 
-    // 최초 3개는 안전한 긴 직선 구간
-    for (let i = 0; i < 3; i++) {
-      segments.push(this.createStraightSegment(260, false));
-    }
+    // 1. 첫 출발: 2스텝 짧은 적응 구간 (140px)
+    segments.push(this.createStraightStep(2, false));
 
-    // 이후 20개 세그먼트 연속 생성
-    for (let i = 0; i < 20; i++) {
-      segments.push(this.generateNextSegment(0));
+    // 2. 시작 15m 지점: 첫 번째 점프 갭 (바로 점프의 손맛 체험!)
+    segments.push(this.createGapStep(0));
+
+    // 3. 착지 후 2스텝 직진
+    segments.push(this.createStraightStep(2, false));
+
+    // 4. 첫 번째 방향 전환 (TURN)
+    segments.push(this.createTurnSegment());
+
+    // 5. 1스텝 짧은 길 후 또 턴 (무한의 계단식 지그재그 맛보기)
+    segments.push(this.createStraightStep(1, false));
+    segments.push(this.createTurnSegment());
+
+    // 6. 3스텝 직진 후 점프 갭
+    segments.push(this.createStraightStep(3, true));
+    segments.push(this.createGapStep(30));
+
+    // 7. 연속해서 다이나믹 맵 25개 세그먼트 생성
+    for (let i = 0; i < 25; i++) {
+      this.generateDynamicPattern(segments, 50);
     }
 
     return segments;
   }
 
-  // 다음 세그먼트 생성 (현재 하강 거리 meters 반영하여 난이도 조절)
-  public generateNextSegment(currentMeters: number): SlopeSegment {
-    this.currentId++;
+  // 다이나믹 패턴 단위 생성 (무한의 계단 리듬감 알고리즘)
+  public generateDynamicPattern(segments: SlopeSegment[], currentMeters: number): void {
+    // 난이도 단계 (0: 초반, 1: 중반 300m+, 2: 고난도 700m+)
+    const isMid = currentMeters >= 250;
+    const isHard = currentMeters >= 600;
 
-    // 방향 전환(TURN) 결정
-    // 현재 방향으로 3~6번 직진했으면 방향 전환 고려
-    const minStraights = currentMeters > 500 ? 2 : 3;
-    const maxStraights = currentMeters > 500 ? 5 : 7;
+    const rand = Math.random();
 
-    const shouldTurn = this.straightCountInCurrentDir >= minStraights &&
-      (this.straightCountInCurrentDir >= maxStraights || Math.random() < 0.45);
-
-    if (shouldTurn) {
-      return this.createTurnSegment();
+    if (isHard && rand < 0.22) {
+      // [고난도] 2연속 점프 (Double Gap Jump)
+      segments.push(this.createStraightStep(1, false));
+      segments.push(this.createGapStep(currentMeters));
+      segments.push(this.createStraightStep(1, false));
+      segments.push(this.createGapStep(currentMeters));
+      segments.push(this.createTurnSegment());
+    } else if (rand < 0.28) {
+      // [무한의 계단 시그니처] 1스텝 엇박 지그재그 (따-탁-따-탁!)
+      const zigzagCount = isMid ? 3 + Math.floor(Math.random() * 2) : 2;
+      for (let z = 0; z < zigzagCount; z++) {
+        segments.push(this.createStraightStep(1, false));
+        segments.push(this.createTurnSegment());
+      }
+    } else if (rand < 0.55) {
+      // [점프 후 급회전] 점프 ➔ 1스텝 착지 ➔ 바로 방향 전환!
+      const leadSteps = Math.random() < 0.5 ? 2 : 3;
+      segments.push(this.createStraightStep(leadSteps, this.shouldSpawnItem(currentMeters)));
+      segments.push(this.createGapStep(currentMeters));
+      segments.push(this.createStraightStep(1, false));
+      segments.push(this.createTurnSegment());
+    } else if (rand < 0.78) {
+      // [계단형 스텝] 2스텝 ➔ 턴 ➔ 2스텝 ➔ 턴
+      segments.push(this.createStraightStep(2, false));
+      segments.push(this.createTurnSegment());
+      segments.push(this.createStraightStep(2, this.shouldSpawnItem(currentMeters)));
+      segments.push(this.createTurnSegment());
+    } else {
+      // [롱 스트레이트 & 점프] 3~5스텝 시원한 질주 후 점프
+      const runSteps = isHard ? 3 : 4 + Math.floor(Math.random() * 2);
+      segments.push(this.createStraightStep(runSteps, this.shouldSpawnItem(currentMeters)));
+      segments.push(this.createGapStep(currentMeters));
     }
-
-    // 끊어진 길(GAP) 결정 (100m 이후부터 등장)
-    // 갭 확률: 초반 20% -> 후반 35%
-    const gapChance = currentMeters > 100 ? Math.min(0.35, 0.2 + (currentMeters / 3000) * 0.15) : 0;
-    const shouldGap = Math.random() < gapChance;
-
-    if (shouldGap) {
-      return this.createGapSegment(currentMeters);
-    }
-
-    // 일반 직진 슬로프
-    const length = 180 + Math.random() * 120; // 180 ~ 300px
-    const shouldSpawnItem = (currentMeters - this.lastItemMeter >= 140) && Math.random() < 0.35;
-    if (shouldSpawnItem) {
-      this.lastItemMeter = currentMeters;
-    }
-
-    return this.createStraightSegment(length, shouldSpawnItem);
   }
 
-  // 1. 직진 슬로프 세그먼트 생성
-  private createStraightSegment(length: number, hasItem: boolean): SlopeSegment {
+  private shouldSpawnItem(currentMeters: number): boolean {
+    if (currentMeters - this.lastItemMeter >= 120 && Math.random() < 0.4) {
+      this.lastItemMeter = currentMeters;
+      return true;
+    }
+    return false;
+  }
+
+  // 1. 스텝 단위 직진 도로 생성
+  private createStraightStep(steps: number, hasItem: boolean): SlopeSegment {
+    this.currentId++;
+    const length = steps * GAME_CONSTANTS.STEP_LENGTH;
     const dirSign = this.currentDirection === 'RIGHT_DOWN' ? 1 : -1;
+
     const dx = dirSign * length * GAME_CONSTANTS.SLOPE_COS;
     const dy = length * GAME_CONSTANTS.SLOPE_SIN;
 
@@ -87,7 +119,6 @@ export class MapGenerator {
 
     this.currentX = endX;
     this.currentY = endY;
-    this.straightCountInCurrentDir++;
 
     let item = undefined;
     if (hasItem) {
@@ -113,29 +144,28 @@ export class MapGenerator {
     };
   }
 
-  // 2. 끊어진 길 (GAP) 세그먼트 생성
-  private createGapSegment(currentMeters: number): SlopeSegment {
+  // 2. 끊어진 길(GAP) 생성
+  private createGapStep(currentMeters: number): SlopeSegment {
+    this.currentId++;
     const dirSign = this.currentDirection === 'RIGHT_DOWN' ? 1 : -1;
-    const length = 160 + Math.random() * 80;
+    // 도약 발판 길이 (1~2스텝)
+    const runLength = GAME_CONSTANTS.STEP_LENGTH * (1 + Math.random() * 0.5);
 
     const startX = this.currentX;
     const startY = this.currentY;
-    const endX = startX + dirSign * length * GAME_CONSTANTS.SLOPE_COS;
-    const endY = startY + length * GAME_CONSTANTS.SLOPE_SIN;
+    const endX = startX + dirSign * runLength * GAME_CONSTANTS.SLOPE_COS;
+    const endY = startY + runLength * GAME_CONSTANTS.SLOPE_SIN;
 
-    // 갭의 폭: 거리(meters)에 따라 조금씩 넓어짐 (기획 3-1 반영)
-    // 초반: 70px -> 2000m: 130px (기본 점프 도달거리 200px 이내에서 정확한 점프 타이밍 요구)
+    // 갭 폭: 초반 65px -> 후반 115px (도달거리 175px 이내에서 정확한 점프 요구)
     const baseGap = 65;
-    const extraGap = Math.min(65, (currentMeters / 2000) * 65);
+    const extraGap = Math.min(50, (currentMeters / 1500) * 50);
     const gapDistance = baseGap + extraGap;
 
     const gapDx = dirSign * gapDistance * GAME_CONSTANTS.SLOPE_COS;
-    const gapDy = gapDistance * GAME_CONSTANTS.SLOPE_SIN + 15; // 아랫길이 15px 살짝 더 아래로 떨어져 단차 형성
+    const gapDy = gapDistance * GAME_CONSTANTS.SLOPE_SIN + 12;
 
-    // 다음 세그먼트의 시작 좌표를 갭만큼 점프 이동
     this.currentX = endX + gapDx;
     this.currentY = endY + gapDy;
-    this.straightCountInCurrentDir++;
 
     return {
       id: this.currentId,
@@ -145,16 +175,16 @@ export class MapGenerator {
       startY,
       endX,
       endY,
-      length,
+      length: runLength,
       gapDistance,
       gapHeight: gapDy,
       isPassed: false,
     };
   }
 
-  // 3. 방향 전환 (TURN) 세그먼트 생성
+  // 3. 방향 전환(TURN) 생성
   private createTurnSegment(): SlopeSegment {
-    // 현재 방향의 끝점에서 즉시 반대 방향으로 전환
+    this.currentId++;
     const oldDir = this.currentDirection;
     const newDir: SlopeDirection = oldDir === 'RIGHT_DOWN' ? 'LEFT_DOWN' : 'RIGHT_DOWN';
 
@@ -170,10 +200,7 @@ export class MapGenerator {
       isPassed: false,
     };
 
-    // 방향 반전 및 카운트 리셋
     this.currentDirection = newDir;
-    this.straightCountInCurrentDir = 0;
-
     return turnSegment;
   }
 }
