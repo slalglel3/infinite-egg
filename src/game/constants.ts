@@ -31,8 +31,9 @@ export const GAME_CONSTANTS = {
 
   // [판정 정밀화] PERFECT 판정 범위 및 유효 회전 윈도우
   PERFECT_JUMP_MARGIN: 25, // 절벽 끝 25px 이내 (기존 48px 대비 정밀 축소)
-  PERFECT_TURN_MARGIN: 25, // 코너 끝 25px 이내 (기존 38px 대비 정밀 축소)
-  VALID_TURN_WINDOW: 85,   // 코너 전방 85px 이내에서 누르면 즉시 부드럽게 방향 전환 허용
+  PERFECT_TURN_MARGIN: 22, // 코너 끝 22px 이내 최적 회전
+  VALID_TURN_WINDOW: 65,   // 코너 전방 65px 이내에서 누르면 부드러운 스무스 피벗 선입력 허용
+  COYOTE_TURN_MARGIN: 20,  // 코너를 지난 후 20px 이내 늦은 입력도 세이프 허용
 
   // 내구도
   BASE_HP: 100,

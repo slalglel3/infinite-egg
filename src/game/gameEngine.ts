@@ -30,6 +30,14 @@ export class GameEngine {
   private isCurrentJumpMisjump: boolean = false;
   private jumpDistanceToEdge: number = 0;
 
+  // 방향 전환 선입력 버퍼 (순간이동 튐 0% 스무스 피벗)
+  private pendingTurn: {
+    turnSegIndex: number;
+    newDir: SlopeDirection;
+    targetX: number;
+    targetY: number;
+  } | null = null;
+
   // 대기 환경 파티클 타이머 (눈송이, 불티 등)
   private ambientParticleTimer: number = 0;
 
@@ -135,6 +143,7 @@ export class GameEngine {
     this.gameOverReason = null;
     this.screenShake = 0;
     this.ambientParticleTimer = 0;
+    this.pendingTurn = null;
   }
 
   // ==========================================
@@ -145,6 +154,8 @@ export class GameEngine {
   public triggerJump(): void {
     if (!this.isRunning || this.isGameOver) return;
     if (this.egg.state !== 'ROLLING') return;
+
+    this.pendingTurn = null; // 점프 시 대기 중인 회전 선입력 해제
 
     const currentSeg = this.segments[this.egg.currentSegmentIndex];
     this.egg.state = 'JUMPING';
@@ -175,10 +186,11 @@ export class GameEngine {
     }
   }
 
-  // 2. [방향 전환] 버튼 (즉각 반응하는 아케이드 손맛 100% 복원 & 정밀 판정)
+  // 2. [방향 전환] 버튼 (순간이동 튐 0% 무결점 스무스 피벗 버퍼링)
   public triggerTurn(): void {
     if (!this.isRunning || this.isGameOver) return;
     if (this.egg.state !== 'ROLLING') return;
+    if (this.pendingTurn) return; // 이미 선입력 처리 중인 경우 중복 입력 방지
 
     const currentSeg = this.segments[this.egg.currentSegmentIndex];
     if (!currentSeg) return;
@@ -202,25 +214,37 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 코너 전방 유효 판정 윈도우(85px) 내에서 방향 전환을 누른 경우
+      // 코너 전방 유효 윈도우(65px) 내에서 방향 전환을 누른 경우
       if (distToTurn <= GAME_CONSTANTS.VALID_TURN_WINDOW) {
-        // [핵심] 버벅이는 낙하 모션 없이 누르는 즉시 100% 깔끔하게 방향을 전환하여 연속 롤링!
-        this.egg.direction = newDir;
-        this.egg.state = 'ROLLING';
-        this.egg.currentSegmentIndex = turnSegIndex + 1; // 새로운 방향의 세그먼트로 즉시 전환
-        this.egg.x = turnSeg.startX;
-        this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
         sound.playTurn();
 
-        // 1) 코너 끝점 25px 이내 최적 타이밍: PERFECT TURN!
+        // 1) 키 누른 순간의 위치를 기준으로 즉시 판정 (PERFECT vs EARLY)
         if (distToTurn <= GAME_CONSTANTS.PERFECT_TURN_MARGIN) {
           sound.playPerfect();
           this.stats.perfectLandings++;
           this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
         } else {
-          // 2) 조금 일찍 턴한 경우: 렉 없이 깔끔하게 돌면서 조기 회전 충격 대미지만 약간 차감
-          const damage = Math.max(3, Math.min(8, Math.floor((distToTurn - GAME_CONSTANTS.PERFECT_TURN_MARGIN) * 0.12) + 3));
-          this.applyDamage(damage, `EARLY -${damage}HP`);
+          // 조금 일찍 누른 경우: 화면 흔들림 및 찌그러짐 튐 없는 부드러운 대미지
+          const damage = Math.max(3, Math.min(7, Math.floor((distToTurn - GAME_CONSTANTS.PERFECT_TURN_MARGIN) * 0.12) + 3));
+          this.applyTurnDamage(damage, `EARLY -${damage}HP`);
+        }
+
+        // 2) [핵심] 계란을 순간이동(Snap)시키지 않고, 꼭짓점에 도달하는 순간 자연스럽게 회전하도록 버퍼링!
+        // 이미 코너 꼭짓점 8px 이내에 아주 근접해 있거나 지나친 경우 즉시 전환
+        if (distToTurn <= 8 || this.egg.y >= turnSeg.startY) {
+          this.egg.direction = newDir;
+          this.egg.currentSegmentIndex = turnSegIndex + 1;
+          this.egg.x = turnSeg.startX;
+          this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
+          this.pendingTurn = null;
+        } else {
+          // 꼭짓점까지 원래 가던 속도로 부드럽게 굴러가도록 선입력 등록
+          this.pendingTurn = {
+            turnSegIndex,
+            newDir,
+            targetX: turnSeg.startX,
+            targetY: turnSeg.startY,
+          };
         }
         return;
       }
@@ -365,7 +389,19 @@ export class GameEngine {
       }
     }
 
-    // 세그먼트 끝 도달 판정
+    // [핵심 1] 선입력된 방향 전환(pendingTurn) 처리: 코너 꼭짓점 도달 시 0픽셀 순간이동 없이 매끄럽게 회전!
+    if (this.pendingTurn) {
+      if (this.egg.y >= this.pendingTurn.targetY - 2) {
+        this.egg.direction = this.pendingTurn.newDir;
+        this.egg.currentSegmentIndex = this.pendingTurn.turnSegIndex + 1;
+        this.egg.x = this.pendingTurn.targetX;
+        this.egg.y = this.pendingTurn.targetY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
+        this.pendingTurn = null;
+        return;
+      }
+    }
+
+    // [핵심 2] 세그먼트 끝 도달 판정
     const pastEndY = this.egg.y >= currentSeg.endY;
     if (pastEndY) {
       if (currentSeg.type === 'GAP') {
@@ -373,8 +409,11 @@ export class GameEngine {
         this.startFallSequence(dirSign * this.stats.speed * 0.5);
         return;
       } else if (currentSeg.type === 'TURN') {
-        this.startFallSequence(dirSign * this.stats.speed);
-        return;
+        // 코너 꼭짓점으로부터 코요테 유예 거리(20px)를 초과하여 지나칠 때까지 입력이 없으면 추락!
+        if (this.egg.y >= currentSeg.endY + GAME_CONSTANTS.COYOTE_TURN_MARGIN) {
+          this.startFallSequence(dirSign * this.stats.speed);
+          return;
+        }
       } else {
         this.egg.currentSegmentIndex++;
         const nextSeg = this.segments[this.egg.currentSegmentIndex];
@@ -533,8 +572,32 @@ export class GameEngine {
     }
   }
 
+  // [방향 전환 전용] 화면 흔들림 및 찌그러짐 튐 없는 부드러운 타이밍 대미지
+  private applyTurnDamage(damage: number, label: string): void {
+    this.egg.hp = Math.max(0, this.egg.hp - damage);
+    this.stats.hp = this.egg.hp;
+
+    this.egg.squishX = 1.05;
+    this.egg.squishY = 0.96;
+    this.screenShake = 1.0; // 덜컹거림 원천 차단
+    this.egg.expression = 'PAIN';
+
+    sound.playImpact(damage);
+    this.spawnTextParticle(this.egg.x, this.egg.y - 25, label, '#ef4444');
+
+    this.egg.flashDamage = true;
+    setTimeout(() => {
+      this.egg.flashDamage = false;
+    }, 100);
+
+    if (this.egg.hp <= 0) {
+      this.startCrackedSequence();
+    }
+  }
+
   // [피드백 5] 구멍이나 코너에서 떨어질 때 공중 멈칫 당황 후 추락 시퀀스
   private startFallSequence(vx: number): void {
+    this.pendingTurn = null;
     this.egg.state = 'SURPRISED_FALL';
     this.egg.expression = 'SURPRISED';
     this.egg.vx = vx;
@@ -545,6 +608,7 @@ export class GameEngine {
   }
 
   private startCrackedSequence(): void {
+    this.pendingTurn = null;
     this.egg.state = 'DEAD_CRACKED';
     this.egg.jumpArcOffset = 0;
     this.egg.deathTimer = 0;
