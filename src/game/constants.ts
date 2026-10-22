@@ -7,57 +7,42 @@ export const GAME_CONSTANTS = {
   SLOPE_COS: 4 / 5, // 0.8
   SLOPE_SIN: 3 / 5, // 0.6
 
-  // 1 Step(블록 단위) 길이: 70px (무한의 계단처럼 빠른 리듬감)
+  // 1 Step(블록 단위) 길이: 70px
   STEP_LENGTH: 70,
 
   // 도로(아스팔트) 외형 치수
-  ROAD_WIDTH: 38,        // 도로 트랙의 전체 폭
-  CURB_WIDTH: 5,         // 도로 양쪽 연석(Curb) 폭
+  ROAD_WIDTH: 38,
+  CURB_WIDTH: 5,
 
   // 통통하고 사랑스러운 황금비율 달걀 치수 (가로 36px, 세로 48px, 비율 1 : 1.33)
   EGG_RADIUS_X: 18,
   EGG_RADIUS_Y: 24,
 
-  // 기본 속도 및 가속 곡선
-  INITIAL_SPEED: 260,    // 픽셀/초
-  MAX_SPEED: 760,        // 최고 속도
-  SPEED_INCREASE_INTERVAL_M: 80,
-  SPEED_INCREASE_STEP: 25,
+  // [피드백 3] 50m마다 속도 상승, 2000m에서 최고 속도(780) 도달
+  INITIAL_SPEED: 260,
+  MAX_SPEED: 780,
+  SPEED_INCREASE_INTERVAL_M: 50, // 50m마다 가속!
+  SPEED_INCREASE_STEP: 13,        // (780 - 260) / 40단계 = 13
 
-  // 점프 물리 (눈에 확실하게 보이는 고정 포물선 점프)
-  JUMP_DURATION_SEC: 0.50,   // 체공 시간 0.5초
-  JUMP_PEAK_PIXELS: 65,     // 공중으로 65픽셀 시원하게 솟구침!
-  JUMP_DISTANCE_FORWARD: 190,// 점프 전진 거리
+  // 점프 물리
+  JUMP_DURATION_SEC: 0.50,
+  JUMP_PEAK_PIXELS: 65,
+  JUMP_DISTANCE_FORWARD: 190,
+
+  // [피드백 4] 판정 범위 절반 축소 (정밀한 손맛)
+  PERFECT_JUMP_MARGIN: 24, // 절벽 끝 24px 이내 (기존 48px의 절반)
+  PERFECT_TURN_MARGIN: 18, // 코너 끝 18px 이내 (기존 38px의 절반)
 
   // 내구도
   BASE_HP: 100,
   HP_PER_LEVEL: 0.05,
-  DAMAGE_PER_HEIGHT_PIXEL: 0.28,
-  MISJUMP_DAMAGE: 12,
+  DAMAGE_PER_HEIGHT_PIXEL: 0.32,
+  MISJUMP_DAMAGE: 14,
+
+  // [피드백 6] 반창고 발생 빈도 및 회복량
   BANDAGE_HEAL_HP: 25,
+  BANDAGE_MIN_INTERVAL_M: 60, // 60m마다 체크
+  BANDAGE_SPAWN_CHANCE: 0.50, // 50% 확률 스폰
 
-  // 경험치 공식
   BASE_EXP_PER_METER: 1,
-
-  // 색상 팔레트: 자연(Nature) & 아스팔트(Asphalt) 테마
-  COLORS: {
-    SKY_TOP: '#38bdf8',
-    SKY_BOTTOM: '#e0f2fe',
-    MOUNTAIN_FAR: '#93c5fd',
-    MOUNTAIN_MID: '#86efac',
-    GRASS_BASE: '#4ade80',
-    GRASS_DARK: '#22c55e',
-    
-    ROAD_SURFACE: '#334155',
-    ROAD_DARK: '#1e293b',
-    ROAD_LINE: '#facc15',
-    CURB_RED: '#ef4444',
-    CURB_WHITE: '#f8fafc',
-
-    EGG_BASE: '#fef08a',
-    EGG_SHADOW: '#f59e0b',
-    EGG_LINE: '#b45309',
-    EGG_YOLK: '#f97316',
-    EGG_WHITE: 'rgba(255, 255, 255, 0.85)',
-  },
 };

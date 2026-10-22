@@ -30,6 +30,9 @@ export class GameEngine {
   private isCurrentJumpMisjump: boolean = false;
   private jumpDistanceToEdge: number = 0;
 
+  // 대기 환경 파티클 타이머 (눈송이, 불티 등)
+  private ambientParticleTimer: number = 0;
+
   // 콜백
   public onGameOver?: (stats: GameStats, reason: 'CRACKED' | 'FALL') => void;
 
@@ -131,6 +134,7 @@ export class GameEngine {
     this.isGameOver = false;
     this.gameOverReason = null;
     this.screenShake = 0;
+    this.ambientParticleTimer = 0;
   }
 
   // ==========================================
@@ -151,7 +155,6 @@ export class GameEngine {
 
     sound.playJump();
 
-    // 윗길 절벽 끝점(도약점)까지 남은 거리 측정 (피드백 3 해결)
     if (currentSeg && currentSeg.type === 'GAP') {
       const distToEdge = Math.hypot(currentSeg.endX - this.egg.x, currentSeg.endY - this.egg.y);
       this.jumpDistanceToEdge = distToEdge;
@@ -162,7 +165,7 @@ export class GameEngine {
     }
   }
 
-  // 2. [방향 전환] 버튼
+  // 2. [방향 전환] 버튼 (피드백 4: 마진 18px로 절반 축소!)
   public triggerTurn(): void {
     if (!this.isRunning || this.isGameOver) return;
     if (this.egg.state !== 'ROLLING') return;
@@ -184,8 +187,8 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 코너 끝점 38px 이내 도달 시: 퍼펙트 턴! (대미지 0)
-      if (distToTurn <= 38) {
+      // [피드백 4] 코너 끝점 18px 이내 도달 시에만 퍼펙트 턴! (기존 38px에서 절반 축소)
+      if (distToTurn <= GAME_CONSTANTS.PERFECT_TURN_MARGIN) {
         this.egg.direction = newDir;
         this.egg.currentSegmentIndex = turnSegIndex + 1;
         this.egg.x = turnSeg.startX;
@@ -197,7 +200,7 @@ export class GameEngine {
         return;
       }
 
-      // 너무 일찍 누른 경우 (수직 낙하 드롭)
+      // 18px보다 일찍 누른 경우: 수직 낙하 드롭 대미지
       this.egg.direction = newDir;
       this.egg.state = 'DROPPING_TURN';
       this.egg.dropStartY = this.egg.y;
@@ -226,7 +229,9 @@ export class GameEngine {
     this.egg.squishY += (1 - this.egg.squishY) * dt * 10;
 
     this.updateParticles(dt);
+    this.updateAmbientParticles(dt);
 
+    // 사망 연출 시퀀스 진행
     if (this.egg.state === 'SURPRISED_FALL') {
       this.egg.deathTimer += dt;
       if (this.egg.deathTimer >= 0.32) {
@@ -266,6 +271,7 @@ export class GameEngine {
       return;
     }
 
+    // [피드백 3] 50m마다 속도 상승, 2000m에서 최고 속도 도달
     const currentMeters = Math.floor(this.egg.y / GAME_CONSTANTS.PIXELS_PER_METER);
     this.stats.distanceMeters = Math.max(this.stats.distanceMeters, currentMeters);
 
@@ -330,12 +336,13 @@ export class GameEngine {
       });
     }
 
-    // 아이템 획득
+    // [피드백 7 해결] 반창고 먹자마자 egg.hp와 stats.hp를 실시간으로 즉시 동기화!
     if (currentSeg.item && !currentSeg.item.collected) {
       const distToItem = Math.hypot(this.egg.x - currentSeg.item.x, this.egg.y - currentSeg.item.y);
-      if (distToItem < 30) {
+      if (distToItem < 32) {
         currentSeg.item.collected = true;
         this.egg.hp = Math.min(this.egg.maxHp, this.egg.hp + GAME_CONSTANTS.BANDAGE_HEAL_HP);
+        this.stats.hp = this.egg.hp; // [핵심] stats.hp 즉시 업데이트!
         this.stats.itemsCollected++;
         sound.playHeal();
         this.spawnTextParticle(this.egg.x, this.egg.y - 25, `+${GAME_CONSTANTS.BANDAGE_HEAL_HP} HP`, '#10b981');
@@ -346,11 +353,10 @@ export class GameEngine {
     const pastEndY = this.egg.y >= currentSeg.endY;
     if (pastEndY) {
       if (currentSeg.type === 'GAP') {
-        // 점프를 안 뛰고 갭의 끝자락을 지나쳐버림 -> 절벽 추락사!
-        this.startFallSequence(dirSign * this.stats.speed * 0.6);
+        // [피드백 5] 점프를 안 하고 구멍에 빠진 경우 방향 전환처럼 멈칫 당황 추락 모션!
+        this.startFallSequence(dirSign * this.stats.speed * 0.5);
         return;
       } else if (currentSeg.type === 'TURN') {
-        // 코너를 지나침 -> 추락사!
         this.startFallSequence(dirSign * this.stats.speed);
         return;
       } else {
@@ -363,7 +369,7 @@ export class GameEngine {
     }
   }
 
-  // 2. 점프 상태 (JUMPING) - 공중 포물선 솟구침
+  // 2. 점프 상태 (JUMPING)
   private updateJumping(dt: number): void {
     const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
     this.egg.jumpProgress += dt / GAME_CONSTANTS.JUMP_DURATION_SEC;
@@ -372,7 +378,6 @@ export class GameEngine {
     this.egg.x += dirSign * forwardStep * GAME_CONSTANTS.SLOPE_COS;
     this.egg.y += forwardStep * GAME_CONSTANTS.SLOPE_SIN;
 
-    // 공중 솟구침 오프셋 계산
     const p = Math.min(1, this.egg.jumpProgress);
     this.egg.jumpArcOffset = Math.sin(p * Math.PI) * this.egg.jumpPeakHeight;
     
@@ -388,18 +393,22 @@ export class GameEngine {
     }
   }
 
-  // 3. 점프 착지 판정 (피드백 2, 3, 4 완벽 해결!)
+  // 3. 점프 착지 판정 (피드백 4: 마진 축소 & 피드백 8: 방향 불일치 공중착지 버그 완벽 수정!)
   private handleJumpLanding(): void {
-    // 착지한 현재 (x, y) 좌표에 위치한 실제 도로 세그먼트를 탐색!
     let landedIndex = -1;
+
+    // [피드백 8 해결] 착지 후보 세그먼트는 반드시 현재 계란 진행 방향과 일치해야 함!
     for (let i = this.egg.currentSegmentIndex; i < Math.min(this.segments.length, this.egg.currentSegmentIndex + 6); i++) {
       const seg = this.segments[i];
       if (seg.type === 'TURN') continue;
+      // 방향이 다른 세그먼트는 절대 착지 불가!
+      if (seg.direction !== this.egg.direction) continue;
 
-      const minX = Math.min(seg.startX, seg.endX) - 35;
-      const maxX = Math.max(seg.startX, seg.endX) + 35;
-      const minY = Math.min(seg.startY, seg.endY) - 25;
-      const maxY = Math.max(seg.startY, seg.endY) + 45;
+      // 선분 상의 유효 착지 영역 정밀 판정
+      const minX = Math.min(seg.startX, seg.endX) - 25;
+      const maxX = Math.max(seg.startX, seg.endX) + 25;
+      const minY = Math.min(seg.startY, seg.endY) - 15;
+      const maxY = Math.max(seg.startY, seg.endY) + 35;
 
       if (this.egg.x >= minX && this.egg.x <= maxX && this.egg.y >= minY && this.egg.y <= maxY) {
         landedIndex = i;
@@ -408,35 +417,33 @@ export class GameEngine {
     }
 
     if (landedIndex !== -1) {
-      // [성공 착지] 실제 도로 세그먼트 위에 안전하게 안착!
+      // 정상 도로 세그먼트 위에 안착!
       const landedSeg = this.segments[landedIndex];
       this.egg.currentSegmentIndex = landedIndex;
       this.egg.direction = landedSeg.direction;
       this.egg.state = 'ROLLING';
 
       if (this.isCurrentJumpMisjump) {
-        // 일반 도로에서 불필요하게 헛점프한 경우
-        const damage = GAME_CONSTANTS.MISJUMP_DAMAGE;
-        this.applyDamage(damage, 'MISJUMP!');
+        // 일반 길에서 헛점프한 경우
+        this.applyDamage(GAME_CONSTANTS.MISJUMP_DAMAGE, 'MISJUMP!');
       } else {
-        // [피드백 3 해결] 갭 도약 성공 시 도약 타이밍에 따른 정밀 판정:
-        // 도약 절벽 끝점 48px 이내에서 뛰었으면 무조건 대미지 0 (PERFECT!)
-        if (this.jumpDistanceToEdge <= 48) {
+        // [피드백 4] 점프 도약점 판정 마진 24px로 절반 축소!
+        if (this.jumpDistanceToEdge <= GAME_CONSTANTS.PERFECT_JUMP_MARGIN) {
           sound.playPerfect();
           this.stats.perfectLandings++;
           this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT JUMP!', '#10b981');
-        } else if (this.jumpDistanceToEdge <= 85) {
-          // 약간 일찍 도약한 경우 (소폭 대미지 2~4 HP)
-          const damage = Math.max(2, Math.floor((this.jumpDistanceToEdge - 48) * 0.12));
+        } else if (this.jumpDistanceToEdge <= 55) {
+          // 조금 일찍 도약
+          const damage = Math.max(3, Math.floor((this.jumpDistanceToEdge - 24) * 0.18));
           this.applyDamage(damage, `EARLY -${damage}HP`);
         } else {
-          // 너무 일찍 도약한 경우 (높이차 충격 6~10 HP)
-          const damage = Math.max(6, Math.floor((this.jumpDistanceToEdge - 48) * 0.2));
+          // 너무 일찍 도약
+          const damage = Math.max(7, Math.floor((this.jumpDistanceToEdge - 24) * 0.28));
           this.applyDamage(damage, `TOO EARLY! -${damage}HP`);
         }
       }
     } else {
-      // 도로를 벗어난 경우 추락
+      // [피드백 5, 8] 구멍에 빠지거나 코너를 지나쳐 공중으로 뛴 경우 -> 당황 후 추락 연출!
       const dirSign = this.egg.direction === 'RIGHT_DOWN' ? 1 : -1;
       this.startFallSequence(dirSign * 60);
     }
@@ -510,6 +517,7 @@ export class GameEngine {
     }
   }
 
+  // [피드백 5] 구멍이나 코너에서 떨어질 때 공중 멈칫 당황 후 추락 시퀀스
   private startFallSequence(vx: number): void {
     this.egg.state = 'SURPRISED_FALL';
     this.egg.expression = 'SURPRISED';
@@ -575,6 +583,59 @@ export class GameEngine {
     }
   }
 
+  // 대기 환경 파티클 생성 (설산 눈송이, 동굴 포자, 마그마 불티 등)
+  private updateAmbientParticles(dt: number): void {
+    this.ambientParticleTimer += dt;
+    if (this.ambientParticleTimer < 0.12) return;
+    this.ambientParticleTimer = 0;
+
+    const meters = this.stats.distanceMeters;
+
+    if (meters < 350) {
+      // 설산: 하늘에서 눈송이가 살랑살랑 내림
+      this.particles.push({
+        x: this.cameraX + Math.random() * this.screenWidth,
+        y: this.cameraY - 20,
+        vx: (Math.random() - 0.5) * 40 - 20,
+        vy: 40 + Math.random() * 60,
+        radius: 2 + Math.random() * 2.5,
+        color: 'rgba(255, 255, 255, 0.85)',
+        alpha: 0.9,
+        life: 0,
+        maxLife: 2.5,
+        type: 'DUST',
+      });
+    } else if (meters >= 1250 && meters < 1750) {
+      // 지하 동굴: 신비로운 푸른/보라빛 수정 포자 반딧불이
+      this.particles.push({
+        x: this.cameraX + Math.random() * this.screenWidth,
+        y: this.cameraY + Math.random() * this.screenHeight,
+        vx: (Math.random() - 0.5) * 20,
+        vy: -15 - Math.random() * 25,
+        radius: 2 + Math.random() * 2,
+        color: Math.random() < 0.5 ? '#818cf8' : '#c084fc',
+        alpha: 0.8,
+        life: 0,
+        maxLife: 2.0,
+        type: 'DUST',
+      });
+    } else if (meters >= 1750) {
+      // 지각 & 맨틀: 작열하는 주황/황금색 불티(Sparks)
+      this.particles.push({
+        x: this.cameraX + Math.random() * this.screenWidth,
+        y: this.cameraY + this.screenHeight + 10,
+        vx: (Math.random() - 0.5) * 60,
+        vy: -90 - Math.random() * 120,
+        radius: 1.5 + Math.random() * 2.5,
+        color: Math.random() < 0.6 ? '#f97316' : '#facc15',
+        alpha: 1,
+        life: 0,
+        maxLife: 1.5,
+        type: 'SPARK',
+      });
+    }
+  }
+
   // ==========================================
   // 파티클 시스템
   // ==========================================
@@ -628,12 +689,12 @@ export class GameEngine {
       ctx.translate(shakeX, shakeY);
     }
 
-    this.drawNatureBackground(ctx);
+    // [피드백 9] 고도(m)에 따라 6단계로 극적으로 변화하는 다이나믹 바이옴 배경!
+    this.drawDynamicBiomeBackground(ctx);
 
     ctx.translate(-this.cameraX, -this.cameraY);
 
     this.drawAsphaltRoads(ctx);
-
     this.drawItems(ctx);
 
     for (const splat of this.splats) {
@@ -649,54 +710,205 @@ export class GameEngine {
     ctx.restore();
   }
 
-  // 자연 패럴랙스 배경
-  private drawNatureBackground(ctx: CanvasRenderingContext2D): void {
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-    skyGrad.addColorStop(0, GAME_CONSTANTS.COLORS.SKY_TOP);
-    skyGrad.addColorStop(0.65, GAME_CONSTANTS.COLORS.SKY_BOTTOM);
-    skyGrad.addColorStop(1, '#ecfdf5');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+  // [피드백 9 완벽 구현] 6대 바이옴(설산 -> 산중턱 -> 숲/초원 -> 지하동굴 -> 지각 -> 맨틀)
+  private drawDynamicBiomeBackground(ctx: CanvasRenderingContext2D): void {
+    const meters = this.stats.distanceMeters;
 
-    const cloudOffset = -(this.cameraX * 0.05);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-    this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
-    this.drawCloud(ctx, (cloudOffset + 380) % (this.screenWidth + 200) - 100, 140, 42);
-    this.drawCloud(ctx, (cloudOffset + 650) % (this.screenWidth + 200) - 100, 95, 65);
+    if (meters < 350) {
+      // ==========================================================
+      // Zone 1: [0m ~ 350m] 에베레스트 설산 (Snow Peaks)
+      // ==========================================================
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      skyGrad.addColorStop(0, '#1e40af'); // 짙은 코발트 블루
+      skyGrad.addColorStop(0.7, '#60a5fa');
+      skyGrad.addColorStop(1, '#e0f2fe');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
 
-    ctx.fillStyle = GAME_CONSTANTS.COLORS.MOUNTAIN_FAR;
-    ctx.beginPath();
-    const mountainOffsetFar = -(this.cameraX * 0.12) % 320;
-    ctx.moveTo(0, this.screenHeight);
-    for (let x = mountainOffsetFar - 320; x < this.screenWidth + 320; x += 320) {
-      ctx.lineTo(x, this.screenHeight - 210);
-      ctx.lineTo(x + 160, this.screenHeight - 340);
-      ctx.lineTo(x + 320, this.screenHeight - 210);
-    }
-    ctx.lineTo(this.screenWidth, this.screenHeight);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = GAME_CONSTANTS.COLORS.MOUNTAIN_MID;
-    ctx.beginPath();
-    const mountainOffsetMid = -(this.cameraX * 0.22) % 240;
-    ctx.moveTo(0, this.screenHeight);
-    for (let x = mountainOffsetMid - 240; x < this.screenWidth + 240; x += 240) {
-      ctx.quadraticCurveTo(x + 120, this.screenHeight - 220, x + 240, this.screenHeight - 140);
-    }
-    ctx.lineTo(this.screenWidth, this.screenHeight);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = GAME_CONSTANTS.COLORS.GRASS_BASE;
-    ctx.fillRect(0, this.screenHeight - 120, this.screenWidth, 120);
-
-    ctx.fillStyle = GAME_CONSTANTS.COLORS.GRASS_DARK;
-    const grassOffset = -(this.cameraX * 0.4) % 60;
-    for (let gx = grassOffset - 60; gx < this.screenWidth + 60; gx += 60) {
+      // 원경 하얀 눈 덮인 뾰족한 만년설 봉우리
+      ctx.fillStyle = '#f8fafc';
       ctx.beginPath();
-      ctx.arc(gx + 20, this.screenHeight - 110, 14, 0, Math.PI, true);
-      ctx.arc(gx + 40, this.screenHeight - 110, 18, 0, Math.PI, true);
+      const snowFarOffset = -(this.cameraX * 0.12) % 340;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = snowFarOffset - 340; x < this.screenWidth + 340; x += 340) {
+        ctx.lineTo(x, this.screenHeight - 180);
+        ctx.lineTo(x + 170, this.screenHeight - 370);
+        ctx.lineTo(x + 340, this.screenHeight - 180);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      // 빙하 푸른빛 음영
+      ctx.fillStyle = '#bfdbfe';
+      ctx.beginPath();
+      const snowMidOffset = -(this.cameraX * 0.22) % 260;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = snowMidOffset - 260; x < this.screenWidth + 260; x += 260) {
+        ctx.lineTo(x, this.screenHeight - 140);
+        ctx.lineTo(x + 130, this.screenHeight - 270);
+        ctx.lineTo(x + 260, this.screenHeight - 140);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      // 근경 설원
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, this.screenHeight - 100, this.screenWidth, 100);
+
+    } else if (meters < 750) {
+      // ==========================================================
+      // Zone 2: [350m ~ 750m] 산 중턱 & 고산 침엽수림 (Highlands)
+      // ==========================================================
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      skyGrad.addColorStop(0, '#0284c7');
+      skyGrad.addColorStop(0.7, '#7dd3fc');
+      skyGrad.addColorStop(1, '#f0fdf4');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+      // 바위 암벽 능선
+      ctx.fillStyle = '#94a3b8';
+      ctx.beginPath();
+      const rockOffset = -(this.cameraX * 0.15) % 300;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = rockOffset - 300; x < this.screenWidth + 300; x += 300) {
+        ctx.lineTo(x, this.screenHeight - 160);
+        ctx.lineTo(x + 150, this.screenHeight - 300);
+        ctx.lineTo(x + 300, this.screenHeight - 160);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      // 짙은 전나무 숲 실루엣
+      ctx.fillStyle = '#166534';
+      ctx.beginPath();
+      const treeOffset = -(this.cameraX * 0.25) % 200;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = treeOffset - 200; x < this.screenWidth + 200; x += 200) {
+        ctx.quadraticCurveTo(x + 100, this.screenHeight - 200, x + 200, this.screenHeight - 130);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      ctx.fillStyle = '#4ade80';
+      ctx.fillRect(0, this.screenHeight - 110, this.screenWidth, 110);
+
+    } else if (meters < 1250) {
+      // ==========================================================
+      // Zone 3: [750m ~ 1250m] 울창한 숲 & 푸른 초원 (Forest & Meadow)
+      // ==========================================================
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      skyGrad.addColorStop(0, '#38bdf8');
+      skyGrad.addColorStop(0.65, '#bae6fd');
+      skyGrad.addColorStop(1, '#ecfdf5');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+      // 뭉게구름
+      const cloudOffset = -(this.cameraX * 0.05);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
+      this.drawCloud(ctx, (cloudOffset + 420) % (this.screenWidth + 200) - 100, 130, 45);
+
+      // 초록 언덕
+      ctx.fillStyle = '#86efac';
+      ctx.beginPath();
+      const hillOffset = -(this.cameraX * 0.18) % 260;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = hillOffset - 260; x < this.screenWidth + 260; x += 260) {
+        ctx.quadraticCurveTo(x + 130, this.screenHeight - 220, x + 260, this.screenHeight - 140);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      // 잔디밭
+      ctx.fillStyle = '#22c55e';
+      ctx.fillRect(0, this.screenHeight - 110, this.screenWidth, 110);
+
+    } else if (meters < 1750) {
+      // ==========================================================
+      // Zone 4: [1250m ~ 1750m] 신비로운 지하 동굴 (Underground Caverns)
+      // ==========================================================
+      const caveGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      caveGrad.addColorStop(0, '#0f172a'); // 깊은 어둠
+      caveGrad.addColorStop(0.5, '#1e1b4b');
+      caveGrad.addColorStop(1, '#09090b');
+      ctx.fillStyle = caveGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+      // 천장 종유석 (Stalactites)
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      const stalactiteOffset = -(this.cameraX * 0.15) % 180;
+      ctx.moveTo(0, 0);
+      for (let x = stalactiteOffset - 180; x < this.screenWidth + 180; x += 180) {
+        ctx.lineTo(x + 60, 0);
+        ctx.lineTo(x + 90, 120 + ((x % 3) * 30));
+        ctx.lineTo(x + 120, 0);
+      }
+      ctx.lineTo(this.screenWidth, 0);
+      ctx.fill();
+
+      // 형광 발광 수정 기둥 (Glowing Crystals)
+      ctx.fillStyle = '#818cf8';
+      ctx.beginPath();
+      const crystalOffset = -(this.cameraX * 0.3) % 240;
+      for (let x = crystalOffset - 240; x < this.screenWidth + 240; x += 240) {
+        ctx.moveTo(x + 100, this.screenHeight);
+        ctx.lineTo(x + 115, this.screenHeight - 160);
+        ctx.lineTo(x + 130, this.screenHeight);
+      }
+      ctx.fill();
+
+    } else if (meters < 2300) {
+      // ==========================================================
+      // Zone 5: [1750m ~ 2300m] 지하 지각 & 화산암 (Deep Crust)
+      // ==========================================================
+      const crustGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      crustGrad.addColorStop(0, '#18181b');
+      crustGrad.addColorStop(0.6, '#450a0a');
+      crustGrad.addColorStop(1, '#7f1d1d');
+      ctx.fillStyle = crustGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+      // 화산암 지열 균열 실루엣
+      ctx.fillStyle = '#27272a';
+      ctx.beginPath();
+      const magmaHillOffset = -(this.cameraX * 0.2) % 250;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = magmaHillOffset - 250; x < this.screenWidth + 250; x += 250) {
+        ctx.lineTo(x, this.screenHeight - 100);
+        ctx.lineTo(x + 125, this.screenHeight - 210);
+        ctx.lineTo(x + 250, this.screenHeight - 100);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
+      // 지열 붉은 안개
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+      ctx.fillRect(0, this.screenHeight - 150, this.screenWidth, 150);
+
+    } else {
+      // ==========================================================
+      // Zone 6: [2300m+] 지구 중심 맨틀 & 용암 코어 (Earth Core & Mantle)
+      // ==========================================================
+      const coreGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+      coreGrad.addColorStop(0, '#450a0a');
+      coreGrad.addColorStop(0.4, '#991b1b');
+      coreGrad.addColorStop(0.8, '#ea580c');
+      coreGrad.addColorStop(1, '#facc15'); // 타오르는 태양빛 용암
+      ctx.fillStyle = coreGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+      // 작열하는 용암 파도
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      const lavaOffset = -(this.cameraX * 0.3) % 180;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = lavaOffset - 180; x < this.screenWidth + 180; x += 180) {
+        ctx.quadraticCurveTo(x + 90, this.screenHeight - 180, x + 180, this.screenHeight - 90);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
     }
   }
@@ -768,7 +980,7 @@ export class GameEngine {
       ctx.beginPath();
       ctx.moveTo(seg.startX, seg.startY);
       ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = GAME_CONSTANTS.COLORS.ROAD_SURFACE;
+      ctx.strokeStyle = '#1e293b';
       ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
       ctx.stroke();
 
@@ -778,7 +990,7 @@ export class GameEngine {
       ctx.beginPath();
       ctx.moveTo(seg.startX, seg.startY);
       ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = GAME_CONSTANTS.COLORS.ROAD_LINE;
+      ctx.strokeStyle = '#facc15';
       ctx.lineWidth = 3.0;
       ctx.stroke();
       ctx.restore();
