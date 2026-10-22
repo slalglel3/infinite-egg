@@ -155,8 +155,18 @@ export class GameEngine {
 
     sound.playJump();
 
+    let targetGapSeg: SlopeSegment | null = null;
     if (currentSeg && currentSeg.type === 'GAP') {
-      const distToEdge = Math.hypot(currentSeg.endX - this.egg.x, currentSeg.endY - this.egg.y);
+      targetGapSeg = currentSeg;
+    } else {
+      const nextSeg = this.segments[this.egg.currentSegmentIndex + 1];
+      if (nextSeg && nextSeg.type === 'GAP') {
+        targetGapSeg = nextSeg;
+      }
+    }
+
+    if (targetGapSeg) {
+      const distToEdge = Math.hypot(targetGapSeg.endX - this.egg.x, targetGapSeg.endY - this.egg.y);
       this.jumpDistanceToEdge = distToEdge;
       this.isCurrentJumpMisjump = false;
     } else {
@@ -165,7 +175,7 @@ export class GameEngine {
     }
   }
 
-  // 2. [방향 전환] 버튼 (피드백 4: 마진 18px로 절반 축소!)
+  // 2. [방향 전환] 버튼 (즉각 반응하는 아케이드 손맛 100% 복원 & 정밀 판정)
   public triggerTurn(): void {
     if (!this.isRunning || this.isGameOver) return;
     if (this.egg.state !== 'ROLLING') return;
@@ -173,11 +183,16 @@ export class GameEngine {
     const currentSeg = this.segments[this.egg.currentSegmentIndex];
     if (!currentSeg) return;
 
+    // 현재 또는 바로 다음 세그먼트 중 코너(TURN) 탐색
     let turnSegIndex = -1;
-    for (let i = this.egg.currentSegmentIndex; i < Math.min(this.segments.length, this.egg.currentSegmentIndex + 3); i++) {
-      if (this.segments[i].type === 'TURN') {
-        turnSegIndex = i;
-        break;
+    if (currentSeg.type === 'TURN') {
+      turnSegIndex = this.egg.currentSegmentIndex;
+    } else {
+      for (let i = this.egg.currentSegmentIndex; i < Math.min(this.segments.length, this.egg.currentSegmentIndex + 2); i++) {
+        if (this.segments[i].type === 'TURN') {
+          turnSegIndex = i;
+          break;
+        }
       }
     }
 
@@ -187,32 +202,33 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // [피드백 4] 코너 끝점 18px 이내 도달 시에만 퍼펙트 턴! (기존 38px에서 절반 축소)
-      if (distToTurn <= GAME_CONSTANTS.PERFECT_TURN_MARGIN) {
+      // 코너 전방 유효 판정 윈도우(85px) 내에서 방향 전환을 누른 경우
+      if (distToTurn <= GAME_CONSTANTS.VALID_TURN_WINDOW) {
+        // [핵심] 버벅이는 낙하 모션 없이 누르는 즉시 100% 깔끔하게 방향을 전환하여 연속 롤링!
         this.egg.direction = newDir;
-        this.egg.currentSegmentIndex = turnSegIndex + 1;
+        this.egg.state = 'ROLLING';
+        this.egg.currentSegmentIndex = turnSegIndex + 1; // 새로운 방향의 세그먼트로 즉시 전환
         this.egg.x = turnSeg.startX;
         this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
         sound.playTurn();
-        sound.playPerfect();
-        this.stats.perfectLandings++;
-        this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
+
+        // 1) 코너 끝점 25px 이내 최적 타이밍: PERFECT TURN!
+        if (distToTurn <= GAME_CONSTANTS.PERFECT_TURN_MARGIN) {
+          sound.playPerfect();
+          this.stats.perfectLandings++;
+          this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
+        } else {
+          // 2) 조금 일찍 턴한 경우: 렉 없이 깔끔하게 돌면서 조기 회전 충격 대미지만 약간 차감
+          const damage = Math.max(3, Math.min(8, Math.floor((distToTurn - GAME_CONSTANTS.PERFECT_TURN_MARGIN) * 0.12) + 3));
+          this.applyDamage(damage, `EARLY -${damage}HP`);
+        }
         return;
       }
-
-      // 18px보다 일찍 누른 경우: 수직 낙하 드롭 대미지
-      this.egg.direction = newDir;
-      this.egg.state = 'DROPPING_TURN';
-      this.egg.dropStartY = this.egg.y;
-      this.egg.vy = 80;
-      sound.playTurn();
-
-      this.egg.currentSegmentIndex = turnSegIndex + 1;
-    } else {
-      // 코너가 없는 곳에서 방향 전환 누름 -> 추락 시퀀스 시작
-      this.egg.direction = newDir;
-      this.startFallSequence((newDir === 'RIGHT_DOWN' ? 1 : -1) * 110);
     }
+
+    // 코너가 없거나 코너에서 너무 멀리 떨어진 곳에서 방향 전환 누름 -> 절벽 밖으로 튕겨 추락 시퀀스
+    this.egg.direction = newDir;
+    this.startFallSequence((newDir === 'RIGHT_DOWN' ? 1 : -1) * 110);
   }
 
   // ==========================================
@@ -427,18 +443,18 @@ export class GameEngine {
         // 일반 길에서 헛점프한 경우
         this.applyDamage(GAME_CONSTANTS.MISJUMP_DAMAGE, 'MISJUMP!');
       } else {
-        // [피드백 4] 점프 도약점 판정 마진 24px로 절반 축소!
+        // 점프 도약점 판정
         if (this.jumpDistanceToEdge <= GAME_CONSTANTS.PERFECT_JUMP_MARGIN) {
           sound.playPerfect();
           this.stats.perfectLandings++;
           this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT JUMP!', '#10b981');
-        } else if (this.jumpDistanceToEdge <= 55) {
+        } else if (this.jumpDistanceToEdge <= 60) {
           // 조금 일찍 도약
-          const damage = Math.max(3, Math.floor((this.jumpDistanceToEdge - 24) * 0.18));
+          const damage = Math.max(3, Math.floor((this.jumpDistanceToEdge - GAME_CONSTANTS.PERFECT_JUMP_MARGIN) * 0.16));
           this.applyDamage(damage, `EARLY -${damage}HP`);
         } else {
           // 너무 일찍 도약
-          const damage = Math.max(7, Math.floor((this.jumpDistanceToEdge - 24) * 0.28));
+          const damage = Math.max(6, Math.floor((this.jumpDistanceToEdge - GAME_CONSTANTS.PERFECT_JUMP_MARGIN) * 0.25));
           this.applyDamage(damage, `TOO EARLY! -${damage}HP`);
         }
       }

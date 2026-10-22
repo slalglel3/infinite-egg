@@ -29,9 +29,10 @@ export const GAME_CONSTANTS = {
   JUMP_PEAK_PIXELS: 65,
   JUMP_DISTANCE_FORWARD: 190,
 
-  // [피드백 4] 판정 범위 절반 축소 (정밀한 손맛)
-  PERFECT_JUMP_MARGIN: 24, // 절벽 끝 24px 이내 (기존 48px의 절반)
-  PERFECT_TURN_MARGIN: 18, // 코너 끝 18px 이내 (기존 38px의 절반)
+  // [판정 정밀화] PERFECT 판정 범위 및 유효 회전 윈도우
+  PERFECT_JUMP_MARGIN: 25, // 절벽 끝 25px 이내 (기존 48px 대비 정밀 축소)
+  PERFECT_TURN_MARGIN: 25, // 코너 끝 25px 이내 (기존 38px 대비 정밀 축소)
+  VALID_TURN_WINDOW: 85,   // 코너 전방 85px 이내에서 누르면 즉시 부드럽게 방향 전환 허용
 
   // 내구도
   BASE_HP: 100,
