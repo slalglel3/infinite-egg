@@ -37,7 +37,7 @@ export class MapGenerator {
     return segments;
   }
 
-  // 다이나믹 패턴 생성기 (피드백 1, 2, 6 완벽 반영)
+  // 다이나믹 패턴 생성기 (피드백: 방향 전환 직후 점프 진입로 동적 조절 & 긴장감 극대화)
   public generateDynamicPattern(segments: SlopeSegment[], currentMeters: number): void {
     const isMid = currentMeters >= 300;
     const isHard = currentMeters >= 800;
@@ -45,15 +45,83 @@ export class MapGenerator {
 
     const rand = Math.random();
 
-    // [피드백 1] 점프 빈도를 50% 수준으로 대폭 상향!
+    // 1. [점프 코스] (50% 확률)
     if (rand < 0.50) {
-      // 1. [점프 코스]
-      const leadSteps = Math.random() < 0.5 ? 3 : 2;
-      segments.push(this.createStraightStep(leadSteps, this.shouldSpawnItem(currentMeters)));
-      segments.push(this.createGapStep(currentMeters));
+      // [핵심 개선] 방향 전환 직후 점프까지의 도주로(안전 도로) 길이를 동적으로 조절!
+      // 거리가 늘어날수록 턴 직후 곧바로 점프해야 하는 '칼점프(Instant Jump)'가 적극 출현하여 긴장감 폭발!
+      let leadStraightSteps = 0;
+      let gapRunSteps = 1.0;
 
-      // [피드백 2] 거리에 따른 착지 후 활주로 동적 조절!
-      // 착지 지점(아랫길 1.8스텝 지점)을 최소 거리로 두고, 거리가 늘수록 착지 직후 칼턴 배치!
+      const jumpRand = Math.random();
+
+      if (isExtreme) {
+        // 1500m+ (맨틀 코어): 극한의 반사신경 요구
+        if (jumpRand < 0.50) {
+          // 50% 확률: 턴하자마자 단 1스텝 만에 칼점프! (총 1.0스텝 = 70px)
+          leadStraightSteps = 0;
+          gapRunSteps = 1.0;
+        } else if (jumpRand < 0.85) {
+          // 35% 확률: 턴 후 1.5스텝 점프 (총 1.5스텝 = 105px)
+          leadStraightSteps = 0;
+          gapRunSteps = 1.5;
+        } else {
+          // 15% 확률: 턴 후 2.5스텝 질주 점프
+          leadStraightSteps = 1.2;
+          gapRunSteps = 1.3;
+        }
+      } else if (isHard) {
+        // 800m+ (지하 동굴/지각): 고난도 리듬
+        if (jumpRand < 0.40) {
+          // 40% 확률: 턴하자마자 1스텝 칼점프!
+          leadStraightSteps = 0;
+          gapRunSteps = 1.0;
+        } else if (jumpRand < 0.75) {
+          // 35% 확률: 턴 후 1.6스텝 점프
+          leadStraightSteps = 0;
+          gapRunSteps = 1.6;
+        } else {
+          // 25% 확률: 턴 후 2.8스텝 점프
+          leadStraightSteps = 1.5;
+          gapRunSteps = 1.3;
+        }
+      } else if (isMid) {
+        // 300m+ (산중턱/초원): 긴장감 본격 도입
+        if (jumpRand < 0.30) {
+          // 30% 확률: 턴 후 1.3스텝 칼점프!
+          leadStraightSteps = 0;
+          gapRunSteps = 1.3;
+        } else if (jumpRand < 0.70) {
+          // 40% 확률: 턴 후 2스텝 점프
+          leadStraightSteps = 1.0;
+          gapRunSteps = 1.0;
+        } else {
+          // 30% 확률: 턴 후 3스텝 여유 점프
+          leadStraightSteps = 1.8;
+          gapRunSteps = 1.2;
+        }
+      } else {
+        // 초반 (0~300m): 기본 적응 구간이지만 다양한 템포 제공
+        if (jumpRand < 0.25) {
+          // 25% 확률: 턴 후 1.8스텝 빠른 점프
+          leadStraightSteps = 0;
+          gapRunSteps = 1.8;
+        } else if (jumpRand < 0.65) {
+          // 40% 확률: 턴 후 2.5스텝 점프
+          leadStraightSteps = 1.2;
+          gapRunSteps = 1.3;
+        } else {
+          // 35% 확률: 턴 후 3.5스텝 여유 점프
+          leadStraightSteps = 2.0;
+          gapRunSteps = 1.5;
+        }
+      }
+
+      if (leadStraightSteps > 0) {
+        segments.push(this.createStraightStep(leadStraightSteps, this.shouldSpawnItem(currentMeters)));
+      }
+      segments.push(this.createGapStep(currentMeters, gapRunSteps));
+
+      // 거리에 따른 착지 후 활주로 동적 조절 (착지 후 칼턴)
       let runwaySteps = 4; // 초반: 4스텝 (착지 후 약 2스텝 여유)
       if (isExtreme) {
         runwaySteps = 2;   // 1500m+: 착지하자마자 0.2스텝 만에 칼턴!
@@ -63,7 +131,9 @@ export class MapGenerator {
         runwaySteps = 3;   // 300m+: 착지 후 약 1스텝 만에 턴!
       }
 
-      segments.push(this.createStraightStep(runwaySteps, false));
+      // 선행 도로가 없었을 경우 활주로에서 반창고를 대신 스폰
+      const canSpawnOnRunway = leadStraightSteps === 0 ? this.shouldSpawnItem(currentMeters) : false;
+      segments.push(this.createStraightStep(runwaySteps, canSpawnOnRunway));
       segments.push(this.createTurnSegment());
       return;
     }
@@ -140,11 +210,11 @@ export class MapGenerator {
     };
   }
 
-  // 끊어진 길(GAP) 생성
-  private createGapStep(currentMeters: number): SlopeSegment {
+  // 끊어진 길(GAP) 생성 (runSteps: 도약대 직선 도로 길이 스텝)
+  private createGapStep(currentMeters: number, runSteps: number = 1.5): SlopeSegment {
     this.currentId++;
     const dirSign = this.currentDirection === 'RIGHT_DOWN' ? 1 : -1;
-    const runLength = GAME_CONSTANTS.STEP_LENGTH * 1.5;
+    const runLength = GAME_CONSTANTS.STEP_LENGTH * runSteps;
 
     const startX = this.currentX;
     const startY = this.currentY;
