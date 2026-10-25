@@ -103,6 +103,68 @@ export interface UserProgress {
   bestDistanceMeters: number;
   totalDistanceMeters: number;
   totalGamesPlayed: number;
+  gold: number;
+  selectedEggId: string;
+  unlockedEggIds: string[];
+  achievementProgress: Record<string, number>;
+  claimedAchievementIds: string[];
+}
+
+export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'ACHIEVEMENTS' | 'SHOP';
+
+export type EggRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
+
+export interface EggSkinColors {
+  top: string;
+  mid1: string;
+  mid2: string;
+  bottom: string;
+  shadow: string;
+  line: string;
+  eyeColor: string;
+  cheekColor: string;
+  pattern?: 'NONE' | 'SPOTS' | 'CRACKS' | 'CYBER_LINES' | 'GOLD_SHINE' | 'FIRE_AURA';
+}
+
+export interface EggSkin {
+  id: string;
+  name: string;
+  tagline: string;
+  desc: string;
+  rarity: EggRarity;
+  unlocked: boolean;
+  unlockCondition: string;
+  unlockReq?: {
+    type: 'DISTANCE' | 'LEVEL' | 'GAMES' | 'GOLD';
+    value: number;
+  };
+  priceGold?: number;
+  hpBonus: number;
+  colors: EggSkinColors;
+}
+
+export interface AchievementItem {
+  id: string;
+  title: string;
+  desc: string;
+  category: 'DISTANCE' | 'PLAY' | 'SKILL';
+  target: number;
+  rewardGold: number;
+  rewardExp: number;
+}
+
+export interface EventMapItem {
+  id: string;
+  title: string;
+  tag: string;
+  badgeColor: string;
+  desc: string;
+  bgGradient: string;
+  speedMultiplier: number;
+  bandageRate: number;
+  rewardText: string;
+  isOpen: boolean;
+  dDayText?: string;
 }
 
 export interface GameStats {

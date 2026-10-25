@@ -1,7 +1,14 @@
-import { Egg, EggSplat, Particle } from '../types/game';
+import { Egg, EggSplat, Particle, EggSkin } from '../types/game';
 import { GAME_CONSTANTS } from './constants';
+import { getEggSkinById } from '../data/eggSkins';
 
 export class EggRenderer {
+  private currentSkin: EggSkin = getEggSkinById('classic');
+
+  public setSkin(skin: EggSkin): void {
+    this.currentSkin = skin;
+  }
+
   // 금(Crack) 패턴 벡터
   private crackPatterns: Array<Array<{ x: number; y: number }>> = [
     [
@@ -60,19 +67,19 @@ export class EggRenderer {
     if (egg.flashDamage) {
       ctx.fillStyle = '#f87171';
     } else {
-      // 자연산 유기농 황금빛 달걀 그라데이션
+      const c = this.currentSkin.colors;
       const grad = ctx.createRadialGradient(-rx * 0.35, -ry * 0.35, 2, 0, ry * 0.1, ry * 1.25);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(0.2, '#fffbeb');
-      grad.addColorStop(0.65, '#fef08a');
-      grad.addColorStop(0.9, '#f59e0b');
-      grad.addColorStop(1, '#b45309');
+      grad.addColorStop(0, c.top);
+      grad.addColorStop(0.2, c.mid1);
+      grad.addColorStop(0.65, c.mid2);
+      grad.addColorStop(0.9, c.bottom);
+      grad.addColorStop(1, c.shadow);
       ctx.fillStyle = grad;
     }
     ctx.fill();
 
-    // 매끄러운 껍질 외곽선
-    ctx.strokeStyle = '#92400e';
+    // 껍질 외곽선
+    ctx.strokeStyle = this.currentSkin.colors.line;
     ctx.lineWidth = 2.0;
     ctx.stroke();
 

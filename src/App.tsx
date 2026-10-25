@@ -4,14 +4,15 @@ import { GameEngine } from './game/gameEngine';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
 import { Controls } from './components/Controls';
-import { StartScreen } from './components/StartScreen';
+import { HomeView } from './components/home/HomeView';
 import { GameOverModal } from './components/GameOverModal';
-import { GameStats, UserProgress } from './types/game';
+import { GameStats, UserProgress, EventMapItem } from './types/game';
 import { loadUserProgress, addGameResult } from './utils/storage';
+import { getEggSkinById } from './data/eggSkins';
 import { sound } from './audio/sound';
 
 export function App() {
-  const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'GAMEOVER'>('START');
+  const [gameState, setGameState] = useState<'HOME' | 'PLAYING' | 'GAMEOVER'>('HOME');
   const [userProgress, setUserProgress] = useState<UserProgress>(loadUserProgress());
   const [stats, setStats] = useState<GameStats>({
     distanceMeters: 0,
@@ -25,6 +26,7 @@ export function App() {
   const [gameOverReason, setGameOverReason] = useState<'CRACKED' | 'FALL'>('CRACKED');
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [leveledUp, setLeveledUp] = useState(false);
+  const [lastEarnedGold, setLastEarnedGold] = useState(0);
   const [isMuted, setIsMuted] = useState(sound.getMuted());
 
   // 싱글톤 GameEngine 인스턴스 유지
@@ -36,10 +38,11 @@ export function App() {
 
   // 게임 오버 핸들러
   const handleEngineGameOver = useCallback((finalStats: GameStats, reason: 'CRACKED' | 'FALL') => {
-    const result = addGameResult(finalStats.distanceMeters);
+    const result = addGameResult(finalStats);
     setUserProgress(result.progress);
     setIsNewRecord(result.isNewRecord);
     setLeveledUp(result.leveledUp);
+    setLastEarnedGold(result.earnedGold);
     setGameOverReason(reason);
     setStats({ ...finalStats });
     setGameState('GAMEOVER');
@@ -65,16 +68,14 @@ export function App() {
     let handler: { remove: () => Promise<void> } | null = null;
     try {
       CapApp.addListener('backButton', () => {
-        if (gameState === 'PLAYING') {
-          setGameState('START');
-        } else if (gameState === 'GAMEOVER') {
-          setGameState('START');
+        if (gameState === 'PLAYING' || gameState === 'GAMEOVER') {
+          setGameState('HOME');
         }
       }).then((h) => {
         handler = h;
       }).catch(() => {});
     } catch {
-      // 웹 개발 환경에서는 무시
+      // 웹 환경 무시
     }
 
     return () => {
@@ -97,11 +98,18 @@ export function App() {
     }
   }, [engine, gameState]);
 
-  // 게임 시작
-  const handleStartGame = () => {
-    engine.restart(userProgress.level);
+  // 게임 시작 (기본 모드 또는 이벤트 맵 모드)
+  const handleStartGame = (eventMap?: EventMapItem) => {
+    const currentSkin = getEggSkinById(userProgress.selectedEggId);
+    engine.restart(userProgress.level, currentSkin);
     setStats({ ...engine.stats });
     setGameState('PLAYING');
+  };
+
+  // 홈 화면으로 이동
+  const handleGoHome = () => {
+    sound.playTurn();
+    setGameState('HOME');
   };
 
   // 음소거 토글
@@ -112,10 +120,10 @@ export function App() {
 
   return (
     <div className="relative w-full h-full overflow-hidden select-none touch-none bg-sky-100">
-      {/* 1. 2D 캔버스 렌더러 */}
+      {/* 1. 2D 캔버스 렌더러 (백그라운드 주행) */}
       <GameCanvas engine={engine} onJump={handleJump} onTurn={handleTurn} />
 
-      {/* 2. 게임 중 HUD 오버레이 */}
+      {/* 2. 게임 중 HUD & 조작 버튼 오버레이 */}
       {gameState === 'PLAYING' && (
         <>
           <HUD
@@ -128,12 +136,18 @@ export function App() {
         </>
       )}
 
-      {/* 3. 시작 화면 */}
-      {gameState === 'START' && (
-        <StartScreen progress={userProgress} onStart={handleStartGame} />
+      {/* 3. 새로운 모바일 5대 탭 홈 화면 (HomeView) */}
+      {gameState === 'HOME' && (
+        <HomeView
+          progress={userProgress}
+          isMuted={isMuted}
+          onToggleMute={handleToggleMute}
+          onStartGame={handleStartGame}
+          onUpdateProgress={setUserProgress}
+        />
       )}
 
-      {/* 4. 게임 오버 모달 */}
+      {/* 4. 게임 오버 모달 ([다시 도전하기] & [홈으로 이동] 버튼) */}
       {gameState === 'GAMEOVER' && (
         <GameOverModal
           stats={stats}
@@ -141,7 +155,9 @@ export function App() {
           progress={userProgress}
           leveledUp={leveledUp}
           isNewRecord={isNewRecord}
-          onRestart={handleStartGame}
+          earnedGold={lastEarnedGold}
+          onRestart={() => handleStartGame()}
+          onGoHome={handleGoHome}
         />
       )}
     </div>

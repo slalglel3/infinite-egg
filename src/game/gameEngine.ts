@@ -1,12 +1,14 @@
-import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection, EggSplat } from '../types/game';
+import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection, EggSplat, EggSkin } from '../types/game';
 import { GAME_CONSTANTS } from './constants';
 import { MapGenerator } from './mapGenerator';
 import { EggRenderer } from './eggRenderer';
 import { sound } from '../audio/sound';
+import { getEggSkinById } from '../data/eggSkins';
 
 export class GameEngine {
   private mapGen: MapGenerator;
   private eggRenderer: EggRenderer;
+  private currentSkin: EggSkin = getEggSkinById('classic');
 
   public egg: Egg;
   public segments: SlopeSegment[] = [];
@@ -83,12 +85,22 @@ export class GameEngine {
     this.screenHeight = height;
   }
 
+  public setSkin(skin: EggSkin): void {
+    this.currentSkin = skin;
+    this.eggRenderer.setSkin(skin);
+  }
+
   // 게임 재시작 및 완전 초기화
-  public restart(userLevel: number = 1): void {
+  public restart(userLevel: number = 1, skin?: EggSkin): void {
+    if (skin) {
+      this.setSkin(skin);
+    }
+
     this.mapGen.reset(0, 0);
     this.segments = this.mapGen.generateInitialMap();
 
-    const maxHp = GAME_CONSTANTS.BASE_HP + (userLevel - 1) * GAME_CONSTANTS.HP_PER_LEVEL;
+    const hpBonus = this.currentSkin.hpBonus || 0;
+    const maxHp = GAME_CONSTANTS.BASE_HP + (userLevel - 1) * GAME_CONSTANTS.HP_PER_LEVEL + hpBonus;
     const firstSeg = this.segments[0];
 
     this.egg = {

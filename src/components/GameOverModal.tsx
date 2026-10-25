@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { GameStats, UserProgress } from '../types/game';
-import { RotateCcw, Trophy, Sparkles } from 'lucide-react';
+import { RotateCcw, Trophy, Sparkles, Home, Coins } from 'lucide-react';
 
 interface GameOverModalProps {
   stats: GameStats;
@@ -9,7 +9,9 @@ interface GameOverModalProps {
   progress: UserProgress;
   leveledUp: boolean;
   isNewRecord: boolean;
+  earnedGold?: number;
   onRestart: () => void;
+  onGoHome: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -18,7 +20,9 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   progress,
   leveledUp,
   isNewRecord,
+  earnedGold = 0,
   onRestart,
+  onGoHome,
 }) => {
   useEffect(() => {
     if (isNewRecord && stats.distanceMeters > 0) {
@@ -110,7 +114,15 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           <div className="flex items-center justify-between text-xs font-bold pt-1 text-gray-700">
             <div className="flex items-center gap-1 text-amber-700">
               <Sparkles size={14} />
-              <span>경험치 +{stats.distanceMeters} EXP</span>
+              <span>+{stats.distanceMeters} EXP</span>
+              {earnedGold > 0 && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <span className="flex items-center gap-0.5 text-amber-600 font-extrabold">
+                    <Coins size={13} /> +{earnedGold}G
+                  </span>
+                </>
+              )}
             </div>
             {leveledUp && (
               <span className="bg-emerald-500 text-white px-2 py-0.5 rounded-full font-black animate-pulse">
@@ -120,18 +132,29 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        {/* 다시 도전하기 큰 버튼 */}
-        <button
-          type="button"
-          onClick={onRestart}
-          className="w-full h-15 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-500 border-2 border-white shadow-[0_6px_20px_rgba(245,158,11,0.5)] active:scale-95 transition-all flex items-center justify-center gap-2 text-white font-black text-lg select-none cursor-pointer"
-        >
-          <RotateCcw size={22} className="stroke-[3]" />
-          <span>다시 도전하기!</span>
-        </button>
+        {/* 2개 버튼: [다시 도전하기] & [홈으로 이동] */}
+        <div className="w-full flex flex-col gap-2 mt-1">
+          <button
+            type="button"
+            onClick={onRestart}
+            className="w-full h-14 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-500 border-2 border-white shadow-[0_6px_20px_rgba(245,158,11,0.5)] active:scale-95 transition-all flex items-center justify-center gap-2 text-white font-black text-lg select-none cursor-pointer"
+          >
+            <RotateCcw size={20} className="stroke-[3]" />
+            <span>다시 도전하기!</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onGoHome}
+            className="w-full h-12 rounded-2xl bg-white hover:bg-amber-50/50 border-2 border-amber-200 shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 text-gray-700 font-extrabold text-sm select-none cursor-pointer"
+          >
+            <Home size={18} className="text-amber-600" />
+            <span>홈으로 이동</span>
+          </button>
+        </div>
 
         <p className="text-[11px] text-gray-400 font-medium">
-          화면 아무 곳이나 탭하거나 스페이스바를 눌러도 바로 시작됩니다.
+          스페이스바나 엔터를 누르면 바로 다시 도전할 수 있어요.
         </p>
       </div>
     </div>
