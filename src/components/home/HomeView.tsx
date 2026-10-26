@@ -44,6 +44,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         progress={progress}
         isMuted={isMuted}
         onToggleMute={onToggleMute}
+        onUpdateProgress={onUpdateProgress}
       />
 
       {/* 2. 중앙 탭 컨텐츠 렌더링 영역 */}
@@ -61,6 +62,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <EggsTab
             progress={progress}
             onUpdateProgress={onUpdateProgress}
+            onStartGame={() => onStartGame()}
           />
         )}
 

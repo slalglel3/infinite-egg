@@ -4,9 +4,14 @@ import { getEggSkinById } from '../data/eggSkins';
 
 export class EggRenderer {
   private currentSkin: EggSkin = getEggSkinById('classic');
+  private costumes: { hat?: string; top?: string; bottom?: string; hand?: string } = {};
 
   public setSkin(skin: EggSkin): void {
     this.currentSkin = skin;
+  }
+
+  public setCostumes(costumes?: { hat?: string; top?: string; bottom?: string; hand?: string }): void {
+    this.costumes = costumes || {};
   }
 
   // 금(Crack) 패턴 벡터
@@ -89,10 +94,13 @@ export class EggRenderer {
     // 달걀 표정 그리기
     this.drawFace(ctx, egg, rx, ry);
 
+    // [피드백 8 & 9 반영] 의상 코스튬 렌더링 (모자, 상의, 하의, 손)
+    this.drawCostumes(ctx, rx, ry);
+
     // 좌상단 부드러운 곡면 하이라이트 (실물 달걀의 은은한 광택)
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(-rx * 0.35, -ry * 0.3, rx * 0.35, ry * 0.45, -0.32, 0, Math.PI * 2);
+    ctx.ellipse(-rx * 0.35, -ry * 0.25, rx * 0.35, ry * 0.42, -0.32, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
     ctx.fill();
     ctx.restore();
@@ -100,20 +108,184 @@ export class EggRenderer {
     ctx.restore();
   }
 
-  // 실물 달걀 3차 베지어 곡선 (단 1개의 각진 곳도 없는 유선형, 상단 슬림 첨단 & y=60% 최대 폭)
+  // [피드백 1 반영] 실물 달걀 3차 베지어 곡선 (세로 비율을 단축하여 통통하고 둥근 형태, 상단 슬림 첨단 & y=60% 최대 폭)
   public createTrueEggPath(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
     ctx.beginPath();
     // 상단 슬림한 정점 (0, -ry)
     ctx.moveTo(0, -ry);
-    // 우상단 -> 우측 최대 폭 (rx, ry * 0.20)
-    ctx.bezierCurveTo(rx * 0.57, -ry, rx, -ry * 0.4, rx, ry * 0.2);
+    // 우상단 -> 우측 최대 폭 (rx, ry * 0.18)
+    ctx.bezierCurveTo(rx * 0.58, -ry, rx, -ry * 0.35, rx, ry * 0.18);
     // 우하단 -> 하단 풍만한 둔단 (0, ry)
-    ctx.bezierCurveTo(rx, ry * 0.67, rx * 0.6, ry, 0, ry);
-    // 좌하단 -> 좌측 최대 폭 (-rx, ry * 0.20)
-    ctx.bezierCurveTo(-rx * 0.6, ry, -rx, ry * 0.67, -rx, ry * 0.2);
+    ctx.bezierCurveTo(rx, ry * 0.65, rx * 0.6, ry, 0, ry);
+    // 좌하단 -> 좌측 최대 폭 (-rx, ry * 0.18)
+    ctx.bezierCurveTo(-rx * 0.6, ry, -rx, ry * 0.65, -rx, ry * 0.18);
     // 좌상단 -> 상단 슬림 정점 (0, -ry)
-    ctx.bezierCurveTo(-rx, -ry * 0.4, -rx * 0.57, -ry, 0, -ry);
+    ctx.bezierCurveTo(-rx, -ry * 0.35, -rx * 0.58, -ry, 0, -ry);
     ctx.closePath();
+  }
+
+  // 캔버스 인게임 의상 렌더링
+  private drawCostumes(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
+    const { hat, top, bottom, hand } = this.costumes;
+
+    // 1. 하의
+    if (bottom === 'police_bottom') {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-rx * 0.85, ry * 0.45, rx * 1.7, ry * 0.22);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(-rx * 0.25, ry * 0.43, rx * 0.5, ry * 0.26);
+    } else if (bottom === 'cowboy_bottom') {
+      ctx.fillStyle = '#1d4ed8';
+      ctx.beginPath();
+      ctx.arc(0, ry * 0.3, rx * 0.95, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(-rx * 0.85, ry * 0.35, rx * 1.7, ry * 0.18);
+    } else if (bottom === 'mermaid_bottom') {
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.arc(0, ry * 0.35, rx * 0.95, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#34d399';
+      // 꼬리 날개
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.5, ry);
+      ctx.lineTo(-rx * 0.9, ry + 6);
+      ctx.lineTo(0, ry + 2);
+      ctx.lineTo(rx * 0.9, ry + 6);
+      ctx.lineTo(rx * 0.5, ry);
+      ctx.fill();
+    } else if (bottom === 'king_bottom') {
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(-rx * 0.85, ry * 0.45, rx * 1.7, ry * 0.2);
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, ry * 0.55, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. 상의
+    if (top === 'police_top') {
+      // 넥타이
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.moveTo(-2, -ry * 0.05);
+      ctx.lineTo(2, -ry * 0.05);
+      ctx.lineTo(3.5, ry * 0.4);
+      ctx.lineTo(0, ry * 0.48);
+      ctx.lineTo(-3.5, ry * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      // 경찰 배지
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(-rx * 0.65, ry * 0.05, 4, 5);
+    } else if (top === 'cowboy_top') {
+      // 빨간 반다나
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.5, -ry * 0.1);
+      ctx.lineTo(rx * 0.5, -ry * 0.1);
+      ctx.lineTo(0, ry * 0.25);
+      ctx.closePath();
+      ctx.fill();
+    } else if (top === 'mermaid_top') {
+      // 보라 조개
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.ellipse(-rx * 0.4, ry * 0.08, 5, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(rx * 0.4, ry * 0.08, 5, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (top === 'king_top') {
+      // 붉은 망토 칼라
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(0, -ry * 0.1, rx * 0.85, 0, Math.PI);
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = '#f8fafc';
+      ctx.stroke();
+    }
+
+    // 3. 모자
+    if (hat === 'police_hat') {
+      ctx.fillStyle = '#1e3a8a';
+      ctx.beginPath();
+      ctx.ellipse(0, -ry * 0.9, rx * 0.75, ry * 0.35, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-rx * 0.8, -ry * 0.9, rx * 1.6, 3.5);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(-2, -ry * 1.05, 4, 4);
+    } else if (hat === 'cowboy_hat') {
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.ellipse(0, -ry * 0.85, rx * 1.15, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#92400e';
+      ctx.beginPath();
+      ctx.arc(0, -ry * 0.95, rx * 0.6, Math.PI, Math.PI * 2);
+      ctx.fill();
+    } else if (hat === 'mermaid_hat') {
+      ctx.fillStyle = '#ffffff';
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.arc(i * 5, -ry * 0.92, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(0, -ry * 1.05, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (hat === 'king_hat') {
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.65, -ry * 0.85);
+      ctx.lineTo(-rx * 0.65, -ry * 1.25);
+      ctx.lineTo(-rx * 0.25, -ry * 1.05);
+      ctx.lineTo(0, -ry * 1.35);
+      ctx.lineTo(rx * 0.25, -ry * 1.05);
+      ctx.lineTo(rx * 0.65, -ry * 1.25);
+      ctx.lineTo(rx * 0.65, -ry * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-rx * 0.65, -ry * 0.9, rx * 1.3, 2.5);
+    }
+
+    // 4. 손
+    if (hand === 'police_hand') {
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(rx * 0.85, ry * 0.2);
+      ctx.lineTo(rx * 1.25, -ry * 0.2);
+      ctx.stroke();
+    } else if (hand === 'cowboy_hand') {
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(rx * 1.1, ry * 0.1, 4, 7, 0.4, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (hand === 'mermaid_hand') {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(rx * 0.85, ry * 0.4);
+      ctx.lineTo(rx * 1.15, -ry * 0.35);
+      ctx.stroke();
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillRect(rx * 1.05, -ry * 0.45, 6, 4);
+    } else if (hand === 'king_hand') {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(rx * 0.85, ry * 0.4);
+      ctx.lineTo(rx * 1.15, -ry * 0.3);
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(rx * 1.18, -ry * 0.35, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   // 달걀 표정 렌더링

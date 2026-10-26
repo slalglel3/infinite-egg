@@ -14,9 +14,9 @@ export const GAME_CONSTANTS = {
   ROAD_WIDTH: 38,
   CURB_WIDTH: 5,
 
-  // 통통하고 사랑스러운 황금비율 달걀 치수 (가로 36px, 세로 48px, 비율 1 : 1.33)
-  EGG_RADIUS_X: 18,
-  EGG_RADIUS_Y: 24,
+  // [피드백 1 반영] 세로 비율을 단축하여 더욱 통통하고 포근한 실물 달걀 치수 (가로 38px, 세로 44px, 비율 1 : 1.16)
+  EGG_RADIUS_X: 19,
+  EGG_RADIUS_Y: 22,
 
   // [피드백 3] 50m마다 속도 상승, 2000m에서 최고 속도(780) 도달
   INITIAL_SPEED: 260,

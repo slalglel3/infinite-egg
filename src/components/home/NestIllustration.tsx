@@ -2,15 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { EggSkin } from '../../types/game';
 import { Sparkles, Heart } from 'lucide-react';
 import { sound } from '../../audio/sound';
+import { CostumeSvgLayers } from './CostumeSvgLayers';
 
 interface NestIllustrationProps {
   skin: EggSkin;
+  equippedCostumes?: {
+    hat?: string;
+    top?: string;
+    bottom?: string;
+    hand?: string;
+  };
   onEggClick?: () => void;
 }
 
 type EggMotion = 'IDLE' | 'WIGGLE' | 'HOP' | 'TILT' | 'TOUCH_JUMP';
 
-export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggClick }) => {
+export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equippedCostumes, onEggClick }) => {
   const [motion, setMotion] = useState<EggMotion>('IDLE');
   const [showHeart, setShowHeart] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,20 +154,19 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
         {/* LAYER 2: 계란 캐릭터 (Egg in Nest) - z-index: 20       */}
         {/* ======================================================== */}
         <div
-          className={`absolute z-20 w-32 h-42 flex items-center justify-center transition-transform ${getMotionClass()}`}
+          className={`absolute z-20 w-32 h-38 flex items-center justify-center transition-transform ${getMotionClass()}`}
           style={{
-            bottom: '50px', // 둥지 안쪽 바닥에 쏙 안착하여 하단 30%가 둥지 앞면에 묻힘
+            bottom: '48px', // 둥지 안쪽 바닥에 쏙 안착하여 하단 30%가 둥지 앞면에 묻힘
             filter: 'drop-shadow(0 10px 12px rgba(0,0,0,0.3))',
           }}
         >
           {/* 
-            [참고 이미지 2 완벽 반영 달걀 SVG]
-            - 상단: 부드럽게 좁아지는 포물선 정점
-            - 60% 지점: 최대 폭 지점
-            - 하단: 풍만하고 둥근 둔단 곡선
-            - 좌상단 초승달 하이라이트 + 우측/하단 곡면 음영
+            [피드백 1 반영: 세로 비율을 단축하여 통통하고 귀여운 황금비율 달걀 SVG]
+            - 상단: 부드러운 첨단 포물선
+            - 60% 지점 (y=65): 최대 폭 지점
+            - 하단 (y=106): 풍만하고 둥근 둔단 곡선
           */}
-          <svg viewBox="0 0 100 132" className="w-full h-full overflow-visible">
+          <svg viewBox="0 0 100 116" className="w-full h-full overflow-visible">
             <defs>
               {/* 스킨별 기본 바디 방사형 그라데이션 */}
               <radialGradient id={`trueEggGrad-${skin.id}`} cx="42%" cy="36%" r="65%">
@@ -186,14 +192,14 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
               </linearGradient>
             </defs>
 
-            {/* 1. 실제 달걀 외곽선 베지어 곡선 (Base Shell) */}
+            {/* 1. 실제 달걀 외곽선 베지어 곡선 (Base Shell) - 세로 비율 단축 */}
             <path
               d="
-                M 50 6
-                C 74 6, 92 42, 92 78
-                C 92 106, 75 126, 50 126
-                C 25 126, 8 106, 8 78
-                C 8 42, 26 6, 50 6
+                M 50 10
+                C 74 10, 92 38, 92 65
+                C 92 90, 75 106, 50 106
+                C 25 106, 8 90, 8 65
+                C 8 38, 26 10, 50 10
                 Z
               "
               fill={`url(#trueEggGrad-${skin.id})`}
@@ -202,27 +208,27 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
               strokeLinejoin="round"
             />
 
-            {/* 2. 이미지 2 스타일 우측 곡면 초승달 섀도우 (Inner 3D Volume) */}
+            {/* 2. 우측 곡면 초승달 섀도우 (Inner 3D Volume) */}
             <path
               d="
-                M 50 6
-                C 74 6, 92 42, 92 78
-                C 92 106, 75 126, 50 126
-                C 68 126, 82 102, 82 78
-                C 82 46, 68 12, 50 6
+                M 50 10
+                C 74 10, 92 38, 92 65
+                C 92 90, 75 106, 50 106
+                C 68 106, 82 86, 82 65
+                C 82 40, 68 16, 50 10
                 Z
               "
               fill="url(#eggSideShadowGrad)"
             />
 
-            {/* 3. 이미지 2 스타일 좌측 상단 초승달 하이라이트 (Crescent Highlight) */}
+            {/* 3. 좌측 상단 초승달 하이라이트 (Crescent Highlight) */}
             <path
               d="
-                M 42 12
-                C 30 18, 17 38, 17 62
-                C 17 68, 20 72, 24 66
-                C 27 50, 36 28, 46 18
-                C 47 16, 45 12, 42 12
+                M 42 16
+                C 30 22, 17 40, 17 56
+                C 17 62, 20 66, 24 60
+                C 27 46, 36 28, 46 20
+                C 47 18, 45 16, 42 16
                 Z
               "
               fill="url(#eggHighlightGrad)"
@@ -231,19 +237,19 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
             {/* 4. 특수 스킨 패턴 오버레이 */}
             {colors.pattern === 'SPOTS' && (
               <g fill={colors.line} opacity="0.38">
-                <ellipse cx="32" cy="52" rx="3.5" ry="4.5" transform="rotate(-15 32 52)" />
-                <ellipse cx="46" cy="38" rx="2.5" ry="3" transform="rotate(20 46 38)" />
-                <ellipse cx="68" cy="56" rx="4" ry="5" transform="rotate(10 68 56)" />
-                <ellipse cx="76" cy="80" rx="3.2" ry="4" transform="rotate(-25 76 80)" />
-                <ellipse cx="30" cy="95" rx="3" ry="3.5" />
-                <ellipse cx="58" cy="100" rx="2.8" ry="3.2" />
-                <ellipse cx="48" cy="68" rx="2" ry="2.5" />
+                <ellipse cx="32" cy="46" rx="3.5" ry="4" transform="rotate(-15 32 46)" />
+                <ellipse cx="46" cy="34" rx="2.5" ry="2.8" transform="rotate(20 46 34)" />
+                <ellipse cx="68" cy="48" rx="4" ry="4.5" transform="rotate(10 68 48)" />
+                <ellipse cx="76" cy="70" rx="3.2" ry="3.5" transform="rotate(-25 76 70)" />
+                <ellipse cx="30" cy="84" rx="3" ry="3" />
+                <ellipse cx="58" cy="88" rx="2.8" ry="2.8" />
+                <ellipse cx="48" cy="58" rx="2" ry="2" />
               </g>
             )}
 
             {colors.pattern === 'CRACKS' && (
               <path
-                d="M 50 22 L 57 42 L 47 54 L 60 68 L 52 86 L 62 102"
+                d="M 50 20 L 57 38 L 47 50 L 60 62 L 52 78 L 62 92"
                 stroke="#15803d"
                 strokeWidth="2.8"
                 fill="none"
@@ -255,39 +261,47 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
 
             {colors.pattern === 'CYBER_LINES' && (
               <g stroke="#38bdf8" strokeWidth="2.0" fill="none" opacity="0.85">
-                <path d="M 26 56 L 42 56 L 52 44 L 78 44" />
-                <path d="M 30 84 L 46 84 L 56 96 L 72 96" />
-                <circle cx="42" cy="56" r="2.2" fill="#38bdf8" />
-                <circle cx="56" cy="96" r="2.2" fill="#38bdf8" />
+                <path d="M 26 50 L 42 50 L 52 38 L 78 38" />
+                <path d="M 30 74 L 46 74 L 56 86 L 72 86" />
+                <circle cx="42" cy="50" r="2.2" fill="#38bdf8" />
+                <circle cx="56" cy="86" r="2.2" fill="#38bdf8" />
               </g>
             )}
 
             {colors.pattern === 'FIRE_AURA' && (
               <g fill="#f97316" opacity="0.4">
-                <circle cx="50" cy="20" r="5.5" />
-                <circle cx="22" cy="60" r="6.5" />
-                <circle cx="78" cy="60" r="6.5" />
-                <circle cx="34" cy="102" r="5.5" />
-                <circle cx="66" cy="102" r="5.5" />
+                <circle cx="50" cy="18" r="5" />
+                <circle cx="22" cy="52" r="6" />
+                <circle cx="78" cy="52" r="6" />
+                <circle cx="34" cy="88" r="5" />
+                <circle cx="66" cy="88" r="5" />
               </g>
             )}
 
             {/* 5. 앙증맞은 달걀 표정 (생동감 있는 눈 & 볼터치 & 미소) */}
-            <circle cx="38" cy="72" r="4.2" fill={colors.eyeColor} />
-            <circle cx="64" cy="72" r="4.2" fill={colors.eyeColor} />
+            <circle cx="38" cy="62" r="4.2" fill={colors.eyeColor} />
+            <circle cx="64" cy="62" r="4.2" fill={colors.eyeColor} />
             {/* 눈 반짝임 */}
-            <circle cx="36.5" cy="70.5" r="1.6" fill="#ffffff" />
-            <circle cx="62.5" cy="70.5" r="1.6" fill="#ffffff" />
+            <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
+            <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
             {/* 핑크 볼터치 */}
-            <ellipse cx="29" cy="80" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
-            <ellipse cx="73" cy="80" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+            <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+            <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
             {/* 방긋 미소 */}
             <path
-              d="M 44 80 Q 51 86 58 80"
+              d="M 44 70 Q 51 76 58 70"
               stroke={colors.eyeColor}
               strokeWidth="2.8"
               fill="none"
               strokeLinecap="round"
+            />
+
+            {/* 6. 착용 중인 4대 부위 의상 코스튬 레이어 (모자, 상의, 하의, 손) */}
+            <CostumeSvgLayers
+              hatId={equippedCostumes?.hat}
+              topId={equippedCostumes?.top}
+              bottomId={equippedCostumes?.bottom}
+              handId={equippedCostumes?.hand}
             />
           </svg>
         </div>

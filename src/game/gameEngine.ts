@@ -90,11 +90,20 @@ export class GameEngine {
     this.eggRenderer.setSkin(skin);
   }
 
+  public setCostumes(costumes?: { hat?: string; top?: string; bottom?: string; hand?: string }): void {
+    this.eggRenderer.setCostumes(costumes);
+  }
+
   // 게임 재시작 및 완전 초기화
-  public restart(userLevel: number = 1, skin?: EggSkin): void {
+  public restart(
+    userLevel: number = 1,
+    skin?: EggSkin,
+    costumes?: { hat?: string; top?: string; bottom?: string; hand?: string }
+  ): void {
     if (skin) {
       this.setSkin(skin);
     }
+    this.setCostumes(costumes);
 
     this.mapGen.reset(0, 0);
     this.segments = this.mapGen.generateInitialMap();
@@ -732,22 +741,55 @@ export class GameEngine {
     ctx.restore();
   }
 
-  // [피드백 9 완벽 구현] 6대 바이옴(설산 -> 산중턱 -> 숲/초원 -> 지하동굴 -> 지각 -> 맨틀)
+  // [피드백 5 완벽 구현] 6대 바이옴 연속 보간 배경 렌더링 (설산 -> 침엽수림 -> 초원 -> 지하동굴 -> 지각 -> 맨틀)
   private drawDynamicBiomeBackground(ctx: CanvasRenderingContext2D): void {
     const meters = this.stats.distanceMeters;
 
-    if (meters < 350) {
-      // ==========================================================
-      // Zone 1: [0m ~ 350m] 에베레스트 설산 (Snow Peaks)
-      // ==========================================================
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      skyGrad.addColorStop(0, '#1e40af'); // 짙은 코발트 블루
-      skyGrad.addColorStop(0.7, '#60a5fa');
-      skyGrad.addColorStop(1, '#e0f2fe');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+    // 바이옴 키프레임 (거리, 상단색, 중단색, 하단색)
+    const BIOMES = [
+      { m: 0, top: '#1e40af', mid: '#60a5fa', bot: '#e0f2fe' },     // 설산
+      { m: 450, top: '#0284c7', mid: '#7dd3fc', bot: '#f0fdf4' },   // 고산림
+      { m: 900, top: '#38bdf8', mid: '#bae6fd', bot: '#ecfdf5' },   // 초원/숲
+      { m: 1400, top: '#0f172a', mid: '#1e1b4b', bot: '#09090b' },  // 지하 동굴
+      { m: 1950, top: '#18181b', mid: '#450a0a', bot: '#7f1d1d' },  // 지각/화산암
+      { m: 2500, top: '#450a0a', mid: '#991b1b', bot: '#facc15' },  // 지구 중심 맨틀
+    ];
 
-      // 원경 하얀 눈 덮인 뾰족한 만년설 봉우리
+    // 현재 거리에 해당하는 인접 키프레임 탐색 및 보간율 t 계산
+    let curIdx = 0;
+    while (curIdx < BIOMES.length - 2 && meters > BIOMES[curIdx + 1].m) {
+      curIdx++;
+    }
+    const b1 = BIOMES[curIdx];
+    const b2 = BIOMES[curIdx + 1];
+    const span = b2.m - b1.m;
+    const t = Math.max(0, Math.min(1, (meters - b1.m) / span));
+
+    // 하늘 그라데이션 3색 완전 연속 보간
+    const topColor = this.lerpColor(b1.top, b2.top, t);
+    const midColor = this.lerpColor(b1.mid, b2.mid, t);
+    const botColor = this.lerpColor(b1.bot, b2.bot, t);
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
+    skyGrad.addColorStop(0, topColor);
+    skyGrad.addColorStop(0.65, midColor);
+    skyGrad.addColorStop(1, botColor);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
+
+    // 각 바이옴별 가중치(Alpha, 0 ~ 1) 계산을 통한 부드러운 지형 크로스페이드
+    const getZoneAlpha = (centerM: number, radiusM: number) => {
+      const dist = Math.abs(meters - centerM);
+      if (dist >= radiusM) return 0;
+      return Math.cos((dist / radiusM) * (Math.PI / 2));
+    };
+
+    // 1. 설산 지형 (0m ~ 500m)
+    const snowAlpha = getZoneAlpha(150, 350);
+    if (snowAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = snowAlpha;
+      // 원경 만년설 봉우리
       ctx.fillStyle = '#f8fafc';
       ctx.beginPath();
       const snowFarOffset = -(this.cameraX * 0.12) % 340;
@@ -772,23 +814,14 @@ export class GameEngine {
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+      ctx.restore();
+    }
 
-      // 근경 설원
-      ctx.fillStyle = '#f1f5f9';
-      ctx.fillRect(0, this.screenHeight - 100, this.screenWidth, 100);
-
-    } else if (meters < 750) {
-      // ==========================================================
-      // Zone 2: [350m ~ 750m] 산 중턱 & 고산 침엽수림 (Highlands)
-      // ==========================================================
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      skyGrad.addColorStop(0, '#0284c7');
-      skyGrad.addColorStop(0.7, '#7dd3fc');
-      skyGrad.addColorStop(1, '#f0fdf4');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
-
-      // 바위 암벽 능선
+    // 2. 침엽수림 지형 (300m ~ 850m)
+    const highlandAlpha = getZoneAlpha(500, 350);
+    if (highlandAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = highlandAlpha;
       ctx.fillStyle = '#94a3b8';
       ctx.beginPath();
       const rockOffset = -(this.cameraX * 0.15) % 300;
@@ -801,7 +834,6 @@ export class GameEngine {
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      // 짙은 전나무 숲 실루엣
       ctx.fillStyle = '#166534';
       ctx.beginPath();
       const treeOffset = -(this.cameraX * 0.25) % 200;
@@ -811,28 +843,19 @@ export class GameEngine {
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+      ctx.restore();
+    }
 
-      ctx.fillStyle = '#4ade80';
-      ctx.fillRect(0, this.screenHeight - 110, this.screenWidth, 110);
-
-    } else if (meters < 1250) {
-      // ==========================================================
-      // Zone 3: [750m ~ 1250m] 울창한 숲 & 푸른 초원 (Forest & Meadow)
-      // ==========================================================
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      skyGrad.addColorStop(0, '#38bdf8');
-      skyGrad.addColorStop(0.65, '#bae6fd');
-      skyGrad.addColorStop(1, '#ecfdf5');
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
-
-      // 뭉게구름
+    // 3. 푸른 초원 & 숲 지형 (700m ~ 1350m)
+    const meadowAlpha = getZoneAlpha(950, 400);
+    if (meadowAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = meadowAlpha;
       const cloudOffset = -(this.cameraX * 0.05);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
       this.drawCloud(ctx, (cloudOffset + 420) % (this.screenWidth + 200) - 100, 130, 45);
 
-      // 초록 언덕
       ctx.fillStyle = '#86efac';
       ctx.beginPath();
       const hillOffset = -(this.cameraX * 0.18) % 260;
@@ -842,23 +865,14 @@ export class GameEngine {
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+      ctx.restore();
+    }
 
-      // 잔디밭
-      ctx.fillStyle = '#22c55e';
-      ctx.fillRect(0, this.screenHeight - 110, this.screenWidth, 110);
-
-    } else if (meters < 1750) {
-      // ==========================================================
-      // Zone 4: [1250m ~ 1750m] 신비로운 지하 동굴 (Underground Caverns)
-      // ==========================================================
-      const caveGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      caveGrad.addColorStop(0, '#0f172a'); // 깊은 어둠
-      caveGrad.addColorStop(0.5, '#1e1b4b');
-      caveGrad.addColorStop(1, '#09090b');
-      ctx.fillStyle = caveGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
-
-      // 천장 종유석 (Stalactites)
+    // 4. 지하 동굴 지형 (1200m ~ 1850m)
+    const caveAlpha = getZoneAlpha(1500, 400);
+    if (caveAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = caveAlpha;
       ctx.fillStyle = '#334155';
       ctx.beginPath();
       const stalactiteOffset = -(this.cameraX * 0.15) % 180;
@@ -871,7 +885,6 @@ export class GameEngine {
       ctx.lineTo(this.screenWidth, 0);
       ctx.fill();
 
-      // 형광 발광 수정 기둥 (Glowing Crystals)
       ctx.fillStyle = '#818cf8';
       ctx.beginPath();
       const crystalOffset = -(this.cameraX * 0.3) % 240;
@@ -881,19 +894,14 @@ export class GameEngine {
         ctx.lineTo(x + 130, this.screenHeight);
       }
       ctx.fill();
+      ctx.restore();
+    }
 
-    } else if (meters < 2300) {
-      // ==========================================================
-      // Zone 5: [1750m ~ 2300m] 지하 지각 & 화산암 (Deep Crust)
-      // ==========================================================
-      const crustGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      crustGrad.addColorStop(0, '#18181b');
-      crustGrad.addColorStop(0.6, '#450a0a');
-      crustGrad.addColorStop(1, '#7f1d1d');
-      ctx.fillStyle = crustGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
-
-      // 화산암 지열 균열 실루엣
+    // 5. 지각 & 화산암 (1700m ~ 2400m)
+    const crustAlpha = getZoneAlpha(2050, 450);
+    if (crustAlpha > 0.01) {
+      ctx.save();
+      ctx.globalAlpha = crustAlpha;
       ctx.fillStyle = '#27272a';
       ctx.beginPath();
       const magmaHillOffset = -(this.cameraX * 0.2) % 250;
@@ -906,23 +914,16 @@ export class GameEngine {
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      // 지열 붉은 안개
       ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
       ctx.fillRect(0, this.screenHeight - 150, this.screenWidth, 150);
+      ctx.restore();
+    }
 
-    } else {
-      // ==========================================================
-      // Zone 6: [2300m+] 지구 중심 맨틀 & 용암 코어 (Earth Core & Mantle)
-      // ==========================================================
-      const coreGrad = ctx.createLinearGradient(0, 0, 0, this.screenHeight);
-      coreGrad.addColorStop(0, '#450a0a');
-      coreGrad.addColorStop(0.4, '#991b1b');
-      coreGrad.addColorStop(0.8, '#ea580c');
-      coreGrad.addColorStop(1, '#facc15'); // 타오르는 태양빛 용암
-      ctx.fillStyle = coreGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight);
-
-      // 작열하는 용암 파도
+    // 6. 맨틀 & 용암 코어 (2250m+)
+    if (meters >= 2250) {
+      const mantleAlpha = Math.min(1, (meters - 2250) / 300);
+      ctx.save();
+      ctx.globalAlpha = mantleAlpha;
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       const lavaOffset = -(this.cameraX * 0.3) % 180;
@@ -932,7 +933,26 @@ export class GameEngine {
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+      ctx.restore();
     }
+  }
+
+  // 16진수 색상 보간(Lerp) 헬퍼
+  private lerpColor(c1: string, c2: string, factor: number): string {
+    const f = Math.max(0, Math.min(1, factor));
+    const r1 = parseInt(c1.slice(1, 3), 16);
+    const g1 = parseInt(c1.slice(3, 5), 16);
+    const b1 = parseInt(c1.slice(5, 7), 16);
+
+    const r2 = parseInt(c2.slice(1, 3), 16);
+    const g2 = parseInt(c2.slice(3, 5), 16);
+    const b2 = parseInt(c2.slice(5, 7), 16);
+
+    const r = Math.round(r1 + (r2 - r1) * f);
+    const g = Math.round(g1 + (g2 - g1) * f);
+    const b = Math.round(b1 + (b2 - b1) * f);
+
+    return `rgb(${r},${g},${b})`;
   }
 
   private drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, scale: number): void {

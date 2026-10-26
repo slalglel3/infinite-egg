@@ -104,10 +104,33 @@ export interface UserProgress {
   totalDistanceMeters: number;
   totalGamesPlayed: number;
   gold: number;
+  eggShells: number; // 중복 계란 획득 시 지급되는 계란 껍데기 재화
   selectedEggId: string;
   unlockedEggIds: string[];
+  equippedCostumes: {
+    hat?: string;
+    top?: string;
+    bottom?: string;
+    hand?: string;
+  };
+  unlockedCostumeIds: string[];
+  lastFreeGoldDate?: string; // 일일 무료 선물 수령일 (YYYY-MM-DD)
   achievementProgress: Record<string, number>;
   claimedAchievementIds: string[];
+}
+
+export type CostumeSlot = 'hat' | 'top' | 'bottom' | 'hand';
+
+export interface CostumeItem {
+  id: string;
+  name: string;
+  slot: CostumeSlot;
+  setTheme: 'police' | 'cowboy' | 'mermaid' | 'king' | 'special';
+  rarity: EggRarity;
+  priceGold?: number;
+  priceShells?: number;
+  desc: string;
+  iconText?: string;
 }
 
 export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'ACHIEVEMENTS' | 'SHOP';

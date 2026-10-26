@@ -45,10 +45,22 @@ export class MapGenerator {
 
     const rand = Math.random();
 
-    // 1. [점프 코스] (50% 확률)
-    if (rand < 0.50) {
-      // [핵심 개선] 방향 전환 직후 점프까지의 도주로(안전 도로) 길이를 동적으로 조절!
-      // 거리가 늘어날수록 턴 직후 곧바로 점프해야 하는 '칼점프(Instant Jump)'가 적극 출현하여 긴장감 폭발!
+    // 1. [점프 코스] (52% 확률)
+    if (rand < 0.52) {
+      // [피드백 6 반영] 거리가 늘어날수록 단일 방향 경로에서 2연속 또는 3연속 점프가 깜짝 출현!
+      let jumpCount = 1;
+      const multiJumpRand = Math.random();
+
+      if (isExtreme) {
+        if (multiJumpRand < 0.25) jumpCount = 3;      // 1500m+: 25% 확률로 3연속 점프!
+        else if (multiJumpRand < 0.70) jumpCount = 2; // 45% 확률로 2연속 점프!
+      } else if (isHard) {
+        if (multiJumpRand < 0.45) jumpCount = 2;      // 800m+: 45% 확률로 2연속 점프!
+      } else if (isMid) {
+        if (multiJumpRand < 0.30) jumpCount = 2;      // 300m+: 30% 확률로 2연속 점프!
+      }
+
+      // 방향 전환 직후 첫 점프까지의 도주로(안전 도로) 길이를 동적으로 조절
       let leadStraightSteps = 0;
       let gapRunSteps = 1.0;
 
@@ -57,81 +69,79 @@ export class MapGenerator {
       if (isExtreme) {
         // 1500m+ (맨틀 코어): 극한의 반사신경 요구
         if (jumpRand < 0.50) {
-          // 50% 확률: 턴하자마자 단 1스텝 만에 칼점프! (총 1.0스텝 = 70px)
           leadStraightSteps = 0;
           gapRunSteps = 1.0;
         } else if (jumpRand < 0.85) {
-          // 35% 확률: 턴 후 1.5스텝 점프 (총 1.5스텝 = 105px)
           leadStraightSteps = 0;
           gapRunSteps = 1.5;
         } else {
-          // 15% 확률: 턴 후 2.5스텝 질주 점프
           leadStraightSteps = 1.2;
           gapRunSteps = 1.3;
         }
       } else if (isHard) {
-        // 800m+ (지하 동굴/지각): 고난도 리듬
+        // 800m+ (지하 동굴/지각)
         if (jumpRand < 0.40) {
-          // 40% 확률: 턴하자마자 1스텝 칼점프!
           leadStraightSteps = 0;
           gapRunSteps = 1.0;
         } else if (jumpRand < 0.75) {
-          // 35% 확률: 턴 후 1.6스텝 점프
           leadStraightSteps = 0;
           gapRunSteps = 1.6;
         } else {
-          // 25% 확률: 턴 후 2.8스텝 점프
           leadStraightSteps = 1.5;
           gapRunSteps = 1.3;
         }
       } else if (isMid) {
-        // 300m+ (산중턱/초원): 긴장감 본격 도입
+        // 300m+ (산중턱/초원)
         if (jumpRand < 0.30) {
-          // 30% 확률: 턴 후 1.3스텝 칼점프!
           leadStraightSteps = 0;
           gapRunSteps = 1.3;
         } else if (jumpRand < 0.70) {
-          // 40% 확률: 턴 후 2스텝 점프
           leadStraightSteps = 1.0;
           gapRunSteps = 1.0;
         } else {
-          // 30% 확률: 턴 후 3스텝 여유 점프
           leadStraightSteps = 1.8;
           gapRunSteps = 1.2;
         }
       } else {
-        // 초반 (0~300m): 기본 적응 구간이지만 다양한 템포 제공
+        // 초반 (0~300m)
         if (jumpRand < 0.25) {
-          // 25% 확률: 턴 후 1.8스텝 빠른 점프
           leadStraightSteps = 0;
           gapRunSteps = 1.8;
         } else if (jumpRand < 0.65) {
-          // 40% 확률: 턴 후 2.5스텝 점프
           leadStraightSteps = 1.2;
           gapRunSteps = 1.3;
         } else {
-          // 35% 확률: 턴 후 3.5스텝 여유 점프
           leadStraightSteps = 2.0;
           gapRunSteps = 1.5;
         }
       }
 
+      // 1) 첫 점프 진입 직선로
       if (leadStraightSteps > 0) {
         segments.push(this.createStraightStep(leadStraightSteps, this.shouldSpawnItem(currentMeters)));
       }
+      // 1차 점프
       segments.push(this.createGapStep(currentMeters, gapRunSteps));
 
-      // 거리에 따른 착지 후 활주로 동적 조절 (착지 후 칼턴)
-      let runwaySteps = 4; // 초반: 4스텝 (착지 후 약 2스텝 여유)
-      if (isExtreme) {
-        runwaySteps = 2;   // 1500m+: 착지하자마자 0.2스텝 만에 칼턴!
-      } else if (isHard) {
-        runwaySteps = 2.5; // 800m+: 착지 후 약 0.7스텝 만에 턴!
-      } else if (isMid) {
-        runwaySteps = 3;   // 300m+: 착지 후 약 1스텝 만에 턴!
+      // 2) 2번째 또는 3번째 점프가 연결되는 경우
+      for (let j = 1; j < jumpCount; j++) {
+        // 착지 후 다음 점프 도약대까지의 중간 연결 활주로 (1.8 ~ 2.4스텝)
+        const midConnectSteps = isExtreme ? 1.6 : (isHard ? 2.0 : 2.4);
+        segments.push(this.createStraightStep(midConnectSteps, this.shouldSpawnItem(currentMeters)));
+        // 연속 점프 GAP 생성
+        segments.push(this.createGapStep(currentMeters, 1.2));
       }
 
-      // 선행 도로가 없었을 경우 활주로에서 반창고를 대신 스폰
+      // 최종 착지 후 활주로 동적 조절
+      let runwaySteps = 4;
+      if (isExtreme) {
+        runwaySteps = 2;
+      } else if (isHard) {
+        runwaySteps = 2.5;
+      } else if (isMid) {
+        runwaySteps = 3;
+      }
+
       const canSpawnOnRunway = leadStraightSteps === 0 ? this.shouldSpawnItem(currentMeters) : false;
       segments.push(this.createStraightStep(runwaySteps, canSpawnOnRunway));
       segments.push(this.createTurnSegment());

@@ -99,9 +99,9 @@ export function App() {
   }, [engine, gameState]);
 
   // 게임 시작 (기본 모드 또는 이벤트 맵 모드)
-  const handleStartGame = (eventMap?: EventMapItem) => {
+  const handleStartGame = (_eventMap?: EventMapItem) => {
     const currentSkin = getEggSkinById(userProgress.selectedEggId);
-    engine.restart(userProgress.level, currentSkin);
+    engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes);
     setStats({ ...engine.stats });
     setGameState('PLAYING');
   };

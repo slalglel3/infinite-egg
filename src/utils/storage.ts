@@ -1,7 +1,8 @@
-import { UserProgress, GameStats } from '../types/game';
+import { UserProgress, GameStats, CostumeSlot } from '../types/game';
 import { GAME_CONSTANTS } from '../game/constants';
 import { EGG_SKINS } from '../data/eggSkins';
 import { ACHIEVEMENTS } from '../data/achievements';
+import { COSTUME_ITEMS } from '../data/eggCostumes';
 
 const STORAGE_KEY = 'infinite_egg_progress_v2';
 
@@ -21,6 +22,26 @@ export function calculateLevelFromExp(totalExp: number): { level: number; expInL
   const neededForNext = nextLevelBase - currentLevelBase;
 
   return { level, expInLevel, neededForNext };
+}
+
+export function getInitialProgress(): UserProgress {
+  return {
+    level: 1,
+    exp: 0,
+    nextLevelExp: getRequiredExpForLevel(2),
+    bestDistanceMeters: 0,
+    totalDistanceMeters: 0,
+    totalGamesPlayed: 0,
+    gold: 300,
+    eggShells: 0,
+    selectedEggId: 'classic',
+    unlockedEggIds: ['classic'],
+    equippedCostumes: {},
+    unlockedCostumeIds: [],
+    lastFreeGoldDate: undefined,
+    achievementProgress: {},
+    claimedAchievementIds: [],
+  };
 }
 
 export function loadUserProgress(): UserProgress {
@@ -57,8 +78,12 @@ export function loadUserProgress(): UserProgress {
         totalDistanceMeters: data.totalDistanceMeters || 0,
         totalGamesPlayed: games,
         gold: typeof data.gold === 'number' ? data.gold : 300, // 기본 웰컴 골드
+        eggShells: typeof data.eggShells === 'number' ? data.eggShells : 0,
         selectedEggId: data.selectedEggId || 'classic',
         unlockedEggIds,
+        equippedCostumes: data.equippedCostumes || {},
+        unlockedCostumeIds: Array.isArray(data.unlockedCostumeIds) ? data.unlockedCostumeIds : [],
+        lastFreeGoldDate: data.lastFreeGoldDate,
         achievementProgress: data.achievementProgress || {},
         claimedAchievementIds: data.claimedAchievementIds || [],
       };
@@ -67,19 +92,7 @@ export function loadUserProgress(): UserProgress {
     console.error('Failed to load user progress:', e);
   }
 
-  return {
-    level: 1,
-    exp: 0,
-    nextLevelExp: getRequiredExpForLevel(2),
-    bestDistanceMeters: 0,
-    totalDistanceMeters: 0,
-    totalGamesPlayed: 0,
-    gold: 300,
-    selectedEggId: 'classic',
-    unlockedEggIds: ['classic'],
-    achievementProgress: {},
-    claimedAchievementIds: [],
-  };
+  return getInitialProgress();
 }
 
 export function saveUserProgress(progress: UserProgress): void {
@@ -145,6 +158,7 @@ export function addGameResult(stats: GameStats): {
   }
 
   const updated: UserProgress = {
+    ...current,
     level,
     exp: newExp,
     nextLevelExp: neededForNext,
@@ -152,10 +166,8 @@ export function addGameResult(stats: GameStats): {
     totalDistanceMeters,
     totalGamesPlayed,
     gold: newGold,
-    selectedEggId: current.selectedEggId,
     unlockedEggIds,
     achievementProgress: achProgress,
-    claimedAchievementIds: current.claimedAchievementIds,
   };
 
   saveUserProgress(updated);
@@ -226,4 +238,141 @@ export function claimAchievementReward(achievementId: string): { success: boolea
 
   saveUserProgress(updated);
   return { success: true, progress: updated };
+}
+
+// [피드백 3 해결] 일일 무료 선물 수령 (1일 1회 검증)
+export function claimDailyFreeGold(): { success: boolean; progress: UserProgress; message?: string } {
+  const current = loadUserProgress();
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  if (current.lastFreeGoldDate === today) {
+    return {
+      success: false,
+      progress: current,
+      message: '오늘의 무료 선물은 이미 수령하셨습니다! 내일 다시 방문해주세요.',
+    };
+  }
+
+  const updated: UserProgress = {
+    ...current,
+    gold: current.gold + 100,
+    lastFreeGoldDate: today,
+  };
+
+  saveUserProgress(updated);
+  return { success: true, progress: updated };
+}
+
+// [피드백 8 & 9 구현] 부위별 의상 장착/해제
+export function equipCostume(
+  slot: CostumeSlot,
+  costumeId?: string
+): { success: boolean; progress: UserProgress } {
+  const current = loadUserProgress();
+  const newEquipped = { ...current.equippedCostumes };
+
+  if (!costumeId) {
+    // 벗기
+    delete newEquipped[slot];
+  } else {
+    // 착용 (해금 여부 검사)
+    if (!current.unlockedCostumeIds.includes(costumeId)) {
+      return { success: false, progress: current };
+    }
+    newEquipped[slot] = costumeId;
+  }
+
+  const updated: UserProgress = {
+    ...current,
+    equippedCostumes: newEquipped,
+  };
+
+  saveUserProgress(updated);
+  return { success: true, progress: updated };
+}
+
+// 의상 세트 일괄 장착
+export function equipCostumeSet(
+  itemIds: string[]
+): { success: boolean; progress: UserProgress } {
+  const current = loadUserProgress();
+  const newEquipped = { ...current.equippedCostumes };
+
+  for (const id of itemIds) {
+    const item = COSTUME_ITEMS.find((c) => c.id === id);
+    if (item && current.unlockedCostumeIds.includes(id)) {
+      newEquipped[item.slot] = id;
+    }
+  }
+
+  const updated: UserProgress = {
+    ...current,
+    equippedCostumes: newEquipped,
+  };
+
+  saveUserProgress(updated);
+  return { success: true, progress: updated };
+}
+
+// 의상 구매 (골드 또는 계란 껍데기)
+export function buyCostume(
+  costumeId: string,
+  currency: 'GOLD' | 'SHELLS'
+): { success: boolean; progress: UserProgress; message?: string } {
+  const current = loadUserProgress();
+  const item = COSTUME_ITEMS.find((c) => c.id === costumeId);
+  if (!item) {
+    return { success: false, progress: current, message: '존재하지 않는 의상입니다.' };
+  }
+  if (current.unlockedCostumeIds.includes(costumeId)) {
+    return { success: false, progress: current, message: '이미 보유 중인 의상입니다.' };
+  }
+
+  if (currency === 'GOLD') {
+    const price = item.priceGold || 999999;
+    if (current.gold < price) {
+      return { success: false, progress: current, message: '골드가 부족합니다.' };
+    }
+    const updated: UserProgress = {
+      ...current,
+      gold: current.gold - price,
+      unlockedCostumeIds: [...current.unlockedCostumeIds, costumeId],
+      equippedCostumes: { ...current.equippedCostumes, [item.slot]: costumeId },
+    };
+    saveUserProgress(updated);
+    return { success: true, progress: updated };
+  } else {
+    const price = item.priceShells || 999999;
+    if (current.eggShells < price) {
+      return { success: false, progress: current, message: '계란 껍데기가 부족합니다.' };
+    }
+    const updated: UserProgress = {
+      ...current,
+      eggShells: current.eggShells - price,
+      unlockedCostumeIds: [...current.unlockedCostumeIds, costumeId],
+      equippedCostumes: { ...current.equippedCostumes, [item.slot]: costumeId },
+    };
+    saveUserProgress(updated);
+    return { success: true, progress: updated };
+  }
+}
+
+// 계란 껍데기 추가
+export function addEggShells(amount: number): UserProgress {
+  const current = loadUserProgress();
+  const updated: UserProgress = {
+    ...current,
+    eggShells: current.eggShells + amount,
+  };
+  saveUserProgress(updated);
+  return updated;
+}
+
+// [피드백 10 구현] 게임 진행 상태 완전 초기화
+export function resetAllProgress(): UserProgress {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem('infinite_egg_progress_v1');
+  const fresh = getInitialProgress();
+  saveUserProgress(fresh);
+  return fresh;
 }

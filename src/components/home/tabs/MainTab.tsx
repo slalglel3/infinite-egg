@@ -36,15 +36,19 @@ export const MainTab: React.FC<MainTabProps> = ({
 
       {/* 2. 중앙: 아름다운 계란 둥지 (Nest) */}
       <div className="my-auto py-2 flex flex-col items-center">
-        <NestIllustration skin={currentSkin} onEggClick={onGoToEggsTab} />
+        <NestIllustration
+          skin={currentSkin}
+          equippedCostumes={progress.equippedCostumes}
+          onEggClick={onGoToEggsTab}
+        />
         
-        {/* 계란 변경 퀵 버튼 */}
+        {/* 계란 및 의상 변경 퀵 버튼 */}
         <button
           type="button"
           onClick={onGoToEggsTab}
-          className="mt-2 text-xs font-extrabold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1 rounded-full border border-amber-300 shadow-sm active:scale-95 transition-all cursor-pointer"
+          className="mt-2 text-xs font-extrabold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3.5 py-1.5 rounded-full border border-amber-300 shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
         >
-          계란 교체하기 ↷
+          <span>계란 & 의상 코디 ↷</span>
         </button>
       </div>
 
