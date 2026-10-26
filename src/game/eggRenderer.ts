@@ -61,7 +61,7 @@ export class EggRenderer {
     // 착지 시 탄성
     ctx.scale(egg.squishX, egg.squishY);
 
-    // 기하학적으로 완벽한 유선형 황금비율 달걀 패스
+    // 실물 달걀 황금비율 곡선 (상단 슬림 첨단, y=60% 최대폭, 풍만한 하단 둔단)
     this.createTrueEggPath(ctx, rx, ry);
 
     if (egg.flashDamage) {
@@ -89,28 +89,30 @@ export class EggRenderer {
     // 달걀 표정 그리기
     this.drawFace(ctx, egg, rx, ry);
 
-    // 상단 유광 하이라이트 (맑은 빛 반사)
+    // 좌상단 부드러운 곡면 하이라이트 (실물 달걀의 은은한 광택)
+    ctx.save();
     ctx.beginPath();
-    ctx.ellipse(-rx * 0.35, -ry * 0.45, rx * 0.3, ry * 0.42, -0.3, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.ellipse(-rx * 0.35, -ry * 0.3, rx * 0.35, ry * 0.45, -0.32, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
     ctx.fill();
+    ctx.restore();
 
     ctx.restore();
   }
 
-  // 완벽한 황금비율 달걀 곡선 (단 1개의 각진 곳도 없는 3차 스플라인)
+  // 실물 달걀 3차 베지어 곡선 (단 1개의 각진 곳도 없는 유선형, 상단 슬림 첨단 & y=60% 최대 폭)
   public createTrueEggPath(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
     ctx.beginPath();
-    // 상단 좁고 둥근 정점 (0, -ry)
+    // 상단 슬림한 정점 (0, -ry)
     ctx.moveTo(0, -ry);
-    // 우상단 -> 우측 허리
-    ctx.bezierCurveTo(rx * 0.85, -ry * 0.9, rx * 1.15, -ry * 0.1, rx * 1.05, ry * 0.35);
-    // 우하단 -> 하단 둥근 둔단 (0, ry)
-    ctx.bezierCurveTo(rx * 0.95, ry * 0.85, rx * 0.55, ry, 0, ry);
-    // 좌하단 -> 좌측 허리
-    ctx.bezierCurveTo(-rx * 0.55, ry, -rx * 0.95, ry * 0.85, -rx * 1.05, ry * 0.35);
-    // 좌상단 -> 상단 정점 (0, -ry)
-    ctx.bezierCurveTo(-rx * 1.15, -ry * 0.1, -rx * 0.85, -ry * 0.9, 0, -ry);
+    // 우상단 -> 우측 최대 폭 (rx, ry * 0.20)
+    ctx.bezierCurveTo(rx * 0.57, -ry, rx, -ry * 0.4, rx, ry * 0.2);
+    // 우하단 -> 하단 풍만한 둔단 (0, ry)
+    ctx.bezierCurveTo(rx, ry * 0.67, rx * 0.6, ry, 0, ry);
+    // 좌하단 -> 좌측 최대 폭 (-rx, ry * 0.20)
+    ctx.bezierCurveTo(-rx * 0.6, ry, -rx, ry * 0.67, -rx, ry * 0.2);
+    // 좌상단 -> 상단 슬림 정점 (0, -ry)
+    ctx.bezierCurveTo(-rx, -ry * 0.4, -rx * 0.57, -ry, 0, -ry);
     ctx.closePath();
   }
 

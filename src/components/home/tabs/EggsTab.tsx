@@ -61,30 +61,41 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
       <div className="w-full bg-white/95 rounded-3xl p-4 shadow-xl border-2 border-amber-200 flex flex-col gap-3">
         <div className="flex items-center gap-4">
           {/* 달걀 비주얼 프리뷰 */}
-          <div className="relative w-22 h-26 shrink-0 flex items-center justify-center p-1 bg-gradient-to-b from-sky-50 to-amber-50 rounded-2xl border border-amber-100 shadow-inner">
-            <svg viewBox="0 0 100 120" className="w-18 h-22 drop-shadow-md">
+          <div className="relative w-22 h-28 shrink-0 flex items-center justify-center p-1 bg-gradient-to-b from-sky-50 to-amber-50 rounded-2xl border border-amber-100 shadow-inner">
+            <svg viewBox="0 0 100 132" className="w-18 h-24 drop-shadow-md">
               <defs>
-                <radialGradient id={`previewGrad-${previewSkin.id}`} cx="38%" cy="32%" r="65%">
+                <radialGradient id={`previewGrad-${previewSkin.id}`} cx="42%" cy="36%" r="65%">
                   <stop offset="0%" stopColor={previewSkin.colors.top} />
-                  <stop offset="20%" stopColor={previewSkin.colors.mid1} />
+                  <stop offset="22%" stopColor={previewSkin.colors.mid1} />
                   <stop offset="65%" stopColor={previewSkin.colors.mid2} />
-                  <stop offset="90%" stopColor={previewSkin.colors.bottom} />
+                  <stop offset="92%" stopColor={previewSkin.colors.bottom} />
                   <stop offset="100%" stopColor={previewSkin.colors.shadow} />
                 </radialGradient>
+                <linearGradient id="previewHighlightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+                  <stop offset="100%" stopColor="#fff8eb" stopOpacity="0.2" />
+                </linearGradient>
               </defs>
+              {/* 이미지 2 스타일 실제 자연 달걀 곡선 */}
               <path
-                d="M 50 14 C 26 14 14 44 14 74 C 14 100 28 114 50 114 C 72 114 86 100 86 74 C 86 44 74 14 50 14 Z"
+                d="M 50 6 C 74 6, 92 42, 92 78 C 92 106, 75 126, 50 126 C 25 126, 8 106, 8 78 C 8 42, 26 6, 50 6 Z"
                 fill={`url(#previewGrad-${previewSkin.id})`}
                 stroke={previewSkin.colors.line}
-                strokeWidth="3.5"
+                strokeWidth="3.2"
+                strokeLinejoin="round"
               />
-              <circle cx="37" cy="66" r="4.2" fill={previewSkin.colors.eyeColor} />
-              <circle cx="63" cy="66" r="4.2" fill={previewSkin.colors.eyeColor} />
-              <circle cx="35.5" cy="64.5" r="1.6" fill="#ffffff" />
-              <circle cx="61.5" cy="64.5" r="1.6" fill="#ffffff" />
-              <ellipse cx="28" cy="74" rx="4.5" ry="2.8" fill={previewSkin.colors.cheekColor} opacity="0.85" />
-              <ellipse cx="72" cy="74" rx="4.5" ry="2.8" fill={previewSkin.colors.cheekColor} opacity="0.85" />
-              <path d="M 43 74 Q 50 80 57 74" stroke={previewSkin.colors.eyeColor} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+              {/* 좌상단 초승달 하이라이트 */}
+              <path
+                d="M 42 12 C 30 18, 17 38, 17 62 C 17 68, 20 72, 24 66 C 27 50, 36 28, 46 18 C 47 16, 45 12, 42 12 Z"
+                fill="url(#previewHighlightGrad)"
+              />
+              <circle cx="38" cy="72" r="4.2" fill={previewSkin.colors.eyeColor} />
+              <circle cx="64" cy="72" r="4.2" fill={previewSkin.colors.eyeColor} />
+              <circle cx="36.5" cy="70.5" r="1.6" fill="#ffffff" />
+              <circle cx="62.5" cy="70.5" r="1.6" fill="#ffffff" />
+              <ellipse cx="29" cy="80" rx="4.8" ry="3" fill={previewSkin.colors.cheekColor} opacity="0.85" />
+              <ellipse cx="73" cy="80" rx="4.8" ry="3" fill={previewSkin.colors.cheekColor} opacity="0.85" />
+              <path d="M 44 80 Q 51 86 58 80" stroke={previewSkin.colors.eyeColor} strokeWidth="2.8" fill="none" strokeLinecap="round" />
             </svg>
 
             {!isUnlocked && (
@@ -202,7 +213,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
 
                 {/* 계란 미니 일러스트 */}
                 <div className="relative w-12 h-15 flex items-center justify-center my-0.5">
-                  <svg viewBox="0 0 100 120" className="w-10 h-13 drop-shadow">
+                  <svg viewBox="0 0 100 132" className="w-10 h-13 drop-shadow">
                     <defs>
                       <radialGradient id={`miniGrad-${skin.id}`} cx="38%" cy="32%" r="65%">
                         <stop offset="0%" stopColor={skin.colors.top} />
@@ -212,14 +223,22 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
                         <stop offset="100%" stopColor={skin.colors.shadow} />
                       </radialGradient>
                     </defs>
+                    {/* 실물 달걀 황금비율 곡선 (상단 슬림, 최대폭 y=60%) */}
                     <path
-                      d="M 50 14 C 26 14 14 44 14 74 C 14 100 28 114 50 114 C 72 114 86 100 86 74 C 86 44 74 14 50 14 Z"
+                      d="M 50 6 C 74 6, 92 42, 92 78 C 92 106, 75 126, 50 126 C 25 126, 8 106, 8 78 C 8 42, 26 6, 50 6 Z"
                       fill={`url(#miniGrad-${skin.id})`}
                       stroke={skin.colors.line}
                       strokeWidth="3.5"
+                      strokeLinejoin="round"
                     />
-                    <circle cx="37" cy="66" r="4" fill={skin.colors.eyeColor} />
-                    <circle cx="63" cy="66" r="4" fill={skin.colors.eyeColor} />
+                    {/* 좌상단 부드러운 하이라이트 */}
+                    <path
+                      d="M 30 20 C 38 12, 48 10, 48 10 C 32 18, 24 38, 25 60 C 20 48, 22 30, 30 20 Z"
+                      fill="#ffffff"
+                      opacity="0.5"
+                    />
+                    <circle cx="40" cy="74" r="3.2" fill={skin.colors.eyeColor} />
+                    <circle cx="60" cy="74" r="3.2" fill={skin.colors.eyeColor} />
                   </svg>
 
                   {!isSkinUnlocked && (

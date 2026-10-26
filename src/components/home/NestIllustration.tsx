@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { EggSkin } from '../../types/game';
 import { Sparkles, Heart } from 'lucide-react';
 import { sound } from '../../audio/sound';
@@ -8,202 +8,401 @@ interface NestIllustrationProps {
   onEggClick?: () => void;
 }
 
-export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggClick }) => {
-  const [bounced, setBounced] = useState(false);
-  const [showHeart, setShowHeart] = useState(false);
+type EggMotion = 'IDLE' | 'WIGGLE' | 'HOP' | 'TILT' | 'TOUCH_JUMP';
 
-  const handleClick = () => {
-    setBounced(true);
+export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggClick }) => {
+  const [motion, setMotion] = useState<EggMotion>('IDLE');
+  const [showHeart, setShowHeart] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 랜덤 움직임 루프 (1.8초 ~ 3.2초 주기마다 무작위 액션 실행)
+  useEffect(() => {
+    const scheduleNextMotion = () => {
+      const delay = 1800 + Math.random() * 1600; // 1.8초 ~ 3.4초
+      timerRef.current = setTimeout(() => {
+        // 유저 터치 점프 중이 아닐 때만 랜덤 동작
+        setMotion((prev) => {
+          if (prev === 'TOUCH_JUMP') return prev;
+
+          const rand = Math.random();
+          if (rand < 0.40) {
+            return 'WIGGLE'; // 40% 확률: 좌우 뒤뚱뒤뚱 흔들리기
+          } else if (rand < 0.75) {
+            return 'HOP';    // 35% 확률: 살짝 통통 점프
+          } else {
+            return 'TILT';   // 25% 확률: 갸우뚱 고개 까딱
+          }
+        });
+
+        // 일정 시간 후 다시 부드러운 IDLE 상태로 복귀
+        setTimeout(() => {
+          setMotion((prev) => (prev === 'TOUCH_JUMP' ? prev : 'IDLE'));
+        }, 700);
+
+        scheduleNextMotion();
+      }, delay);
+    };
+
+    scheduleNextMotion();
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  // 유저 직접 탭/클릭 시 반응
+  const handleEggClick = () => {
+    setMotion('TOUCH_JUMP');
     setShowHeart(true);
     sound.playJump();
-    setTimeout(() => setBounced(false), 450);
-    setTimeout(() => setShowHeart(false), 1200);
+
+    setTimeout(() => {
+      setMotion('IDLE');
+    }, 600);
+
+    setTimeout(() => {
+      setShowHeart(false);
+    }, 1300);
+
     if (onEggClick) onEggClick();
   };
 
   const { colors } = skin;
 
-  return (
-    <div className="relative flex flex-col items-center justify-center select-none">
-      {/* 둥지 뒤쪽 햇살 광채 오라 */}
-      <div className="absolute -inset-10 bg-amber-400/20 rounded-full blur-2xl animate-pulse pointer-events-none" />
+  // 모션별 CSS 변환 클래스
+  const getMotionClass = () => {
+    switch (motion) {
+      case 'WIGGLE':
+        return 'animate-egg-wiggle';
+      case 'HOP':
+        return 'animate-egg-hop';
+      case 'TILT':
+        return 'animate-egg-tilt';
+      case 'TOUCH_JUMP':
+        return '-translate-y-8 scale-105 duration-200';
+      default:
+        return 'animate-egg-breathe';
+    }
+  };
 
-      {/* 탭 시 피어오르는 러블리 하트 애니메이션 */}
+  return (
+    <div className="relative flex flex-col items-center justify-center select-none py-2">
+      {/* 둥지 뒤쪽 은은한 햇살 광채 */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+
+      {/* 탭 시 피어오르는 하트 이펙트 */}
       {showHeart && (
-        <div className="absolute -top-12 z-30 flex items-center gap-1 bg-white/95 px-3 py-1 rounded-full shadow-lg border border-pink-200 animate-bounce">
-          <Heart size={16} className="text-rose-500 fill-rose-500" />
+        <div className="absolute -top-6 z-40 flex items-center gap-1 bg-white/95 px-3 py-1 rounded-full shadow-lg border border-pink-200 animate-bounce">
+          <Heart size={15} className="text-rose-500 fill-rose-500" />
           <span className="text-xs font-black text-rose-600">방긋!</span>
         </div>
       )}
 
-      {/* 둥지 & 달걀 컨테이너 */}
+      {/* 
+        [3중 입체 샌드위치 구조]
+        1) Nest Back (둥지 뒷면 테두리 & 깊은 바닥)
+        2) Egg Character (둥지 사이에 쏙 들어간 계란)
+        3) Nest Front (둥지 앞면 림 & 나뭇가지들로 계란 하단 덮음)
+      */}
       <div
-        onClick={handleClick}
-        className="relative w-64 h-64 flex items-center justify-center cursor-pointer group"
+        onClick={handleEggClick}
+        className="relative w-80 h-64 flex items-center justify-center cursor-pointer group"
       >
-        {/* 달걀 본체 (둥지 안에 포근하게 쏙 안착) */}
+        {/* ======================================================== */}
+        {/* LAYER 1: 둥지 뒷면 (Nest Back & Inner Bed) - z-index: 10 */}
+        {/* ======================================================== */}
+        <div className="absolute bottom-6 w-72 h-44 z-10 pointer-events-none drop-shadow-sm">
+          <svg viewBox="0 0 300 180" className="w-full h-full">
+            {/* 둥지 안쪽 깊은 바닥 공간 (어두운 브라운) */}
+            <ellipse cx="150" cy="85" rx="100" ry="42" fill="#78441f" />
+            <ellipse cx="150" cy="88" rx="88" ry="34" fill="#5c3214" />
+
+            {/* 둥지 뒷면 테두리 림 (갈색 아웃라인 & 볏짚) */}
+            <path
+              d="M 45 85 C 45 45, 110 32, 150 32 C 190 32, 255 45, 255 85"
+              fill="none"
+              stroke="#432818"
+              strokeWidth="10"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 50 85 C 50 49, 112 36, 150 36 C 188 36, 250 49, 250 85"
+              fill="none"
+              stroke="#d49a5b"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+            {/* 뒷쪽 나뭇결 하이라이트 지푸라기 */}
+            <path
+              d="M 80 50 Q 150 42 220 54"
+              fill="none"
+              stroke="#eec28d"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+
+        {/* ======================================================== */}
+        {/* LAYER 2: 계란 캐릭터 (Egg in Nest) - z-index: 20       */}
+        {/* ======================================================== */}
         <div
-          className={`absolute z-10 w-28 h-36 transition-transform duration-300 ${
-            bounced ? '-translate-y-8 scale-105' : 'translate-y-2 group-hover:-translate-y-2'
-          }`}
+          className={`absolute z-20 w-32 h-42 flex items-center justify-center transition-transform ${getMotionClass()}`}
           style={{
-            filter: 'drop-shadow(0 12px 14px rgba(0,0,0,0.35))',
+            bottom: '50px', // 둥지 안쪽 바닥에 쏙 안착하여 하단 30%가 둥지 앞면에 묻힘
+            filter: 'drop-shadow(0 10px 12px rgba(0,0,0,0.3))',
           }}
         >
-          <svg viewBox="0 0 100 120" className="w-full h-full overflow-visible">
+          {/* 
+            [참고 이미지 2 완벽 반영 달걀 SVG]
+            - 상단: 부드럽게 좁아지는 포물선 정점
+            - 60% 지점: 최대 폭 지점
+            - 하단: 풍만하고 둥근 둔단 곡선
+            - 좌상단 초승달 하이라이트 + 우측/하단 곡면 음영
+          */}
+          <svg viewBox="0 0 100 132" className="w-full h-full overflow-visible">
             <defs>
-              <radialGradient id={`eggGrad-${skin.id}`} cx="38%" cy="32%" r="65%">
+              {/* 스킨별 기본 바디 방사형 그라데이션 */}
+              <radialGradient id={`trueEggGrad-${skin.id}`} cx="42%" cy="36%" r="65%">
                 <stop offset="0%" stopColor={colors.top} />
-                <stop offset="20%" stopColor={colors.mid1} />
+                <stop offset="22%" stopColor={colors.mid1} />
                 <stop offset="65%" stopColor={colors.mid2} />
-                <stop offset="90%" stopColor={colors.bottom} />
+                <stop offset="92%" stopColor={colors.bottom} />
                 <stop offset="100%" stopColor={colors.shadow} />
               </radialGradient>
+
+              {/* 이미지 2 스타일 좌상단 부드러운 초승달 하이라이트 */}
+              <linearGradient id="eggHighlightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+                <stop offset="50%" stopColor="#fff8eb" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#fef3c7" stopOpacity="0.2" />
+              </linearGradient>
+
+              {/* 이미지 2 스타일 우측 곡면 섀도우 */}
+              <linearGradient id="eggSideShadowGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+                <stop offset="0%" stopColor={colors.shadow} stopOpacity="0" />
+                <stop offset="60%" stopColor={colors.shadow} stopOpacity="0.15" />
+                <stop offset="100%" stopColor={colors.shadow} stopOpacity="0.45" />
+              </linearGradient>
             </defs>
 
-            {/* 통통하고 사랑스러운 황금비율 달걀 곡선 */}
+            {/* 1. 실제 달걀 외곽선 베지어 곡선 (Base Shell) */}
             <path
-              d="M 50 14 C 26 14 14 44 14 74 C 14 100 28 114 50 114 C 72 114 86 100 86 74 C 86 44 74 14 50 14 Z"
-              fill={`url(#eggGrad-${skin.id})`}
+              d="
+                M 50 6
+                C 74 6, 92 42, 92 78
+                C 92 106, 75 126, 50 126
+                C 25 126, 8 106, 8 78
+                C 8 42, 26 6, 50 6
+                Z
+              "
+              fill={`url(#trueEggGrad-${skin.id})`}
               stroke={colors.line}
-              strokeWidth="3.5"
+              strokeWidth="3.2"
+              strokeLinejoin="round"
             />
 
-            {/* 특수 스킨 패턴 렌더링 */}
+            {/* 2. 이미지 2 스타일 우측 곡면 초승달 섀도우 (Inner 3D Volume) */}
+            <path
+              d="
+                M 50 6
+                C 74 6, 92 42, 92 78
+                C 92 106, 75 126, 50 126
+                C 68 126, 82 102, 82 78
+                C 82 46, 68 12, 50 6
+                Z
+              "
+              fill="url(#eggSideShadowGrad)"
+            />
+
+            {/* 3. 이미지 2 스타일 좌측 상단 초승달 하이라이트 (Crescent Highlight) */}
+            <path
+              d="
+                M 42 12
+                C 30 18, 17 38, 17 62
+                C 17 68, 20 72, 24 66
+                C 27 50, 36 28, 46 18
+                C 47 16, 45 12, 42 12
+                Z
+              "
+              fill="url(#eggHighlightGrad)"
+            />
+
+            {/* 4. 특수 스킨 패턴 오버레이 */}
             {colors.pattern === 'SPOTS' && (
-              <g fill={colors.line} opacity="0.4">
-                <circle cx="30" cy="45" r="3" />
-                <circle cx="42" cy="35" r="2.2" />
-                <circle cx="68" cy="50" r="3.5" />
-                <circle cx="75" cy="70" r="2.8" />
-                <circle cx="28" cy="85" r="3" />
-                <circle cx="58" cy="90" r="2.5" />
-                <circle cx="48" cy="55" r="1.8" />
+              <g fill={colors.line} opacity="0.38">
+                <ellipse cx="32" cy="52" rx="3.5" ry="4.5" transform="rotate(-15 32 52)" />
+                <ellipse cx="46" cy="38" rx="2.5" ry="3" transform="rotate(20 46 38)" />
+                <ellipse cx="68" cy="56" rx="4" ry="5" transform="rotate(10 68 56)" />
+                <ellipse cx="76" cy="80" rx="3.2" ry="4" transform="rotate(-25 76 80)" />
+                <ellipse cx="30" cy="95" rx="3" ry="3.5" />
+                <ellipse cx="58" cy="100" rx="2.8" ry="3.2" />
+                <ellipse cx="48" cy="68" rx="2" ry="2.5" />
               </g>
             )}
 
             {colors.pattern === 'CRACKS' && (
               <path
-                d="M 50 20 L 56 38 L 48 48 L 58 60 L 52 75 L 60 88"
+                d="M 50 22 L 57 42 L 47 54 L 60 68 L 52 86 L 62 102"
                 stroke="#15803d"
-                strokeWidth="2.5"
+                strokeWidth="2.8"
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity="0.6"
+                opacity="0.65"
               />
             )}
 
             {colors.pattern === 'CYBER_LINES' && (
-              <g stroke="#38bdf8" strokeWidth="1.8" fill="none" opacity="0.8">
-                <path d="M 25 50 L 40 50 L 50 40 L 75 40" />
-                <path d="M 30 75 L 45 75 L 55 85 L 70 85" />
-                <circle cx="40" cy="50" r="2" fill="#38bdf8" />
-                <circle cx="55" cy="85" r="2" fill="#38bdf8" />
+              <g stroke="#38bdf8" strokeWidth="2.0" fill="none" opacity="0.85">
+                <path d="M 26 56 L 42 56 L 52 44 L 78 44" />
+                <path d="M 30 84 L 46 84 L 56 96 L 72 96" />
+                <circle cx="42" cy="56" r="2.2" fill="#38bdf8" />
+                <circle cx="56" cy="96" r="2.2" fill="#38bdf8" />
               </g>
             )}
 
             {colors.pattern === 'FIRE_AURA' && (
-              <g fill="#f97316" opacity="0.45">
-                <circle cx="50" cy="18" r="5" />
-                <circle cx="24" cy="50" r="6" />
-                <circle cx="76" cy="50" r="6" />
-                <circle cx="34" cy="92" r="5" />
-                <circle cx="66" cy="92" r="5" />
+              <g fill="#f97316" opacity="0.4">
+                <circle cx="50" cy="20" r="5.5" />
+                <circle cx="22" cy="60" r="6.5" />
+                <circle cx="78" cy="60" r="6.5" />
+                <circle cx="34" cy="102" r="5.5" />
+                <circle cx="66" cy="102" r="5.5" />
               </g>
             )}
 
-            {/* 반짝반짝 눈망울 */}
-            <circle cx="37" cy="66" r="4.2" fill={colors.eyeColor} />
-            <circle cx="63" cy="66" r="4.2" fill={colors.eyeColor} />
-            <circle cx="35.5" cy="64.5" r="1.6" fill="#ffffff" />
-            <circle cx="61.5" cy="64.5" r="1.6" fill="#ffffff" />
-
-            {/* 볼터치 */}
-            <ellipse cx="28" cy="74" rx="4.5" ry="2.8" fill={colors.cheekColor} opacity="0.85" />
-            <ellipse cx="72" cy="74" rx="4.5" ry="2.8" fill={colors.cheekColor} opacity="0.85" />
-
-            {/* 입 */}
+            {/* 5. 앙증맞은 달걀 표정 (생동감 있는 눈 & 볼터치 & 미소) */}
+            <circle cx="38" cy="72" r="4.2" fill={colors.eyeColor} />
+            <circle cx="64" cy="72" r="4.2" fill={colors.eyeColor} />
+            {/* 눈 반짝임 */}
+            <circle cx="36.5" cy="70.5" r="1.6" fill="#ffffff" />
+            <circle cx="62.5" cy="70.5" r="1.6" fill="#ffffff" />
+            {/* 핑크 볼터치 */}
+            <ellipse cx="29" cy="80" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+            <ellipse cx="73" cy="80" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+            {/* 방긋 미소 */}
             <path
-              d="M 43 74 Q 50 80 57 74"
+              d="M 44 80 Q 51 86 58 80"
               stroke={colors.eyeColor}
               strokeWidth="2.8"
               fill="none"
               strokeLinecap="round"
             />
-
-            {/* 상단 맑은 유광 하이라이트 */}
-            <ellipse
-              cx="36"
-              cy="36"
-              rx="9"
-              ry="15"
-              fill="#ffffff"
-              opacity="0.75"
-              transform="rotate(-22 36 36)"
-            />
           </svg>
         </div>
 
-        {/* 짚풀과 나뭇가지로 아늑하게 엮인 감성적인 "계란 둥지" (Nest) */}
-        <div className="absolute bottom-4 z-20 w-56 h-28 pointer-events-none drop-shadow-xl">
-          <svg viewBox="0 0 200 100" className="w-full h-full">
-            {/* 둥지 밑바닥 어두운 그림자 */}
-            <ellipse cx="100" cy="78" rx="86" ry="18" fill="#451a03" opacity="0.4" />
+        {/* ======================================================== */}
+        {/* LAYER 3: 둥지 앞면 (Nest Front & Twigs) - z-index: 30     */}
+        {/* ======================================================== */}
+        {/* 
+          [참고 이미지 1 완벽 반영 둥지 앞면]
+          - 계란의 아래쪽 약 30%를 포근하게 감싸는 그릇 형태 앞면 림
+          - 두꺼운 짙은 갈색 아웃라인 (#432818)
+          - 따뜻하고 밝은 볏짚 황토색 몸체 (#e5b47a)
+          - 양옆과 바닥으로 삐죽삐죽 튀어나온 귀여운 나뭇가지 가지들
+          - 둥지 결 곡선 텍스처 스트로크
+        */}
+        <div className="absolute bottom-6 w-72 h-44 z-30 pointer-events-none drop-shadow-xl">
+          <svg viewBox="0 0 300 180" className="w-full h-full overflow-visible">
+            {/* 둥지 밑바닥 깊은 그림자 */}
+            <ellipse cx="150" cy="158" rx="105" ry="16" fill="#30190a" opacity="0.35" />
 
-            {/* 둥지 바깥쪽 굵은 나뭇가지 베이스 */}
-            <ellipse cx="100" cy="65" rx="84" ry="24" fill="#78350f" />
-            <ellipse cx="100" cy="62" rx="80" ry="21" fill="#92400e" />
+            {/* 둥지 앞면 그릇 본체 (외곽선 포함) */}
+            <path
+              d="
+                M 35 88
+                C 38 128, 70 162, 150 162
+                C 230 162, 262 128, 265 88
+                C 260 98, 230 108, 150 108
+                C 70 108, 40 98, 35 88
+                Z
+              "
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="8"
+              strokeLinejoin="round"
+            />
 
-            {/* 둥지 내부 안락한 짚풀 레이어 */}
-            <ellipse cx="100" cy="58" rx="72" ry="17" fill="#b45309" />
-            <ellipse cx="100" cy="54" rx="64" ry="14" fill="#d97706" />
+            {/* 둥지 앞면 입구 림 상단 자연스러운 곡면 굴곡 */}
+            <path
+              d="M 35 88 C 70 104, 110 108, 150 108 C 190 108, 230 104, 265 88"
+              fill="none"
+              stroke="#432818"
+              strokeWidth="8"
+              strokeLinecap="round"
+            />
 
-            {/* 엮인 지푸라기 텍스처 스트로크 */}
-            <g stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" opacity="0.9">
-              <path d="M 25 58 Q 50 75 90 70" />
-              <path d="M 60 70 Q 110 82 160 65" />
-              <path d="M 120 72 Q 155 76 182 56" />
-              <path d="M 35 50 Q 80 66 130 62" />
-              <path d="M 85 64 Q 135 68 175 48" />
-              <path d="M 18 52 Q 60 78 115 75" />
+            {/* 둥지 표면 볏짚/나뭇가지 텍스처 결 라인들 (이미지 1 스타일) */}
+            <g stroke="#9c6332" strokeWidth="3.2" strokeLinecap="round" fill="none">
+              <path d="M 52 108 C 85 125, 125 128, 160 126" />
+              <path d="M 175 126 C 205 124, 235 116, 250 106" />
+              <path d="M 68 128 C 105 142, 150 144, 195 138" />
+              <path d="M 120 148 C 145 150, 175 148, 205 142" />
+              <path d="M 90 148 C 108 152, 130 152, 148 150" />
             </g>
 
-            {/* 밝은 볏짚 하이라이트 */}
-            <g stroke="#fef08a" strokeWidth="1.8" strokeLinecap="round" opacity="0.8">
-              <path d="M 40 64 Q 85 76 145 68" />
-              <path d="M 75 73 Q 120 78 168 59" />
-              <path d="M 30 54 Q 70 70 110 66" />
+            {/* 밝은 짚풀 하이라이트 라인 */}
+            <g stroke="#fce4ba" strokeWidth="2.2" strokeLinecap="round" fill="none">
+              <path d="M 46 98 C 75 110, 115 114, 150 114" />
+              <path d="M 165 114 C 200 112, 230 106, 254 96" />
+              <path d="M 80 135 C 115 144, 155 145, 185 140" />
             </g>
 
-            {/* 둥지에 꽂힌 싱그러운 초록 나뭇잎 장식 */}
+            {/* 
+              [참고 이미지 1 핵심 디테일: 삐죽삐죽 튀어나온 나뭇가지 가지들 (Twigs)]
+            */}
+            {/* 좌측 튀어나온 가지 1 (상단) */}
             <path
-              d="M 160 55 C 172 45 186 52 184 62 C 176 66 166 62 160 55 Z"
-              fill="#22c55e"
-              stroke="#15803d"
-              strokeWidth="1.2"
+              d="M 40 85 C 25 78, 12 70, 6 68 C 15 78, 28 88, 38 95"
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="5"
+              strokeLinejoin="round"
             />
+            {/* 좌측 튀어나온 가지 2 (하단) */}
             <path
-              d="M 32 60 C 20 52 16 64 22 70 C 28 72 34 68 32 60 Z"
-              fill="#4ade80"
-              stroke="#16a34a"
-              strokeWidth="1.2"
+              d="M 42 122 C 26 124, 14 125, 8 126 C 18 132, 32 134, 48 132"
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="5"
+              strokeLinejoin="round"
             />
-            {/* 푹신한 하얀 깃털 장식 */}
+
+            {/* 우측 튀어나온 가지 1 (상단) */}
             <path
-              d="M 142 66 C 152 64 158 72 150 76 C 144 76 138 72 142 66 Z"
-              fill="#ffffff"
-              opacity="0.85"
+              d="M 260 88 C 272 80, 285 70, 292 65 C 285 78, 274 90, 262 98"
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="5"
+              strokeLinejoin="round"
+            />
+            {/* 우측 튀어나온 가지 2 (하단) */}
+            <path
+              d="M 258 120 C 274 124, 288 128, 294 130 C 282 135, 268 134, 252 130"
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="5"
+              strokeLinejoin="round"
+            />
+
+            {/* 바닥 쪽 튀어나온 가지 (하단 밑둥) */}
+            <path
+              d="M 125 160 C 110 166, 95 170, 88 172 C 102 174, 120 170, 136 164"
+              fill="#e7b87c"
+              stroke="#432818"
+              strokeWidth="5"
+              strokeLinejoin="round"
             />
           </svg>
         </div>
       </div>
 
-      {/* 둥지 아래 캐릭터 이름 및 보너스 뱃지 */}
-      <div className="flex flex-col items-center mt-1 text-center">
-        <div className="flex items-center gap-1.5 bg-amber-500/20 backdrop-blur-sm px-3.5 py-1 rounded-full border border-amber-300/40">
+      {/* 둥지 아래 캐릭터 정보 배지 */}
+      <div className="flex flex-col items-center -mt-2 text-center z-30">
+        <div className="flex items-center gap-1.5 bg-amber-500/20 backdrop-blur-sm px-3.5 py-1 rounded-full border border-amber-300/50">
           <Sparkles size={14} className="text-amber-500 animate-spin" />
-          <span className="font-black text-amber-900 text-sm tracking-tight">
+          <span className="font-black text-amber-950 text-sm tracking-tight">
             {skin.name}
           </span>
           {skin.hpBonus > 0 && (
@@ -212,10 +411,58 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, onEggC
             </span>
           )}
         </div>
-        <p className="text-xs text-sky-900/80 font-bold mt-1 max-w-[240px]">
+        <p className="text-xs text-amber-950/80 font-bold mt-1 max-w-[240px]">
           {skin.tagline}
         </p>
       </div>
+
+      {/* 커스텀 키프레임 스타일 (Wiggle, Hop, Tilt, Breathe) */}
+      <style>{`
+        @keyframes eggBreathe {
+          0%, 100% {
+            transform: translateY(0px) scale(1);
+          }
+          50% {
+            transform: translateY(-3px) scale(1.02);
+          }
+        }
+        .animate-egg-breathe {
+          animation: eggBreathe 2.4s ease-in-out infinite;
+        }
+
+        @keyframes eggWiggle {
+          0% { transform: rotate(0deg); }
+          20% { transform: rotate(-7deg) translateX(-2px); }
+          40% { transform: rotate(7deg) translateX(2px); }
+          60% { transform: rotate(-4deg) translateX(-1px); }
+          80% { transform: rotate(3deg) translateX(1px); }
+          100% { transform: rotate(0deg) translateX(0); }
+        }
+        .animate-egg-wiggle {
+          animation: eggWiggle 0.65s ease-in-out;
+        }
+
+        @keyframes eggHop {
+          0% { transform: translateY(0) scale(1, 1); }
+          30% { transform: translateY(-16px) scale(0.96, 1.05); }
+          55% { transform: translateY(0) scale(1.06, 0.94); }
+          75% { transform: translateY(-4px) scale(0.98, 1.02); }
+          100% { transform: translateY(0) scale(1, 1); }
+        }
+        .animate-egg-hop {
+          animation: eggHop 0.55s ease-in-out;
+        }
+
+        @keyframes eggTilt {
+          0% { transform: rotate(0deg); }
+          30% { transform: rotate(8deg) translateY(-2px); }
+          70% { transform: rotate(8deg) translateY(-2px); }
+          100% { transform: rotate(0deg) translateY(0); }
+        }
+        .animate-egg-tilt {
+          animation: eggTilt 0.8s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };
