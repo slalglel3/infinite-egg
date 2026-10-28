@@ -156,6 +156,8 @@ export class GameEngine {
     this.gameOverReason = null;
     this.screenShake = 0;
     this.ambientParticleTimer = 0;
+    this.egg.devilStage = 0;
+    this.egg.trailTimer = 0;
   }
 
   // ==========================================
@@ -175,6 +177,27 @@ export class GameEngine {
     this.egg.jumpArcOffset = 0;
 
     sound.playJump();
+
+    // [사이버 메탈란] 점프 시 등 뒤에서 나사가 우수수 떨어져 데굴데굴 구르는 물리 연출!
+    if (this.currentSkin.id === 'metal_egg' || this.currentSkin.specialType === 'METAL') {
+      const dirSign = this.egg.direction === 'RIGHT_DOWN' ? -1 : 1;
+      for (let i = 0; i < 6; i++) {
+        this.particles.push({
+          x: this.egg.x + (Math.random() - 0.5) * 10,
+          y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 4,
+          vx: dirSign * (35 + Math.random() * 65) + (Math.random() - 0.5) * 35,
+          vy: -45 - Math.random() * 65,
+          radius: 3.2,
+          color: '#94a3b8',
+          alpha: 1,
+          life: 0,
+          maxLife: 1.4,
+          rotation: Math.random() * Math.PI * 2,
+          vRot: (Math.random() - 0.5) * 16,
+          type: 'BOLT',
+        });
+      }
+    }
 
     let targetGapSeg: SlopeSegment | null = null;
     if (currentSeg && currentSeg.type === 'GAP') {
@@ -365,6 +388,88 @@ export class GameEngine {
         maxLife: 0.35,
         type: 'DUST',
       });
+    }
+
+    // [신규 특수 계란 4종] 고유 주행 트레일 & 상시 오라
+    this.egg.trailTimer = (this.egg.trailTimer || 0) + dt;
+    if (this.egg.trailTimer >= 0.05) {
+      this.egg.trailTimer = 0;
+      const special = this.currentSkin.specialType;
+
+      if (special === 'POISON') {
+        // [치명적인 맹독란] 몸 주변 피어오르는 독구름 + 주행 트레일
+        this.particles.push({
+          x: this.egg.x - dx * 0.6 + (Math.random() - 0.5) * 12,
+          y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 2,
+          vx: -dx * 0.2 + (Math.random() - 0.5) * 15,
+          vy: -20 - Math.random() * 25,
+          radius: 4.5 + Math.random() * 3.5,
+          color: Math.random() < 0.6 ? '#22c55e' : '#10b981',
+          alpha: 0.75,
+          life: 0,
+          maxLife: 0.65,
+          type: 'POISON_SMOKE',
+        });
+        if (Math.random() < 0.4) {
+          this.particles.push({
+            x: this.egg.x + (Math.random() - 0.5) * 20,
+            y: this.egg.y + (Math.random() - 0.5) * 16,
+            vx: (Math.random() - 0.5) * 10,
+            vy: -15 - Math.random() * 15,
+            radius: 3 + Math.random() * 2.5,
+            color: '#86efac',
+            alpha: 0.5,
+            life: 0,
+            maxLife: 0.5,
+            type: 'POISON_SMOKE',
+          });
+        }
+      } else if (special === 'ANGEL') {
+        // [순백의 천사란] 찬란한 황금빛/순백의 성광 트레일
+        this.particles.push({
+          x: this.egg.x - dx * 0.5 + (Math.random() - 0.5) * 14,
+          y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 2,
+          vx: -dx * 0.2 + (Math.random() - 0.5) * 20,
+          vy: -15 - Math.random() * 20,
+          radius: 3 + Math.random() * 3,
+          color: Math.random() < 0.6 ? '#fde047' : '#ffffff',
+          alpha: 0.9,
+          life: 0,
+          maxLife: 0.45,
+          type: 'HOLY_GLOW',
+        });
+      } else if (special === 'DEVIL') {
+        // [심연의 악마란] 검붉은 심연의 어둠 트레일
+        this.particles.push({
+          x: this.egg.x - dx * 0.5 + (Math.random() - 0.5) * 12,
+          y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 2,
+          vx: -dx * 0.2 + (Math.random() - 0.5) * 15,
+          vy: -15 - Math.random() * 20,
+          radius: 4 + Math.random() * 3,
+          color: Math.random() < 0.6 ? '#7f1d1d' : '#1e1b4b',
+          alpha: 0.75,
+          life: 0,
+          maxLife: 0.55,
+          type: 'DARK_SMOKE',
+        });
+      }
+    }
+
+    // [심연의 악마란] 실시간 거리별 진화 판정 (100m: 뿔 각성, 200m: 박쥐 날개 각성)
+    if (this.currentSkin.specialType === 'DEVIL') {
+      const meters = this.stats.distanceMeters;
+      const stage = this.egg.devilStage || 0;
+      if (meters >= 200 && stage < 2) {
+        this.egg.devilStage = 2;
+        sound.playImpact(8);
+        this.spawnTextParticle(this.egg.x, this.egg.y - 32, 'DEVIL WINGS AWAKENED!', '#ef4444');
+        this.spawnEvolutionBursts(this.egg.x, this.egg.y, '#dc2626');
+      } else if (meters >= 100 && stage < 1) {
+        this.egg.devilStage = 1;
+        sound.playImpact(6);
+        this.spawnTextParticle(this.egg.x, this.egg.y - 32, 'DEVIL HORNS AWAKENED!', '#f87171');
+        this.spawnEvolutionBursts(this.egg.x, this.egg.y, '#991b1b');
+      }
     }
 
     // [피드백 7 해결] 반창고 먹자마자 egg.hp와 stats.hp를 실시간으로 즉시 동기화!
@@ -752,6 +857,18 @@ export class GameEngine {
       }
       if (p.type === 'SHELL' || p.type === 'YOLK' || p.type === 'CHUNK') {
         p.vy += (p.type === 'CHUNK' ? 750 : 480) * dt;
+      } else if (p.type === 'BOLT') {
+        p.vy += 620 * dt;
+        p.vx *= 0.98;
+      } else if (p.type === 'POISON_SMOKE') {
+        p.radius += dt * 8;
+        p.vy -= dt * 10;
+      } else if (p.type === 'HOLY_GLOW') {
+        p.vx *= 0.94;
+        p.vy *= 0.94;
+      } else if (p.type === 'DARK_SMOKE') {
+        p.radius += dt * 7;
+        p.vy -= dt * 8;
       }
     }
   }
@@ -770,6 +887,26 @@ export class GameEngine {
       type: 'TEXT',
       text,
     });
+  }
+
+  // 특수 계란 진화 시 화려한 폭발 파티클 분출
+  private spawnEvolutionBursts(x: number, y: number, color: string): void {
+    for (let i = 0; i < 18; i++) {
+      const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.4;
+      const spd = 80 + Math.random() * 120;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * spd,
+        vy: Math.sin(angle) * spd - 30,
+        radius: 3.5 + Math.random() * 4,
+        color,
+        alpha: 1,
+        life: 0,
+        maxLife: 0.9,
+        type: 'SPARK',
+      });
+    }
   }
 
   // ==========================================
@@ -1063,16 +1200,134 @@ export class GameEngine {
     ctx.fill();
   }
 
-  // 아스팔트 도로 렌더링
+  // 아스팔트 도로 렌더링 (방향 전환 코너가 완전히 하나로 매끄럽게 융합되는 연속 폴리라인 체인 방식)
   private drawAsphaltRoads(ctx: CanvasRenderingContext2D): void {
-    ctx.lineCap = 'butt';
-    ctx.lineJoin = 'miter';
+    // 1. 세그먼트들을 연속된 도로 체인(Continuous Road Chains)으로 그룹화
+    interface RoadPoint {
+      x: number;
+      y: number;
+    }
+    type RoadChain = RoadPoint[];
 
+    const chains: RoadChain[] = [];
+    let currentChain: RoadChain | null = null;
+
+    for (let i = 0; i < this.segments.length; i++) {
+      const seg = this.segments[i];
+
+      // 카메라 컬링
+      const minX = Math.min(seg.startX, seg.endX) - 100;
+      const maxX = Math.max(seg.startX, seg.endX) + 100;
+      const minY = Math.min(seg.startY, seg.endY) - 100;
+      const maxY = Math.max(seg.startY, seg.endY) + 100;
+      const inView = !(
+        maxX < this.cameraX ||
+        minX > this.cameraX + this.screenWidth ||
+        maxY < this.cameraY ||
+        minY > this.cameraY + this.screenHeight
+      );
+
+      // TURN 세그먼트는 이전 세그먼트 끝점과 다음 세그먼트 시작점을 V자로 이어주는 피벗 꼭지점
+      if (seg.type === 'TURN') {
+        continue;
+      }
+
+      if (seg.isCollapsed) {
+        const dx = seg.endX - seg.startX;
+        const dy = seg.endY - seg.startY;
+        const p1 = { x: seg.startX + dx * 0.25, y: seg.startY + dy * 0.25 };
+        const p2 = { x: seg.startX + dx * 0.75, y: seg.startY + dy * 0.75 };
+
+        if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
+          if (currentChain && currentChain.length > 1) chains.push(currentChain);
+          currentChain = [{ x: seg.startX, y: seg.startY }];
+        }
+        currentChain.push(p1);
+        chains.push(currentChain);
+
+        // 붕괴 구간 건너편 착지면 새 체인 시작
+        currentChain = [p2, { x: seg.endX, y: seg.endY }];
+        continue;
+      }
+
+      if (seg.type === 'GAP') {
+        // 도약대까지 체인 연결 후 공중 낭떠러지이므로 체인 분리
+        if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
+          if (currentChain && currentChain.length > 1) chains.push(currentChain);
+          currentChain = [{ x: seg.startX, y: seg.startY }];
+        }
+        currentChain.push({ x: seg.endX, y: seg.endY });
+        chains.push(currentChain);
+        currentChain = null;
+        continue;
+      }
+
+      // 일반 STRAIGHT 세그먼트: 이전 점과 연속되면 이어서 연결, 끊기면 새 체인 시작
+      if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
+        if (currentChain && currentChain.length > 1) chains.push(currentChain);
+        currentChain = [{ x: seg.startX, y: seg.startY }];
+      }
+      currentChain.push({ x: seg.endX, y: seg.endY });
+    }
+
+    if (currentChain && currentChain.length > 1) {
+      chains.push(currentChain);
+    }
+
+    // 2. 단일 폴리라인 패스 그리기 헬퍼
+    const traceChain = (pts: RoadPoint[], offsetY: number = 0) => {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y + offsetY);
+      for (let j = 1; j < pts.length; j++) {
+        ctx.lineTo(pts[j].x, pts[j].y + offsetY);
+      }
+    };
+
+    // 3. 일체형 도로 레이어 렌더링 (코너가 V자로 매끄럽게 융합)
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // A. 하단 3D 도로 그림자 (전체 체인 일괄)
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
+    for (const chain of chains) {
+      traceChain(chain, 8);
+      ctx.stroke();
+    }
+
+    // B. 도로 양옆 레이싱 연석 (전체 체인 일괄)
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
+    for (const chain of chains) {
+      traceChain(chain, 0);
+      ctx.stroke();
+    }
+
+    // C. 다크 아스팔트 노면 (전체 체인 일괄)
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
+    for (const chain of chains) {
+      traceChain(chain, 0);
+      ctx.stroke();
+    }
+
+    // D. 중앙 노란색 점선 (전체 체인 일괄)
+    ctx.save();
+    ctx.setLineDash([12, 10]);
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 3.0;
+    for (const chain of chains) {
+      traceChain(chain, 0);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 4. 특수 도로 디테일 (붕괴 단면 암석 톱니 & 금 간 도로 균열선)
     for (const seg of this.segments) {
-      const minX = Math.min(seg.startX, seg.endX) - 80;
-      const maxX = Math.max(seg.startX, seg.endX) + 80;
-      const minY = Math.min(seg.startY, seg.endY) - 80;
-      const maxY = Math.max(seg.startY, seg.endY) + 80;
+      const minX = Math.min(seg.startX, seg.endX) - 60;
+      const maxX = Math.max(seg.startX, seg.endX) + 60;
+      const minY = Math.min(seg.startY, seg.endY) - 60;
+      const maxY = Math.max(seg.startY, seg.endY) + 60;
 
       if (
         maxX < this.cameraX ||
@@ -1083,159 +1338,30 @@ export class GameEngine {
         continue;
       }
 
-      // [피드백 1 반영] 방향 전환 코너 조인트 자연스러운 연결 (Smooth Corner Fillet Junction)
-      if (seg.type === 'TURN') {
-        const cx = seg.startX;
-        const cy = seg.startY;
-        const roadR = GAME_CONSTANTS.ROAD_WIDTH * 0.5;
-        const curbW = GAME_CONSTANTS.CURB_WIDTH;
-
-        // 1. 코너 하단 3D 그림자 원반
-        ctx.beginPath();
-        ctx.arc(cx, cy + 8, roadR + 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#0f172a';
-        ctx.fill();
-
-        // 2. 코너 외곽 레이싱 연석 원반
-        ctx.beginPath();
-        ctx.arc(cx, cy, roadR, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
-
-        // 3. 코너 내부 다크 아스팔트 노면 원반
-        ctx.beginPath();
-        ctx.arc(cx, cy, roadR - curbW, 0, Math.PI * 2);
-        ctx.fillStyle = '#1e293b';
-        ctx.fill();
-
-        // 4. 중앙 유도 노란색 호
-        ctx.beginPath();
-        ctx.arc(cx, cy, (roadR - curbW) * 0.45, 0, Math.PI * 2);
-        ctx.strokeStyle = '#facc15';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-
-        continue;
-      }
-
-      // [피드백 4 반영] 붕괴된 도로(isCollapsed)는 중앙이 무너져 내린 실제 점프 낭떠러지(GAP)로 렌더링!
+      // 붕괴된 도로 깨진 바위 톱니 단면
       if (seg.isCollapsed) {
         const dx = seg.endX - seg.startX;
         const dy = seg.endY - seg.startY;
-
-        // 1) 전반부 끊어진 진입 단면 (0% ~ 25%)
         const p1X = seg.startX + dx * 0.25;
         const p1Y = seg.startY + dy * 0.25;
-
-        // 그림자
-        ctx.beginPath();
-        ctx.moveTo(seg.startX, seg.startY + 8);
-        ctx.lineTo(p1X, p1Y + 8);
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
-        ctx.stroke();
-
-        // 연석
-        ctx.beginPath();
-        ctx.moveTo(seg.startX, seg.startY);
-        ctx.lineTo(p1X, p1Y);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
-        ctx.stroke();
-
-        // 아스팔트
-        ctx.beginPath();
-        ctx.moveTo(seg.startX, seg.startY);
-        ctx.lineTo(p1X, p1Y);
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
-        ctx.stroke();
-
-        // 붕괴된 깨진 바위 톱니 단면 1
-        ctx.fillStyle = '#020617';
-        ctx.beginPath();
-        ctx.arc(p1X, p1Y, 14, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 2) 후반부 끊어진 착지 단면 (75% ~ 100%)
         const p2X = seg.startX + dx * 0.75;
         const p2Y = seg.startY + dy * 0.75;
 
-        // 그림자
-        ctx.beginPath();
-        ctx.moveTo(p2X, p2Y + 8);
-        ctx.lineTo(seg.endX, seg.endY + 8);
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
-        ctx.stroke();
-
-        // 연석
-        ctx.beginPath();
-        ctx.moveTo(p2X, p2Y);
-        ctx.lineTo(seg.endX, seg.endY);
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
-        ctx.stroke();
-
-        // 아스팔트
-        ctx.beginPath();
-        ctx.moveTo(p2X, p2Y);
-        ctx.lineTo(seg.endX, seg.endY);
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
-        ctx.stroke();
-
-        // 붕괴된 깨진 바위 톱니 단면 2
         ctx.fillStyle = '#020617';
         ctx.beginPath();
+        ctx.arc(p1X, p1Y, 14, 0, Math.PI * 2);
         ctx.arc(p2X, p2Y, 14, 0, Math.PI * 2);
         ctx.fill();
-
         continue;
       }
 
-      // 도로 하단 3D 그림자
-      ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY + 8);
-      ctx.lineTo(seg.endX, seg.endY + 8);
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
-      ctx.stroke();
-
-      // 도로 양옆 레이싱 연석
-      ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY);
-      ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
-      ctx.stroke();
-
-      // 다크 아스팔트 노면
-      ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY);
-      ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
-      ctx.stroke();
-
-      // 중앙 노란색 점선
-      ctx.save();
-      ctx.setLineDash([12, 10]);
-      ctx.beginPath();
-      ctx.moveTo(seg.startX, seg.startY);
-      ctx.lineTo(seg.endX, seg.endY);
-      ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 3.0;
-      ctx.stroke();
-      ctx.restore();
-
-      // [피드백 4 & 11 반영] 금 간 길 (Cracked Road) - 선명한 균열 및 위험 경고 비주얼
+      // 금 간 길 선명한 균열선
       if (seg.isCracked && !seg.isCollapsed) {
         ctx.save();
         const midX = (seg.startX + seg.endX) * 0.5;
         const midY = (seg.startY + seg.endY) * 0.5;
 
-        // 1. 도로를 가로지르는 굵고 선명한 위험 크랙 라인 (검정 균열선)
+        // 굵고 선명한 위험 크랙 라인
         ctx.strokeStyle = '#020617';
         ctx.lineWidth = 4.0;
         ctx.lineCap = 'round';
@@ -1246,7 +1372,7 @@ export class GameEngine {
         ctx.lineTo(midX + 22, midY + 12);
         ctx.stroke();
 
-        // 2. 균열 경계 하이라이트선 (암석 파편이 깨져 돋보이게)
+        // 암석 하이라이트선
         ctx.strokeStyle = '#e2e8f0';
         ctx.lineWidth = 1.6;
         ctx.beginPath();
@@ -1256,26 +1382,13 @@ export class GameEngine {
         ctx.lineTo(midX + 22, midY + 14);
         ctx.stroke();
 
-        // 3. 보조 균열 가지선
-        ctx.strokeStyle = '#020617';
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        ctx.moveTo(midX - 8, midY + 4);
-        ctx.lineTo(midX - 14, midY + 14);
-        ctx.moveTo(midX + 6, midY - 6);
-        ctx.lineTo(midX + 16, midY - 14);
-        ctx.stroke();
-
-        // 4. 위험 주의 경고 노란색 마름모 인디케이터
+        // 경고 인디케이터
         ctx.fillStyle = '#facc15';
         ctx.beginPath();
         ctx.arc(midX, midY, 4, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.restore();
       }
-
-      // [피드백 8 반영] 끊어진 길(GAP) 끝자락의 인위적인 '!' 경고 마커 제거! 순수 낭떠러지 단면을 눈으로 보고 점프 도약!
     }
   }
 
@@ -1351,6 +1464,62 @@ export class GameEngine {
         ctx.strokeStyle = '#b45309';
         ctx.lineWidth = 1;
         ctx.stroke();
+      } else if (p.type === 'BOLT') {
+        // [사이버 메탈란] 굴러다니는 십자 나사 볼트 렌더링
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation || 0);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(-p.radius * 0.7, 0);
+        ctx.lineTo(p.radius * 0.7, 0);
+        ctx.moveTo(0, -p.radius * 0.7);
+        ctx.lineTo(0, p.radius * 0.7);
+        ctx.stroke();
+      } else if (p.type === 'POISON_SMOKE') {
+        // [치명적인 맹독란] 맹독성 초록 구름
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+        grad.addColorStop(0, p.color);
+        grad.addColorStop(0.7, 'rgba(34, 197, 94, 0.4)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.type === 'HOLY_GLOW') {
+        // [순백의 천사란] 성스러운 황금/순백 십자 반짝임
+        ctx.translate(p.x, p.y);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, p.radius * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-p.radius * 1.4, 0);
+        ctx.lineTo(p.radius * 1.4, 0);
+        ctx.moveTo(0, -p.radius * 1.4);
+        ctx.lineTo(0, p.radius * 1.4);
+        ctx.stroke();
+      } else if (p.type === 'DARK_SMOKE') {
+        // [심연의 악마란] 검붉은 심연의 연기
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
+        grad.addColorStop(0, p.color);
+        grad.addColorStop(0.6, 'rgba(127, 29, 29, 0.5)');
+        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);

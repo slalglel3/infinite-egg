@@ -278,23 +278,125 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
               </g>
             )}
 
-            {/* 5. 앙증맞은 달걀 표정 (생동감 있는 눈 & 볼터치 & 미소) */}
-            <circle cx="38" cy="62" r="4.2" fill={colors.eyeColor} />
-            <circle cx="64" cy="62" r="4.2" fill={colors.eyeColor} />
-            {/* 눈 반짝임 */}
-            <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
-            <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
-            {/* 핑크 볼터치 */}
-            <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
-            <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
-            {/* 방긋 미소 */}
-            <path
-              d="M 44 70 Q 51 76 58 70"
-              stroke={colors.eyeColor}
-              strokeWidth="2.8"
-              fill="none"
-              strokeLinecap="round"
-            />
+            {/* [사이버 메탈란] 둘레를 따라 박힌 8개의 정밀 메탈릭 볼트 나사 */}
+            {colors.pattern === 'METAL_BOLTS' && (
+              <g fill="#94a3b8" stroke="#334155" strokeWidth="1.2">
+                {[
+                  { cx: 32, cy: 22 },
+                  { cx: 68, cy: 22 },
+                  { cx: 16, cy: 46 },
+                  { cx: 84, cy: 46 },
+                  { cx: 15, cy: 74 },
+                  { cx: 85, cy: 74 },
+                  { cx: 30, cy: 98 },
+                  { cx: 70, cy: 98 },
+                ].map((b, i) => (
+                  <g key={i}>
+                    <circle cx={b.cx} cy={b.cy} r="3.8" />
+                    <line x1={b.cx - 2.2} y1={b.cy} x2={b.cx + 2.2} y2={b.cy} stroke="#1e293b" strokeWidth="1" />
+                    <line x1={b.cx} y1={b.cy - 2.2} x2={b.cx} y2={b.cy + 2.2} stroke="#1e293b" strokeWidth="1" />
+                  </g>
+                ))}
+              </g>
+            )}
+
+            {/* [치명적인 맹독란] 몸체에 맺힌 4개의 보글보글 독성 기포 방울 */}
+            {colors.pattern === 'POISON_BUBBLES' && (
+              <g>
+                {[
+                  { cx: 32, cy: 36, r: 5.5 },
+                  { cx: 72, cy: 48, r: 6.5 },
+                  { cx: 28, cy: 76, r: 5.8 },
+                  { cx: 64, cy: 88, r: 4.8 },
+                ].map((b, i) => (
+                  <g key={i}>
+                    <circle cx={b.cx} cy={b.cy} r={b.r} fill="#22c55e" opacity="0.75" stroke="#bbf7d0" strokeWidth="1.2" />
+                    <circle cx={b.cx - b.r * 0.3} cy={b.cy - b.r * 0.3} r={b.r * 0.28} fill="#ffffff" />
+                  </g>
+                ))}
+              </g>
+            )}
+
+            {/* [순백의 천사란] 머리 위 황금 헤일로 & 몸을 포근히 감싼 깃털 날개 */}
+            {colors.pattern === 'ANGEL_WINGS' && (
+              <g>
+                {/* 머리 위 황금 헤일로 (천사 링) */}
+                <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#facc15" strokeWidth="3.2" />
+                <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#fef08a" strokeWidth="1.6" opacity="0.8" />
+
+                {/* 포근히 감싼 좌/우 순백 깃털 날개 */}
+                <path
+                  d="M 12 50 C 26 56, 38 68, 38 88 C 22 92, 10 75, 12 50 Z"
+                  fill="#ffffff"
+                  stroke="#fde047"
+                  strokeWidth="1.6"
+                />
+                <path
+                  d="M 88 50 C 74 56, 62 68, 62 88 C 78 92, 90 75, 88 50 Z"
+                  fill="#ffffff"
+                  stroke="#fde047"
+                  strokeWidth="1.6"
+                />
+              </g>
+            )}
+
+            {/* [심연의 악마란] 머리 위 악마 뿔 & 접힌 박쥐 날개 */}
+            {colors.pattern === 'DEVIL' && (
+              <g>
+                {/* 악마 뿔 2개 */}
+                <path d="M 32 20 Q 14 6 18 -6 Q 28 6 38 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
+                <path d="M 68 20 Q 86 6 82 -6 Q 72 6 62 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
+
+                {/* 접힌 박쥐 날개 실루엣 */}
+                <path d="M 14 52 L 35 84 L 16 78 Z" fill="#450a0a" stroke="#dc2626" strokeWidth="1.5" />
+                <path d="M 86 52 L 65 84 L 84 78 Z" fill="#450a0a" stroke="#dc2626" strokeWidth="1.5" />
+              </g>
+            )}
+
+            {/* 5. 달걀 표정 (특수 계란별 맞춤 얼굴 및 기본 표정) */}
+            {skin.specialType === 'METAL' ? (
+              <g>
+                {/* 메탈란: 왼쪽 렌즈 & 오른쪽 사이버네틱 네온 그린 LED 렌즈 */}
+                <circle cx="38" cy="62" r="3.2" fill="#334155" />
+                <circle cx="64" cy="62" r="8" fill="rgba(74, 222, 128, 0.35)" />
+                <circle cx="64" cy="62" r="5" fill="#22c55e" stroke="#15803d" strokeWidth="1.8" />
+                <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
+                <line x1="44" y1="72" x2="56" y2="72" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
+              </g>
+            ) : skin.specialType === 'DEVIL' ? (
+              <g>
+                {/* 악마란: 붉은 눈 & 악마 이빨 미소 */}
+                <circle cx="38" cy="62" r="4.2" fill="#ef4444" />
+                <circle cx="64" cy="62" r="4.2" fill="#ef4444" />
+                <circle cx="36.5" cy="60.5" r="1.6" fill="#fca5a5" />
+                <circle cx="62.5" cy="60.5" r="1.6" fill="#fca5a5" />
+                <ellipse cx="29" cy="70" rx="4.5" ry="2.5" fill="#7f1d1d" opacity="0.6" />
+                <ellipse cx="73" cy="70" rx="4.5" ry="2.5" fill="#7f1d1d" opacity="0.6" />
+                {/* 입과 송곳니 */}
+                <path d="M 44 68 Q 51 77 58 68 Z" fill="#020617" />
+                <polygon points="45,68 47,72 49,68" fill="#ffffff" />
+                <polygon points="53,68 55,72 57,68" fill="#ffffff" />
+              </g>
+            ) : (
+              <g>
+                <circle cx="38" cy="62" r="4.2" fill={colors.eyeColor} />
+                <circle cx="64" cy="62" r="4.2" fill={colors.eyeColor} />
+                {/* 눈 반짝임 */}
+                <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
+                <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
+                {/* 핑크 볼터치 */}
+                <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+                <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+                {/* 방긋 미소 */}
+                <path
+                  d="M 44 70 Q 51 76 58 70"
+                  stroke={colors.eyeColor}
+                  strokeWidth="2.8"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
 
             {/* 6. 착용 중인 4대 부위 의상 코스튬 레이어 (고유 의상 계란은 번들 세트 고정 렌더링) */}
             <CostumeSvgLayers

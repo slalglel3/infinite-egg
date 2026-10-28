@@ -88,13 +88,13 @@ export class EggRenderer {
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
-    // 스킨 고유 패턴 (점박이, 에메랄드 균열, 사이버 라인 등)
-    this.drawSkinPatterns(ctx, rx, ry);
+    // 스킨 고유 패턴 (점박이, 에메랄드 균열, 사이버 라인, 4대 특수 계란 등)
+    this.drawSkinPatterns(ctx, rx, ry, egg);
 
     // 실시간 금(Crack) 렌더링
     this.drawCracks(ctx, egg.hp, egg.maxHp);
 
-    // 달걀 표정 그리기 (홈 화면과 100% 동일한 눈/볼터치/미소)
+    // 달걀 표정 그리기 (홈 화면과 100% 동일한 눈/볼터치/미소 및 특수 계란 얼굴)
     this.drawFace(ctx, egg, rx, ry);
 
     // [피드백 8 & 9 반영] 의상 코스튬 렌더링 (모자, 상의, 하의, 손)
@@ -369,46 +369,144 @@ export class EggRenderer {
       ctx.quadraticCurveTo(0, eyeY + 4, 4, eyeY + 7);
       ctx.stroke();
     } else {
-      // 😊 사랑스럽고 귀여운 평소 표정 (홈 화면과 100% 동일한 눈 & 반짝임 & 핑크 볼터치 & 방긋 미소)
-      const colors = this.currentSkin.colors;
+      // 평소 표정 (특수 계란별 고유 얼굴 또는 귀여운 기본 표정)
+      const special = this.currentSkin.specialType;
 
-      ctx.fillStyle = colors.eyeColor;
-      ctx.beginPath();
-      ctx.arc(-eyeDist, eyeY, 3.2, 0, Math.PI * 2);
-      ctx.arc(eyeDist, eyeY, 3.2, 0, Math.PI * 2);
-      ctx.fill();
+      if (special === 'METAL') {
+        // [사이버 메탈란] 오른쪽 네온 그린 LED 사이버 센서 눈 & 메카닉 입
+        // 1. 왼쪽 눈 (일반 메탈릭 렌즈)
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.arc(-eyeDist, eyeY, 2.8, 0, Math.PI * 2);
+        ctx.fill();
 
-      // 초롱초롱 눈 반짝임
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(-eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
-      ctx.arc(eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
-      ctx.fill();
+        // 2. 오른쪽 눈 (사이버네틱 네온 그린 LED 렌즈 - 외곽 링 + 눈부심)
+        ctx.save();
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.35)';
+        ctx.beginPath();
+        ctx.arc(eyeDist, eyeY, 6.5, 0, Math.PI * 2);
+        ctx.fill();
 
-      // 핑크 볼터치
-      ctx.fillStyle = colors.cheekColor;
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath();
-      ctx.ellipse(-eyeDist - 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
-      ctx.ellipse(eyeDist + 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = '#15803d';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(eyeDist, eyeY, 4.2, 0, Math.PI * 2);
+        ctx.stroke();
 
-      // 방긋 미소
-      ctx.strokeStyle = colors.eyeColor;
-      ctx.lineWidth = 1.8;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(-3, eyeY + 4.5);
-      ctx.quadraticCurveTo(0, eyeY + 7.5, 3, eyeY + 4.5);
-      ctx.stroke();
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(eyeDist, eyeY, 2.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeDist - 0.8, eyeY - 0.8, 1.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 메탈 볼터치
+        ctx.fillStyle = '#cbd5e1';
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.ellipse(-eyeDist - 3, eyeY + 5, 3.2, 1.8, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeDist + 3, eyeY + 5, 3.2, 1.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // 사이버네틱 직선 슬릿 입
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-3, eyeY + 6);
+        ctx.lineTo(3, eyeY + 6);
+        ctx.stroke();
+      } else if (special === 'DEVIL') {
+        // [심연의 악마란] 붉은 눈과 날카로운 악마 송곳니 미소
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(-eyeDist, eyeY, 3.4, 0, Math.PI * 2);
+        ctx.arc(eyeDist, eyeY, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 붉은 눈 안쪽 하이라이트
+        ctx.fillStyle = '#fca5a5';
+        ctx.beginPath();
+        ctx.arc(-eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
+        ctx.arc(eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 짙은 검붉은 볼터치
+        ctx.fillStyle = '#7f1d1d';
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.ellipse(-eyeDist - 4, eyeY + 5, 3.5, 2.0, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeDist + 4, eyeY + 5, 3.5, 2.0, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // 악마 이빨 미소 (벌린 입 + 상단 2개 뾰족한 송곳니)
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.moveTo(-4, eyeY + 4.5);
+        ctx.quadraticCurveTo(0, eyeY + 9, 4, eyeY + 4.5);
+        ctx.closePath();
+        ctx.fill();
+
+        // 하얀 송곳니 2개
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-3, eyeY + 4.5);
+        ctx.lineTo(-1.8, eyeY + 7);
+        ctx.lineTo(-0.8, eyeY + 4.5);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(0.8, eyeY + 4.5);
+        ctx.lineTo(1.8, eyeY + 7);
+        ctx.lineTo(3, eyeY + 4.5);
+        ctx.fill();
+      } else {
+        // 😊 사랑스럽고 귀여운 평소 표정 (홈 화면과 100% 동일한 눈 & 반짝임 & 핑크 볼터치 & 방긋 미소)
+        const colors = this.currentSkin.colors;
+
+        ctx.fillStyle = colors.eyeColor;
+        ctx.beginPath();
+        ctx.arc(-eyeDist, eyeY, 3.2, 0, Math.PI * 2);
+        ctx.arc(eyeDist, eyeY, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 초롱초롱 눈 반짝임
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
+        ctx.arc(eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 핑크 볼터치
+        ctx.fillStyle = colors.cheekColor;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.ellipse(-eyeDist - 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeDist + 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // 방긋 미소
+        ctx.strokeStyle = colors.eyeColor;
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-3, eyeY + 4.5);
+        ctx.quadraticCurveTo(0, eyeY + 7.5, 3, eyeY + 4.5);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
   }
 
   // 스킨별 고유 패턴 렌더링
-  private drawSkinPatterns(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
+  private drawSkinPatterns(ctx: CanvasRenderingContext2D, rx: number, ry: number, egg: Egg): void {
     const pattern = this.currentSkin.colors.pattern;
     if (!pattern || pattern === 'NONE') return;
 
@@ -449,6 +547,215 @@ export class EggRenderer {
       ctx.arc(-rx * 0.6, 0, 5, 0, Math.PI * 2);
       ctx.arc(rx * 0.6, 0, 5, 0, Math.PI * 2);
       ctx.fill();
+    } else if (pattern === 'METAL_BOLTS') {
+      // [사이버 메탈란] 둘레를 따라 균일하게 박힌 8개의 정밀 메탈릭 볼트 나사
+      const bolts = [
+        { x: -rx * 0.45, y: -ry * 0.72 },
+        { x: rx * 0.45, y: -ry * 0.72 },
+        { x: -rx * 0.82, y: -ry * 0.22 },
+        { x: rx * 0.82, y: -ry * 0.22 },
+        { x: -rx * 0.84, y: ry * 0.32 },
+        { x: rx * 0.84, y: ry * 0.32 },
+        { x: -rx * 0.48, y: ry * 0.76 },
+        { x: rx * 0.48, y: ry * 0.76 },
+      ];
+
+      for (const b of bolts) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // 십자(+) 나사 홈
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(b.x - 1.8, b.y);
+        ctx.lineTo(b.x + 1.8, b.y);
+        ctx.moveTo(b.x, b.y - 1.8);
+        ctx.lineTo(b.x, b.y + 1.8);
+        ctx.stroke();
+      }
+    } else if (pattern === 'POISON_BUBBLES') {
+      // [치명적인 맹독란] 몸체에 맺힌 4개의 보글보글 독성 기포 방울
+      const bubbles = [
+        { x: -rx * 0.38, y: -ry * 0.45, r: 4.2 },
+        { x: rx * 0.55, y: -ry * 0.12, r: 5.5 },
+        { x: -rx * 0.46, y: ry * 0.42, r: 4.8 },
+        { x: rx * 0.32, y: ry * 0.68, r: 3.6 },
+      ];
+
+      for (const b of bubbles) {
+        const bGrad = ctx.createRadialGradient(b.x - 1, b.y - 1, 1, b.x, b.y, b.r);
+        bGrad.addColorStop(0, '#86efac');
+        bGrad.addColorStop(0.7, '#22c55e');
+        bGrad.addColorStop(1, '#15803d');
+        ctx.fillStyle = bGrad;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#bbf7d0';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+
+        // 기포 광택
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+    } else if (pattern === 'ANGEL_WINGS') {
+      // [순백의 천사란] 머리 위 황금 헤일로 + 접힘/펼쳐짐 날개
+      // 1. 머리 위 황금 헤일로 (천사 링)
+      ctx.save();
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 2.8;
+      ctx.beginPath();
+      ctx.ellipse(0, -ry * 1.18, rx * 0.55, 3.8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(254, 240, 138, 0.6)';
+      ctx.lineWidth = 4.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. 날개 렌더링 (점프 시 활짝 펼침, 평소엔 몸을 포근히 감쌈)
+      if (egg.state === 'JUMPING') {
+        // 활짝 펼쳐진 천사 날개 (Wings Spread)
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 1.5;
+
+        // 좌측 날개
+        ctx.beginPath();
+        ctx.moveTo(-rx * 0.6, -ry * 0.1);
+        ctx.bezierCurveTo(-rx * 1.5, -ry * 0.7, -rx * 1.7, -ry * 0.1, -rx * 1.5, ry * 0.3);
+        ctx.bezierCurveTo(-rx * 1.2, ry * 0.1, -rx * 0.9, ry * 0.2, -rx * 0.6, ry * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 우측 날개
+        ctx.beginPath();
+        ctx.moveTo(rx * 0.6, -ry * 0.1);
+        ctx.bezierCurveTo(rx * 1.5, -ry * 0.7, rx * 1.7, -ry * 0.1, rx * 1.5, ry * 0.3);
+        ctx.bezierCurveTo(rx * 1.2, ry * 0.1, rx * 0.9, ry * 0.2, rx * 0.6, ry * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // 접힌 천사 날개 (Wings Folded - 몸을 포근히 감쌈)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 1.4;
+
+        // 좌측 접힌 날개
+        ctx.beginPath();
+        ctx.moveTo(-rx * 0.85, -ry * 0.1);
+        ctx.quadraticCurveTo(-rx * 0.3, 0, -rx * 0.2, ry * 0.5);
+        ctx.quadraticCurveTo(-rx * 0.65, ry * 0.55, -rx * 0.82, ry * 0.3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 우측 접힌 날개
+        ctx.beginPath();
+        ctx.moveTo(rx * 0.85, -ry * 0.1);
+        ctx.quadraticCurveTo(rx * 0.3, 0, rx * 0.2, ry * 0.5);
+        ctx.quadraticCurveTo(rx * 0.65, ry * 0.55, rx * 0.82, ry * 0.3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (pattern === 'DEVIL') {
+      // [심연의 악마란] 실시간 진화 (stage 1: 악마 뿔, stage 2: 박쥐 날개)
+      const stage = egg.devilStage || 0;
+
+      // 1. 악마 뿔 (100m 이상: stage >= 1)
+      if (stage >= 1) {
+        ctx.save();
+        ctx.fillStyle = '#dc2626';
+        ctx.strokeStyle = '#7f1d1d';
+        ctx.lineWidth = 1.5;
+
+        // 좌측 뿔
+        ctx.beginPath();
+        ctx.moveTo(-rx * 0.45, -ry * 0.8);
+        ctx.quadraticCurveTo(-rx * 0.85, -ry * 1.25, -rx * 0.65, -ry * 1.35);
+        ctx.quadraticCurveTo(-rx * 0.35, -ry * 1.05, -rx * 0.25, -ry * 0.85);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 우측 뿔
+        ctx.beginPath();
+        ctx.moveTo(rx * 0.45, -ry * 0.8);
+        ctx.quadraticCurveTo(rx * 0.85, -ry * 1.25, rx * 0.65, -ry * 1.35);
+        ctx.quadraticCurveTo(rx * 0.35, -ry * 1.05, rx * 0.25, -ry * 0.85);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 2. 박쥐 날개 (200m 이상: stage >= 2)
+      if (stage >= 2) {
+        ctx.save();
+        ctx.fillStyle = '#7f1d1d';
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 1.5;
+
+        if (egg.state === 'JUMPING') {
+          // 펼쳐진 박쥐 날개
+          // 좌측 박쥐 날개
+          ctx.beginPath();
+          ctx.moveTo(-rx * 0.6, -ry * 0.1);
+          ctx.lineTo(-rx * 1.5, -ry * 0.6);
+          ctx.lineTo(-rx * 1.3, -ry * 0.1);
+          ctx.lineTo(-rx * 1.6, ry * 0.1);
+          ctx.lineTo(-rx * 1.1, ry * 0.2);
+          ctx.lineTo(-rx * 0.7, ry * 0.3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // 우측 박쥐 날개
+          ctx.beginPath();
+          ctx.moveTo(rx * 0.6, -ry * 0.1);
+          ctx.lineTo(rx * 1.5, -ry * 0.6);
+          ctx.lineTo(rx * 1.3, -ry * 0.1);
+          ctx.lineTo(rx * 1.6, ry * 0.1);
+          ctx.lineTo(rx * 1.1, ry * 0.2);
+          ctx.lineTo(rx * 0.7, ry * 0.3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          // 접힌 박쥐 날개 (몸 뒤쪽을 감싼 실루엣)
+          ctx.fillStyle = '#450a0a';
+          ctx.beginPath();
+          ctx.moveTo(-rx * 0.85, -ry * 0.05);
+          ctx.lineTo(-rx * 0.35, ry * 0.5);
+          ctx.lineTo(-rx * 0.8, ry * 0.4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(rx * 0.85, -ry * 0.05);
+          ctx.lineTo(rx * 0.35, ry * 0.5);
+          ctx.lineTo(rx * 0.8, ry * 0.4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
     ctx.restore();
   }

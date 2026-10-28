@@ -67,6 +67,9 @@ export interface Egg {
   squishY: number;
   flashDamage: boolean;
   crackLevel: number;      // 0(멀쩡) ~ 4(파괴 직전)
+  // 신규 계란 특수 상태
+  devilStage?: number;     // 0: 기본, 1: 100m 뿔, 2: 200m 날개
+  trailTimer?: number;     // 특수 트레일 생성 주기 타이머
 }
 
 export interface EggSplat {
@@ -95,7 +98,7 @@ export interface Particle {
   maxLife: number;
   rotation?: number;
   vRot?: number;
-  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK';
+  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK' | 'BOLT' | 'POISON_SMOKE' | 'HOLY_GLOW' | 'DARK_SMOKE';
   text?: string;
 }
 
@@ -150,8 +153,10 @@ export interface EggSkinColors {
   line: string;
   eyeColor: string;
   cheekColor: string;
-  pattern?: 'NONE' | 'SPOTS' | 'CRACKS' | 'CYBER_LINES' | 'GOLD_SHINE' | 'FIRE_AURA';
+  pattern?: 'NONE' | 'SPOTS' | 'CRACKS' | 'CYBER_LINES' | 'GOLD_SHINE' | 'FIRE_AURA' | 'METAL_BOLTS' | 'POISON_BUBBLES' | 'ANGEL_WINGS' | 'DEVIL';
 }
+
+export type SpecialEggType = 'NORMAL' | 'METAL' | 'POISON' | 'ANGEL' | 'DEVIL';
 
 export interface EggSkin {
   id: string;
@@ -159,6 +164,7 @@ export interface EggSkin {
   tagline: string;
   desc: string;
   rarity: EggRarity;
+  specialType?: SpecialEggType;
   unlocked: boolean;
   unlockCondition: string;
   unlockReq?: {
