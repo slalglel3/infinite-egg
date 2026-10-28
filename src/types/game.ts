@@ -95,7 +95,7 @@ export interface Particle {
   maxLife: number;
   rotation?: number;
   vRot?: number;
-  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT';
+  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK';
   text?: string;
 }
 
@@ -134,6 +134,7 @@ export interface CostumeItem {
   priceShells?: number;
   desc: string;
   iconText?: string;
+  requiredEggSkinId?: string; // [피드백 2] 독립 의상 계란 귀속 ID (해당 계란 보유 필수)
 }
 
 export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'ACHIEVEMENTS' | 'SHOP';

@@ -350,6 +350,15 @@ export function buyCostume(
     return { success: false, progress: current, message: '이미 보유 중인 의상입니다.' };
   }
 
+  // [피드백 2] 독립 의상 계란 전용 의상은 해당 계란을 획득해야만 해금 가능
+  if (item.requiredEggSkinId && !current.unlockedEggIds.includes(item.requiredEggSkinId)) {
+    return {
+      success: false,
+      progress: current,
+      message: '해당 독립 의상 계란을 부화기나 도감에서 먼저 획득해야 합니다.',
+    };
+  }
+
   if (currency === 'GOLD') {
     const price = item.priceGold || 999999;
     if (current.gold < price) {
@@ -397,4 +406,21 @@ export function resetAllProgress(): UserProgress {
   const fresh = getInitialProgress();
   saveUserProgress(fresh);
   return fresh;
+}
+
+// [피드백 7 구현] 각 메뉴별 최초 1회 튜토리얼 확인 여부
+const TUTORIAL_KEY_PREFIX = 'infinite_egg_tutorial_seen_';
+
+export function isTutorialSeen(tabKey: string): boolean {
+  try {
+    return localStorage.getItem(TUTORIAL_KEY_PREFIX + tabKey) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function markTutorialSeen(tabKey: string): void {
+  try {
+    localStorage.setItem(TUTORIAL_KEY_PREFIX + tabKey, 'true');
+  } catch {}
 }

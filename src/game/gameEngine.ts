@@ -525,23 +525,44 @@ export class GameEngine {
     }
   }
 
-  // [피드백 11 구현] 금 간 도로 붕괴 및 아래 길로 추락 낙하
+  // [피드백 11 & 피드백 4 구현] 금 간 도로 붕괴 및 아래 길로 추락 낙하
   private triggerCrackedRoadCollapse(): void {
     sound.playImpact(10);
-    this.screenShake = 16;
+    this.screenShake = 18;
 
-    // 도로 붕괴 흙돌 파편 대량 분출
-    for (let i = 0; i < 14; i++) {
+    // [피드백 4] 도로가 무너지면서 부서진 길 암석 파편들이 와르르 아래로 쏟아져 내리는 효과!
+    const rockColors = ['#1e293b', '#334155', '#475569', '#0f172a', '#ef4444'];
+    for (let i = 0; i < 16; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 140;
       this.particles.push({
-        x: this.egg.x + (Math.random() - 0.5) * 24,
-        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y,
-        vx: (Math.random() - 0.5) * 120,
-        vy: -30 - Math.random() * 80,
-        radius: 2 + Math.random() * 3.5,
-        color: '#475569',
-        alpha: 0.9,
+        x: this.egg.x + (Math.random() - 0.5) * 36,
+        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y + (Math.random() - 0.5) * 10,
+        vx: Math.cos(angle) * speed,
+        vy: -20 - Math.random() * 90,
+        radius: 3.5 + Math.random() * 5.0,
+        color: rockColors[Math.floor(Math.random() * rockColors.length)],
+        alpha: 1,
         life: 0,
-        maxLife: 0.6,
+        maxLife: 1.2 + Math.random() * 0.6,
+        rotation: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 14,
+        type: 'CHUNK',
+      });
+    }
+
+    // 미세 분진 파티클 분출
+    for (let i = 0; i < 10; i++) {
+      this.particles.push({
+        x: this.egg.x + (Math.random() - 0.5) * 30,
+        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y,
+        vx: (Math.random() - 0.5) * 90,
+        vy: -10 - Math.random() * 50,
+        radius: 2 + Math.random() * 3,
+        color: '#64748b',
+        alpha: 0.8,
+        life: 0,
+        maxLife: 0.8,
         type: 'DUST',
       });
     }
@@ -729,8 +750,8 @@ export class GameEngine {
       if (p.vRot) {
         p.rotation = (p.rotation || 0) + p.vRot * dt;
       }
-      if (p.type === 'SHELL' || p.type === 'YOLK') {
-        p.vy += 480 * dt;
+      if (p.type === 'SHELL' || p.type === 'YOLK' || p.type === 'CHUNK') {
+        p.vy += (p.type === 'CHUNK' ? 750 : 480) * dt;
       }
     }
   }
@@ -1062,8 +1083,114 @@ export class GameEngine {
         continue;
       }
 
-      // [피드백 8 반영] 인위적인 방향 전환 최적 마커('↷')를 완전히 제거하여 도로의 꺾임을 눈으로 보고 판단하도록 변경!
+      // [피드백 1 반영] 방향 전환 코너 조인트 자연스러운 연결 (Smooth Corner Fillet Junction)
       if (seg.type === 'TURN') {
+        const cx = seg.startX;
+        const cy = seg.startY;
+        const roadR = GAME_CONSTANTS.ROAD_WIDTH * 0.5;
+        const curbW = GAME_CONSTANTS.CURB_WIDTH;
+
+        // 1. 코너 하단 3D 그림자 원반
+        ctx.beginPath();
+        ctx.arc(cx, cy + 8, roadR + 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#0f172a';
+        ctx.fill();
+
+        // 2. 코너 외곽 레이싱 연석 원반
+        ctx.beginPath();
+        ctx.arc(cx, cy, roadR, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+
+        // 3. 코너 내부 다크 아스팔트 노면 원반
+        ctx.beginPath();
+        ctx.arc(cx, cy, roadR - curbW, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+
+        // 4. 중앙 유도 노란색 호
+        ctx.beginPath();
+        ctx.arc(cx, cy, (roadR - curbW) * 0.45, 0, Math.PI * 2);
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        continue;
+      }
+
+      // [피드백 4 반영] 붕괴된 도로(isCollapsed)는 중앙이 무너져 내린 실제 점프 낭떠러지(GAP)로 렌더링!
+      if (seg.isCollapsed) {
+        const dx = seg.endX - seg.startX;
+        const dy = seg.endY - seg.startY;
+
+        // 1) 전반부 끊어진 진입 단면 (0% ~ 25%)
+        const p1X = seg.startX + dx * 0.25;
+        const p1Y = seg.startY + dy * 0.25;
+
+        // 그림자
+        ctx.beginPath();
+        ctx.moveTo(seg.startX, seg.startY + 8);
+        ctx.lineTo(p1X, p1Y + 8);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
+        ctx.stroke();
+
+        // 연석
+        ctx.beginPath();
+        ctx.moveTo(seg.startX, seg.startY);
+        ctx.lineTo(p1X, p1Y);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
+        ctx.stroke();
+
+        // 아스팔트
+        ctx.beginPath();
+        ctx.moveTo(seg.startX, seg.startY);
+        ctx.lineTo(p1X, p1Y);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
+        ctx.stroke();
+
+        // 붕괴된 깨진 바위 톱니 단면 1
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.arc(p1X, p1Y, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2) 후반부 끊어진 착지 단면 (75% ~ 100%)
+        const p2X = seg.startX + dx * 0.75;
+        const p2Y = seg.startY + dy * 0.75;
+
+        // 그림자
+        ctx.beginPath();
+        ctx.moveTo(p2X, p2Y + 8);
+        ctx.lineTo(seg.endX, seg.endY + 8);
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
+        ctx.stroke();
+
+        // 연석
+        ctx.beginPath();
+        ctx.moveTo(p2X, p2Y);
+        ctx.lineTo(seg.endX, seg.endY);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
+        ctx.stroke();
+
+        // 아스팔트
+        ctx.beginPath();
+        ctx.moveTo(p2X, p2Y);
+        ctx.lineTo(seg.endX, seg.endY);
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
+        ctx.stroke();
+
+        // 붕괴된 깨진 바위 톱니 단면 2
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.arc(p2X, p2Y, 14, 0, Math.PI * 2);
+        ctx.fill();
+
         continue;
       }
 
@@ -1102,42 +1229,49 @@ export class GameEngine {
       ctx.stroke();
       ctx.restore();
 
-      // [피드백 11 반영] 금 간 길 (Cracked Road) 균열 선 및 붕괴 구멍 렌더링
-      if (seg.isCracked) {
+      // [피드백 4 & 11 반영] 금 간 길 (Cracked Road) - 선명한 균열 및 위험 경고 비주얼
+      if (seg.isCracked && !seg.isCollapsed) {
         ctx.save();
         const midX = (seg.startX + seg.endX) * 0.5;
         const midY = (seg.startY + seg.endY) * 0.5;
 
-        if (seg.isCollapsed) {
-          // 붕괴된 어두운 추락 구멍
-          ctx.beginPath();
-          ctx.ellipse(midX, midY, 15, 9, 0.4, 0, Math.PI * 2);
-          ctx.fillStyle = '#020617';
-          ctx.fill();
-          ctx.strokeStyle = '#475569';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        } else {
-          // 쩍쩍 갈라진 위험 균열 패턴
-          ctx.strokeStyle = '#090d16';
-          ctx.lineWidth = 2.4;
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(midX - 12, midY - 8);
-          ctx.lineTo(midX - 3, midY + 4);
-          ctx.lineTo(midX + 6, midY - 4);
-          ctx.lineTo(midX + 14, midY + 6);
-          ctx.stroke();
+        // 1. 도로를 가로지르는 굵고 선명한 위험 크랙 라인 (검정 균열선)
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 4.0;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(midX - 22, midY - 14);
+        ctx.lineTo(midX - 8, midY + 4);
+        ctx.lineTo(midX + 6, midY - 6);
+        ctx.lineTo(midX + 22, midY + 12);
+        ctx.stroke();
 
-          // 보조 균열 가지선
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.moveTo(midX - 3, midY + 4);
-          ctx.lineTo(midX - 7, midY + 10);
-          ctx.moveTo(midX + 6, midY - 4);
-          ctx.lineTo(midX + 11, midY - 9);
-          ctx.stroke();
-        }
+        // 2. 균열 경계 하이라이트선 (암석 파편이 깨져 돋보이게)
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(midX - 22, midY - 12);
+        ctx.lineTo(midX - 8, midY + 6);
+        ctx.lineTo(midX + 6, midY - 4);
+        ctx.lineTo(midX + 22, midY + 14);
+        ctx.stroke();
+
+        // 3. 보조 균열 가지선
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(midX - 8, midY + 4);
+        ctx.lineTo(midX - 14, midY + 14);
+        ctx.moveTo(midX + 6, midY - 6);
+        ctx.lineTo(midX + 16, midY - 14);
+        ctx.stroke();
+
+        // 4. 위험 주의 경고 노란색 마름모 인디케이터
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(midX, midY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
       }
 
@@ -1180,10 +1314,30 @@ export class GameEngine {
       ctx.globalAlpha = p.alpha;
 
       if (p.type === 'TEXT') {
-        ctx.font = 'bold 16px sans-serif';
-        ctx.fillStyle = p.color;
+        // [피드백 5] 밝은 배경(설산, 초원 등)에서도 선명하게 보이도록 검정 외곽선 스트로크 추가
+        ctx.font = '900 16px sans-serif';
         ctx.textAlign = 'center';
+        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.strokeText(p.text || '', p.x, p.y);
+        ctx.fillStyle = p.color;
         ctx.fillText(p.text || '', p.x, p.y);
+      } else if (p.type === 'CHUNK') {
+        // [피드백 4] 부서진 각진 도로 암석 파편 렌더링
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation || 0);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        const r = p.radius;
+        ctx.moveTo(-r * 0.8, -r * 0.9);
+        ctx.lineTo(r * 0.9, -r * 0.6);
+        ctx.lineTo(r * 0.7, r * 0.8);
+        ctx.lineTo(-r * 0.6, r * 0.9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#020617';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       } else if (p.type === 'SHELL') {
         ctx.translate(p.x, p.y);
         ctx.rotate(p.rotation || 0);

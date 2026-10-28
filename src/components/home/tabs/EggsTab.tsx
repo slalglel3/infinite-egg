@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProgress, EggSkin, CostumeSlot, CostumeItem } from '../../../types/game';
 import { EGG_SKINS, getEggSkinById } from '../../../data/eggSkins';
 import { COSTUME_ITEMS, COSTUME_SETS, getCostumesBySlot } from '../../../data/eggCostumes';
-import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet, clearAllCostumes } from '../../../utils/storage';
+import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet, clearAllCostumes, isTutorialSeen, markTutorialSeen } from '../../../utils/storage';
 import { Check, Lock, Sparkles, Shield, Coins, Play, Shirt, Egg, Sparkle, RotateCcw, AlertCircle } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import { CostumeSvgLayers } from '../CostumeSvgLayers';
@@ -19,6 +19,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
   const [subTab, setSubTab] = useState<SubTab>('SKINS');
   const [selectedPreviewId, setSelectedPreviewId] = useState<string>(progress.selectedEggId);
   const [costumeSlot, setCostumeSlot] = useState<CostumeSlot>('hat');
+  const [showTutorial, setShowTutorial] = useState(!isTutorialSeen('EGGS'));
 
   const previewSkin = getEggSkinById(selectedPreviewId);
   const equippedSkin = getEggSkinById(progress.selectedEggId);
@@ -282,15 +283,16 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
       {/* 2. 하단 컨텐츠: [계란 도감 목록] or [의상 코디네이터] */}
       {subTab === 'SKINS' ? (
         <div className="flex-1 mt-2.5 flex flex-col min-h-0">
-          <div className="flex items-center justify-between pb-1.5 px-1">
-            <span className="text-xs font-black text-gray-700 flex items-center gap-1">
+          {/* 2. 하단: [피드백 8] 큼직하고 시원한 3열 계란 컬렉션 그리드 */}
+          <div className="flex items-center justify-between pb-1 px-1">
+            <span className="text-xs font-black text-gray-800 flex items-center gap-1">
               <Sparkles size={14} className="text-amber-500" />
               계란 컬렉션 ({progress.unlockedEggIds.length} / {EGG_SKINS.length})
             </span>
-            <span className="text-[11px] text-emerald-600 font-bold">터치하면 즉시 장착됩니다</span>
+            <span className="text-[11px] text-emerald-700 font-extrabold">터치하면 즉시 장착</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto grid grid-cols-4 gap-2 pb-4 pr-1">
+          <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2.5 pb-4 pr-1">
             {EGG_SKINS.map((skin) => {
               const isSkinUnlocked = progress.unlockedEggIds.includes(skin.id);
               const isSkinEquipped = progress.selectedEggId === skin.id;
@@ -299,22 +301,29 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                 <div
                   key={skin.id}
                   onClick={() => handleSelectSkin(skin)}
-                  className={`relative flex flex-col items-center justify-center p-2 rounded-2xl bg-white border-2 transition-all cursor-pointer select-none ${
+                  className={`relative flex flex-col items-center justify-center p-2.5 rounded-2xl bg-white border-2 transition-all cursor-pointer select-none ${
                     isSkinEquipped
-                      ? 'border-emerald-500 ring-2 ring-emerald-300 shadow-md scale-102 bg-emerald-50/30'
-                      : 'border-amber-100/80 hover:border-amber-300'
+                      ? 'border-emerald-500 ring-2 ring-emerald-300 shadow-lg scale-102 bg-emerald-50/40'
+                      : isSkinUnlocked
+                      ? 'border-amber-200 hover:border-amber-400 shadow-sm'
+                      : 'border-gray-200 opacity-75 hover:opacity-90 shadow-sm'
                   }`}
                 >
-                  {/* 장착 배지 */}
+                  {/* 장착 체크 배지 */}
                   {isSkinEquipped && (
-                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm z-10">
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-md z-20">
                       ✓
                     </span>
                   )}
 
-                  {/* 계란 미니 일러스트 (단축 베지어 패스) */}
-                  <div className="relative w-12 h-14 flex items-center justify-center my-0.5">
-                    <svg viewBox="0 0 100 116" className="w-10 h-12 drop-shadow">
+                  {/* 계란 큼직한 일러스트 (피드백 3: 미해금 독립 의상 계란도 의상 착용 상태로 반투명 렌더링) */}
+                  <div className="relative w-16 h-20 flex items-center justify-center my-1">
+                    <svg
+                      viewBox="0 0 100 116"
+                      className={`w-14 h-18 drop-shadow-md overflow-visible transition-opacity ${
+                        !isSkinUnlocked ? 'opacity-55' : 'opacity-100'
+                      }`}
+                    >
                       <defs>
                         <radialGradient id={`miniGrad-${skin.id}`} cx="38%" cy="32%" r="65%">
                           <stop offset="0%" stopColor={skin.colors.top} />
@@ -333,17 +342,30 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                       />
                       <circle cx="40" cy="64" r="3.2" fill={skin.colors.eyeColor} />
                       <circle cx="60" cy="64" r="3.2" fill={skin.colors.eyeColor} />
+
+                      {/* [피드백 3 완벽 구현] 독립 의상 계란은 리스트에서도 고유 의상을 입은 모습으로 렌더링! */}
+                      {skin.hasFixedOutfit && skin.bundledCostumes && (
+                        <CostumeSvgLayers
+                          hatId={skin.bundledCostumes.hat}
+                          topId={skin.bundledCostumes.top}
+                          bottomId={skin.bundledCostumes.bottom}
+                          handId={skin.bundledCostumes.hand}
+                        />
+                      )}
                     </svg>
 
                     {!isSkinUnlocked && (
-                      <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
-                        <Lock size={15} className="text-white drop-shadow" />
+                      <div className="absolute inset-0 bg-black/40 rounded-2xl flex flex-col items-center justify-center gap-0.5 backdrop-blur-[0.5px]">
+                        <Lock size={18} className="text-white drop-shadow" />
                       </div>
                     )}
                   </div>
 
-                  <span className="text-[10px] font-black text-gray-800 text-center truncate w-full mt-0.5">
+                  <span className="text-xs font-black text-gray-800 text-center truncate w-full mt-1">
                     {skin.name}
+                  </span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full mt-0.5 ${getRarityBadge(skin.rarity)}`}>
+                    {skin.rarity}
                   </span>
                 </div>
               );
@@ -472,7 +494,13 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                     </div>
 
                     <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between">
-                      {isOwned ? (
+                      {/* [피드백 2 완벽 해결] 독립 의상 계란 전용 번들 의상은 해당 계란 미보유 시 개별 구매 불가 */}
+                      {item.requiredEggSkinId && !progress.unlockedEggIds.includes(item.requiredEggSkinId) ? (
+                        <div className="w-full py-1.5 px-1.5 rounded-xl bg-amber-50 border border-amber-300 flex items-center justify-center gap-1 text-[10px] font-black text-amber-900 shadow-inner">
+                          <Lock size={12} className="text-amber-700 shrink-0" />
+                          <span className="truncate">[{getEggSkinById(item.requiredEggSkinId).name}] 획득 시 지급</span>
+                        </div>
+                      ) : isOwned ? (
                         <button
                           type="button"
                           onClick={() => handleToggleCostume(item)}
@@ -486,7 +514,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                         </button>
                       ) : (
                         <div className="w-full flex gap-1">
-                          {item.priceGold && (
+                          {item.priceGold ? (
                             <button
                               type="button"
                               onClick={() => handleBuyCostumeItem(item, 'GOLD')}
@@ -495,8 +523,8 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                               <Coins size={11} />
                               <span>{item.priceGold}G</span>
                             </button>
-                          )}
-                          {item.priceShells && (
+                          ) : null}
+                          {item.priceShells ? (
                             <button
                               type="button"
                               onClick={() => handleBuyCostumeItem(item, 'SHELLS')}
@@ -505,7 +533,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                             >
                               <span>🥚{item.priceShells}</span>
                             </button>
-                          )}
+                          ) : null}
                         </div>
                       )}
                     </div>
@@ -534,6 +562,33 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* [피드백 7 구현] 계란 도감 최초 진입 튜토리얼 팝업 */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
+          <div className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-3.5 text-center">
+            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
+              <span className="text-3xl">🥚</span>
+            </div>
+            <h3 className="text-lg font-black text-gray-900 tracking-tight">계란 도감 & 의상 코디</h3>
+            <p className="text-xs text-gray-600 font-semibold leading-relaxed">
+              다양한 개성을 가진 계란을 수집하고 플레이하세요!<br /><br />
+              💡 <strong>독립 의상 계란</strong>(경찰란 등)을 획득하면 전용 4부위 의상이 영구 해금되며, <strong>기본 달걀</strong>을 자유롭게 나만의 스타일로 코디할 수 있습니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playTurn();
+                markTutorialSeen('EGGS');
+                setShowTutorial(false);
+              }}
+              className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-black text-sm rounded-2xl shadow-lg hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all cursor-pointer"
+            >
+              확인하고 둘러보기
+            </button>
           </div>
         </div>
       )}
