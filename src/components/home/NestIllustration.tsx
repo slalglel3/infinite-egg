@@ -296,12 +296,12 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
               strokeLinecap="round"
             />
 
-            {/* 6. 착용 중인 4대 부위 의상 코스튬 레이어 (모자, 상의, 하의, 손) */}
+            {/* 6. 착용 중인 4대 부위 의상 코스튬 레이어 (고유 의상 계란은 번들 세트 고정 렌더링) */}
             <CostumeSvgLayers
-              hatId={equippedCostumes?.hat}
-              topId={equippedCostumes?.top}
-              bottomId={equippedCostumes?.bottom}
-              handId={equippedCostumes?.hand}
+              hatId={skin.hasFixedOutfit ? skin.bundledCostumes?.hat : equippedCostumes?.hat}
+              topId={skin.hasFixedOutfit ? skin.bundledCostumes?.top : equippedCostumes?.top}
+              bottomId={skin.hasFixedOutfit ? skin.bundledCostumes?.bottom : equippedCostumes?.bottom}
+              handId={skin.hasFixedOutfit ? skin.bundledCostumes?.hand : equippedCostumes?.hand}
             />
           </svg>
         </div>

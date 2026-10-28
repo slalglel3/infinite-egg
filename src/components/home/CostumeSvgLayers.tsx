@@ -77,49 +77,49 @@ export const CostumeSvgLayers: React.FC<CostumeProps> = ({ hatId, topId, bottomI
         </g>
       )}
 
-      {/* 2. 상의 (Top) 레이어 - 계란 중단 (y: 54 ~ 78 부근) */}
+      {/* 2. 상의 (Top) 레이어 - [피드백 10] 얼굴(눈/볼터치/미소 y:60~76) 아래 목/가슴 위치(y: 74 ~ 94)로 정확히 배치 */}
       {topId === 'police_top' && (
         <g id="costume-police-top">
-          {/* 경찰 셔츠 칼라 & 넥타이 */}
-          <path d="M 38 60 L 50 67 L 62 60 L 50 56 Z" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
+          {/* 단정한 흰 셔츠 칼라 */}
+          <path d="M 38 74 L 50 81 L 62 74 L 50 72 Z" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
           {/* 검정 넥타이 */}
-          <path d="M 48 64 L 52 64 L 54 78 L 50 82 L 46 78 Z" fill="#0f172a" />
+          <path d="M 48 78 L 52 78 L 54 92 L 50 96 L 46 92 Z" fill="#0f172a" />
           {/* 황금 경찰 배지 (좌측 가슴) */}
-          <polygon points="32,66 36,63 40,66 38,71 34,71" fill="#fbbf24" stroke="#b45309" strokeWidth="0.8" />
+          <polygon points="32,78 36,75 40,78 38,83 34,83" fill="#fbbf24" stroke="#b45309" strokeWidth="0.8" />
         </g>
       )}
 
       {topId === 'cowboy_top' && (
         <g id="costume-cowboy-top">
-          {/* 빨간 반다나 스카프 */}
-          <polygon points="40,58 60,58 50,72" fill="#dc2626" stroke="#991b1b" strokeWidth="1" />
-          <path d="M 36 58 Q 50 64 64 58" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+          {/* 빨간 반다나 스카프 (목에 자연스럽게 두른 형태) */}
+          <polygon points="40,75 60,75 50,87" fill="#dc2626" stroke="#991b1b" strokeWidth="1" />
+          <path d="M 36 75 Q 50 80 64 75" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
           {/* 브라운 스웨이드 조끼 앞섶 */}
-          <path d="M 18 64 L 32 64 L 30 78 L 16 78 Z" fill="#92400e" opacity="0.9" />
-          <path d="M 82 64 L 68 64 L 70 78 L 84 78 Z" fill="#92400e" opacity="0.9" />
+          <path d="M 18 78 L 32 78 L 30 92 L 16 92 Z" fill="#92400e" opacity="0.9" />
+          <path d="M 82 78 L 68 78 L 70 92 L 84 92 Z" fill="#92400e" opacity="0.9" />
         </g>
       )}
 
       {topId === 'mermaid_top' && (
         <g id="costume-mermaid-top">
-          {/* 영롱한 보랏빛 조개 탑 (좌/우) */}
-          <ellipse cx="34" cy="68" rx="8" ry="6.5" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
-          <path d="M 28 66 L 40 70 M 30 64 L 38 72 M 34 62 L 34 74" stroke="#f3e8ff" strokeWidth="1" />
-          <ellipse cx="66" cy="68" rx="8" ry="6.5" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
-          <path d="M 60 70 L 72 66 M 62 72 L 70 64 M 66 62 L 66 74" stroke="#f3e8ff" strokeWidth="1" />
+          {/* 영롱한 보랏빛 조개 탑 (좌/우) - 얼굴 아래 가슴 위치 */}
+          <ellipse cx="34" cy="80" rx="8" ry="6.5" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
+          <path d="M 28 78 L 40 82 M 30 76 L 38 84 M 34 74 L 34 86" stroke="#f3e8ff" strokeWidth="1" />
+          <ellipse cx="66" cy="80" rx="8" ry="6.5" fill="#c084fc" stroke="#7e22ce" strokeWidth="1.2" />
+          <path d="M 60 82 L 72 78 M 62 84 L 70 76 M 66 74 L 66 86" stroke="#f3e8ff" strokeWidth="1" />
           {/* 중앙 진주 연결선 */}
-          <path d="M 42 68 Q 50 70 58 68" stroke="#fdf4ff" strokeWidth="1.5" fill="none" />
-          <circle cx="50" cy="69" r="2.5" fill="#ffffff" stroke="#e9d5ff" strokeWidth="1" />
+          <path d="M 42 80 Q 50 82 58 80" stroke="#fdf4ff" strokeWidth="1.5" fill="none" />
+          <circle cx="50" cy="81" r="2.5" fill="#ffffff" stroke="#e9d5ff" strokeWidth="1" />
         </g>
       )}
 
       {topId === 'king_top' && (
         <g id="costume-king-top">
           {/* 붉은 벨벳 망토 칼라 & 흰 털장식 */}
-          <path d="M 24 54 Q 50 64 76 54 L 80 66 Q 50 74 20 66 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" />
-          <path d="M 22 55 Q 50 63 78 55" stroke="#f8fafc" strokeWidth="4" strokeLinecap="round" fill="none" />
+          <path d="M 24 74 Q 50 82 76 74 L 80 86 Q 50 94 20 86 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" />
+          <path d="M 22 75 Q 50 83 78 75" stroke="#f8fafc" strokeWidth="4" strokeLinecap="round" fill="none" />
           {/* 망토 금장 보석 브로치 */}
-          <circle cx="50" cy="65" r="3.5" fill="#f59e0b" stroke="#78350f" strokeWidth="1" />
+          <circle cx="50" cy="83" r="3.5" fill="#f59e0b" stroke="#78350f" strokeWidth="1" />
         </g>
       )}
 

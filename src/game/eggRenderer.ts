@@ -88,10 +88,13 @@ export class EggRenderer {
     ctx.lineWidth = 2.0;
     ctx.stroke();
 
+    // 스킨 고유 패턴 (점박이, 에메랄드 균열, 사이버 라인 등)
+    this.drawSkinPatterns(ctx, rx, ry);
+
     // 실시간 금(Crack) 렌더링
     this.drawCracks(ctx, egg.hp, egg.maxHp);
 
-    // 달걀 표정 그리기
+    // 달걀 표정 그리기 (홈 화면과 100% 동일한 눈/볼터치/미소)
     this.drawFace(ctx, egg, rx, ry);
 
     // [피드백 8 & 9 반영] 의상 코스튬 렌더링 (모자, 상의, 하의, 손)
@@ -126,25 +129,30 @@ export class EggRenderer {
 
   // 캔버스 인게임 의상 렌더링
   private drawCostumes(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
-    const { hat, top, bottom, hand } = this.costumes;
+    // [피드백 2 & 3] 의상이 갖춰진 고유 계란이면 번들 의상을 자동 장착, 순수 계란이면 유저 커스텀 의상 렌더링
+    const effective = (this.currentSkin.hasFixedOutfit && this.currentSkin.bundledCostumes)
+      ? this.currentSkin.bundledCostumes
+      : this.costumes;
+
+    const { hat, top, bottom, hand } = effective;
 
     // 1. 하의
     if (bottom === 'police_bottom') {
       ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-rx * 0.85, ry * 0.45, rx * 1.7, ry * 0.22);
+      ctx.fillRect(-rx * 0.85, ry * 0.52, rx * 1.7, ry * 0.2);
       ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(-rx * 0.25, ry * 0.43, rx * 0.5, ry * 0.26);
+      ctx.fillRect(-rx * 0.22, ry * 0.50, rx * 0.44, ry * 0.24);
     } else if (bottom === 'cowboy_bottom') {
       ctx.fillStyle = '#1d4ed8';
       ctx.beginPath();
-      ctx.arc(0, ry * 0.3, rx * 0.95, 0, Math.PI);
+      ctx.arc(0, ry * 0.35, rx * 0.95, 0, Math.PI);
       ctx.fill();
       ctx.fillStyle = '#78350f';
-      ctx.fillRect(-rx * 0.85, ry * 0.35, rx * 1.7, ry * 0.18);
+      ctx.fillRect(-rx * 0.85, ry * 0.45, rx * 1.7, ry * 0.18);
     } else if (bottom === 'mermaid_bottom') {
       ctx.fillStyle = '#059669';
       ctx.beginPath();
-      ctx.arc(0, ry * 0.35, rx * 0.95, 0, Math.PI);
+      ctx.arc(0, ry * 0.4, rx * 0.95, 0, Math.PI);
       ctx.fill();
       ctx.fillStyle = '#34d399';
       // 꼬리 날개
@@ -157,49 +165,64 @@ export class EggRenderer {
       ctx.fill();
     } else if (bottom === 'king_bottom') {
       ctx.fillStyle = '#b45309';
-      ctx.fillRect(-rx * 0.85, ry * 0.45, rx * 1.7, ry * 0.2);
+      ctx.fillRect(-rx * 0.85, ry * 0.52, rx * 1.7, ry * 0.2);
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(0, ry * 0.55, 3.5, 0, Math.PI * 2);
+      ctx.arc(0, ry * 0.62, 3.5, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // 2. 상의
+    // 2. 상의 - [피드백 10] 얼굴(눈/볼터치/미소 ry: 0.05~0.25) 아래 목/가슴 위치(ry: 0.28 ~ 0.52)로 정확히 배치
     if (top === 'police_top') {
-      // 넥타이
+      // 흰 칼라 & 검정 넥타이
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(-4, ry * 0.28);
+      ctx.lineTo(4, ry * 0.28);
+      ctx.lineTo(0, ry * 0.38);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.moveTo(-2, -ry * 0.05);
-      ctx.lineTo(2, -ry * 0.05);
-      ctx.lineTo(3.5, ry * 0.4);
-      ctx.lineTo(0, ry * 0.48);
-      ctx.lineTo(-3.5, ry * 0.4);
+      ctx.moveTo(-2, ry * 0.32);
+      ctx.lineTo(2, ry * 0.32);
+      ctx.lineTo(3, ry * 0.54);
+      ctx.lineTo(0, ry * 0.60);
+      ctx.lineTo(-3, ry * 0.54);
       ctx.closePath();
       ctx.fill();
       // 경찰 배지
       ctx.fillStyle = '#fbbf24';
-      ctx.fillRect(-rx * 0.65, ry * 0.05, 4, 5);
+      ctx.fillRect(-rx * 0.65, ry * 0.35, 4, 4.5);
     } else if (top === 'cowboy_top') {
-      // 빨간 반다나
+      // 빨간 반다나 스카프
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
-      ctx.moveTo(-rx * 0.5, -ry * 0.1);
-      ctx.lineTo(rx * 0.5, -ry * 0.1);
-      ctx.lineTo(0, ry * 0.25);
+      ctx.moveTo(-rx * 0.45, ry * 0.28);
+      ctx.lineTo(rx * 0.45, ry * 0.28);
+      ctx.lineTo(0, ry * 0.48);
       ctx.closePath();
       ctx.fill();
+      // 조끼
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(-rx * 0.82, ry * 0.34, rx * 0.35, ry * 0.25);
+      ctx.fillRect(rx * 0.47, ry * 0.34, rx * 0.35, ry * 0.25);
     } else if (top === 'mermaid_top') {
       // 보라 조개
       ctx.fillStyle = '#c084fc';
       ctx.beginPath();
-      ctx.ellipse(-rx * 0.4, ry * 0.08, 5, 4, 0, 0, Math.PI * 2);
-      ctx.ellipse(rx * 0.4, ry * 0.08, 5, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(-rx * 0.38, ry * 0.36, 5, 4, 0, 0, Math.PI * 2);
+      ctx.ellipse(rx * 0.38, ry * 0.36, 5, 4, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = '#f3e8ff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     } else if (top === 'king_top') {
       // 붉은 망토 칼라
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
-      ctx.arc(0, -ry * 0.1, rx * 0.85, 0, Math.PI);
+      ctx.arc(0, ry * 0.3, rx * 0.85, 0, Math.PI);
       ctx.lineWidth = 3.5;
       ctx.strokeStyle = '#f8fafc';
       ctx.stroke();
@@ -346,35 +369,87 @@ export class EggRenderer {
       ctx.quadraticCurveTo(0, eyeY + 4, 4, eyeY + 7);
       ctx.stroke();
     } else {
-      // 😊 사랑스럽고 귀여운 평소 표정
-      ctx.fillStyle = '#78350f';
+      // 😊 사랑스럽고 귀여운 평소 표정 (홈 화면과 100% 동일한 눈 & 반짝임 & 핑크 볼터치 & 방긋 미소)
+      const colors = this.currentSkin.colors;
+
+      ctx.fillStyle = colors.eyeColor;
       ctx.beginPath();
-      ctx.arc(-eyeDist, eyeY, 3, 0, Math.PI * 2);
-      ctx.arc(eyeDist, eyeY, 3, 0, Math.PI * 2);
+      ctx.arc(-eyeDist, eyeY, 3.2, 0, Math.PI * 2);
+      ctx.arc(eyeDist, eyeY, 3.2, 0, Math.PI * 2);
       ctx.fill();
 
+      // 초롱초롱 눈 반짝임
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
-      ctx.arc(-eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
-      ctx.arc(eyeDist - 1, eyeY - 1, 1.2, 0, Math.PI * 2);
+      ctx.arc(-eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
+      ctx.arc(eyeDist - 1, eyeY - 1, 1.3, 0, Math.PI * 2);
       ctx.fill();
 
-      // 볼터치
-      ctx.fillStyle = 'rgba(251, 113, 133, 0.65)';
+      // 핑크 볼터치
+      ctx.fillStyle = colors.cheekColor;
+      ctx.globalAlpha = 0.85;
       ctx.beginPath();
-      ctx.ellipse(-eyeDist - 3, eyeY + 5, 3.5, 2, 0, 0, Math.PI * 2);
-      ctx.ellipse(eyeDist + 3, eyeY + 5, 3.5, 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(-eyeDist - 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
+      ctx.ellipse(eyeDist + 4, eyeY + 5, 3.8, 2.2, 0, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = 1.0;
 
-      // 방긋 웃는 입
-      ctx.strokeStyle = '#78350f';
-      ctx.lineWidth = 2;
+      // 방긋 미소
+      ctx.strokeStyle = colors.eyeColor;
+      ctx.lineWidth = 1.8;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(0, eyeY + 4, 4.5, 0.2, Math.PI - 0.2);
+      ctx.moveTo(-3, eyeY + 4.5);
+      ctx.quadraticCurveTo(0, eyeY + 7.5, 3, eyeY + 4.5);
       ctx.stroke();
     }
 
+    ctx.restore();
+  }
+
+  // 스킨별 고유 패턴 렌더링
+  private drawSkinPatterns(ctx: CanvasRenderingContext2D, rx: number, ry: number): void {
+    const pattern = this.currentSkin.colors.pattern;
+    if (!pattern || pattern === 'NONE') return;
+
+    ctx.save();
+    if (pattern === 'SPOTS') {
+      ctx.fillStyle = this.currentSkin.colors.line;
+      ctx.globalAlpha = 0.38;
+      ctx.beginPath();
+      ctx.arc(-rx * 0.4, -ry * 0.2, 2.5, 0, Math.PI * 2);
+      ctx.arc(rx * 0.45, -ry * 0.3, 2.8, 0, Math.PI * 2);
+      ctx.arc(-rx * 0.5, ry * 0.4, 3, 0, Math.PI * 2);
+      ctx.arc(rx * 0.5, ry * 0.35, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (pattern === 'CRACKS') {
+      ctx.strokeStyle = '#15803d';
+      ctx.lineWidth = 2.0;
+      ctx.globalAlpha = 0.65;
+      ctx.beginPath();
+      ctx.moveTo(0, -ry * 0.6);
+      ctx.lineTo(rx * 0.2, -ry * 0.2);
+      ctx.lineTo(-rx * 0.1, ry * 0.1);
+      ctx.lineTo(rx * 0.25, ry * 0.4);
+      ctx.stroke();
+    } else if (pattern === 'CYBER_LINES') {
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.8;
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.6, -ry * 0.1);
+      ctx.lineTo(0, -ry * 0.1);
+      ctx.lineTo(rx * 0.3, -ry * 0.3);
+      ctx.stroke();
+    } else if (pattern === 'FIRE_AURA') {
+      ctx.fillStyle = '#f97316';
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(0, -ry * 0.6, 4, 0, Math.PI * 2);
+      ctx.arc(-rx * 0.6, 0, 5, 0, Math.PI * 2);
+      ctx.arc(rx * 0.6, 0, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

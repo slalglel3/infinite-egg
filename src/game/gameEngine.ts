@@ -380,6 +380,17 @@ export class GameEngine {
       }
     }
 
+    // [피드백 11 구현] 금 간 길(isCracked) 위를 점프하지 않고 그냥 굴러가는 경우 붕괴 및 추락!
+    if (currentSeg.isCracked && !currentSeg.isCollapsed) {
+      const segLen = currentSeg.length || 70;
+      const progressDist = Math.hypot(this.egg.x - currentSeg.startX, this.egg.y - currentSeg.startY);
+      if (progressDist >= segLen * 0.35) {
+        currentSeg.isCollapsed = true;
+        this.triggerCrackedRoadCollapse();
+        return;
+      }
+    }
+
     // 세그먼트 끝 도달 판정
     const pastEndY = this.egg.y >= currentSeg.endY;
     if (pastEndY) {
@@ -514,8 +525,40 @@ export class GameEngine {
     }
   }
 
+  // [피드백 11 구현] 금 간 도로 붕괴 및 아래 길로 추락 낙하
+  private triggerCrackedRoadCollapse(): void {
+    sound.playImpact(10);
+    this.screenShake = 16;
+
+    // 도로 붕괴 흙돌 파편 대량 분출
+    for (let i = 0; i < 14; i++) {
+      this.particles.push({
+        x: this.egg.x + (Math.random() - 0.5) * 24,
+        y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y,
+        vx: (Math.random() - 0.5) * 120,
+        vy: -30 - Math.random() * 80,
+        radius: 2 + Math.random() * 3.5,
+        color: '#475569',
+        alpha: 0.9,
+        life: 0,
+        maxLife: 0.6,
+        type: 'DUST',
+      });
+    }
+
+    // 아래쪽 도로로 자유 낙하 시작
+    const nextSegIndex = Math.min(this.segments.length - 1, this.egg.currentSegmentIndex + 1);
+    this.egg.currentSegmentIndex = nextSegIndex;
+    this.egg.dropStartY = this.egg.y;
+    this.egg.vy = 80;
+    this.egg.state = 'DROPPING_TURN';
+    this.egg.expression = 'PAIN';
+    this.spawnTextParticle(this.egg.x, this.egg.y - 25, '도로 붕괴!', '#ea580c');
+  }
+
+  // [피드백 12 반영] 높이 차이에 따른 내구도 감소량 2배 온전히 적용
   private handleDropLanding(dropHeight: number): void {
-    const damage = Math.max(0, Math.floor(dropHeight * GAME_CONSTANTS.DAMAGE_PER_HEIGHT_PIXEL * 0.7));
+    const damage = Math.max(0, Math.floor(dropHeight * GAME_CONSTANTS.DAMAGE_PER_HEIGHT_PIXEL));
 
     if (damage <= 2) {
       sound.playPerfect();
@@ -814,6 +857,17 @@ export class GameEngine {
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+
+      // [피드백 9] 살랑살랑 흩날리는 만년설 눈송이 효과
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      for (let i = 0; i < 25; i++) {
+        const sx = ((i * 47) - (this.cameraX * 0.4) + Math.sin(meters * 0.05 + i) * 20) % this.screenWidth;
+        const sy = ((i * 31) + (meters * 1.5)) % this.screenHeight;
+        ctx.beginPath();
+        ctx.arc((sx + this.screenWidth) % this.screenWidth, sy, 1.5 + (i % 3), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
 
@@ -834,12 +888,23 @@ export class GameEngine {
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
+      // 다층 전나무 숲 실루엣
+      ctx.fillStyle = '#14532d';
+      ctx.beginPath();
+      const treeFarOffset = -(this.cameraX * 0.18) % 240;
+      ctx.moveTo(0, this.screenHeight);
+      for (let x = treeFarOffset - 240; x < this.screenWidth + 240; x += 240) {
+        ctx.quadraticCurveTo(x + 120, this.screenHeight - 220, x + 240, this.screenHeight - 150);
+      }
+      ctx.lineTo(this.screenWidth, this.screenHeight);
+      ctx.fill();
+
       ctx.fillStyle = '#166534';
       ctx.beginPath();
       const treeOffset = -(this.cameraX * 0.25) % 200;
       ctx.moveTo(0, this.screenHeight);
       for (let x = treeOffset - 200; x < this.screenWidth + 200; x += 200) {
-        ctx.quadraticCurveTo(x + 100, this.screenHeight - 200, x + 200, this.screenHeight - 130);
+        ctx.quadraticCurveTo(x + 100, this.screenHeight - 190, x + 200, this.screenHeight - 120);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
@@ -851,6 +916,14 @@ export class GameEngine {
     if (meadowAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = meadowAlpha;
+
+      // [피드백 9] 따스한 햇살 갓레이 광선 레이어
+      const sunGrad = ctx.createRadialGradient(this.screenWidth * 0.8, 40, 10, this.screenWidth * 0.8, 40, 260);
+      sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+      sunGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+      ctx.fillStyle = sunGrad;
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight * 0.6);
+
       const cloudOffset = -(this.cameraX * 0.05);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
       this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
@@ -885,7 +958,10 @@ export class GameEngine {
       ctx.lineTo(this.screenWidth, 0);
       ctx.fill();
 
+      // [피드백 9] 은은하게 빛나는 신비로운 수정 기둥
       ctx.fillStyle = '#818cf8';
+      ctx.shadowColor = '#6366f1';
+      ctx.shadowBlur = 12;
       ctx.beginPath();
       const crystalOffset = -(this.cameraX * 0.3) % 240;
       for (let x = crystalOffset - 240; x < this.screenWidth + 240; x += 240) {
@@ -894,6 +970,7 @@ export class GameEngine {
         ctx.lineTo(x + 130, this.screenHeight);
       }
       ctx.fill();
+      ctx.shadowBlur = 0;
       ctx.restore();
     }
 
@@ -985,20 +1062,8 @@ export class GameEngine {
         continue;
       }
 
+      // [피드백 8 반영] 인위적인 방향 전환 최적 마커('↷')를 완전히 제거하여 도로의 꺾임을 눈으로 보고 판단하도록 변경!
       if (seg.type === 'TURN') {
-        ctx.beginPath();
-        ctx.arc(seg.startX, seg.startY, 18, 0, Math.PI * 2);
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('↷', seg.startX, seg.startY);
         continue;
       }
 
@@ -1037,24 +1102,46 @@ export class GameEngine {
       ctx.stroke();
       ctx.restore();
 
-      // 끊어진 길(GAP) 끝자락 경고 마커
-      if (seg.type === 'GAP') {
+      // [피드백 11 반영] 금 간 길 (Cracked Road) 균열 선 및 붕괴 구멍 렌더링
+      if (seg.isCracked) {
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(seg.endX, seg.endY, 15, 0, Math.PI * 2);
-        ctx.fillStyle = '#f97316';
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+        const midX = (seg.startX + seg.endX) * 0.5;
+        const midY = (seg.startY + seg.endY) * 0.5;
 
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'black 16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('!', seg.endX, seg.endY);
+        if (seg.isCollapsed) {
+          // 붕괴된 어두운 추락 구멍
+          ctx.beginPath();
+          ctx.ellipse(midX, midY, 15, 9, 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = '#020617';
+          ctx.fill();
+          ctx.strokeStyle = '#475569';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else {
+          // 쩍쩍 갈라진 위험 균열 패턴
+          ctx.strokeStyle = '#090d16';
+          ctx.lineWidth = 2.4;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(midX - 12, midY - 8);
+          ctx.lineTo(midX - 3, midY + 4);
+          ctx.lineTo(midX + 6, midY - 4);
+          ctx.lineTo(midX + 14, midY + 6);
+          ctx.stroke();
+
+          // 보조 균열 가지선
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(midX - 3, midY + 4);
+          ctx.lineTo(midX - 7, midY + 10);
+          ctx.moveTo(midX + 6, midY - 4);
+          ctx.lineTo(midX + 11, midY - 9);
+          ctx.stroke();
+        }
         ctx.restore();
       }
+
+      // [피드백 8 반영] 끊어진 길(GAP) 끝자락의 인위적인 '!' 경고 마커 제거! 순수 낭떠러지 단면을 눈으로 보고 점프 도약!
     }
   }
 

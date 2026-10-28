@@ -16,6 +16,9 @@ export interface SlopeSegment {
   // 끊어진 길(GAP)인 경우
   gapDistance?: number;
   gapHeight?: number;
+  // [피드백 11] 금이 간 길 (CRACKED) - 점프하지 않고 굴러가면 붕괴 후 아래 길로 추락 낙하
+  isCracked?: boolean;
+  isCollapsed?: boolean;
   item?: {
     type: ItemType;
     x: number;
@@ -164,6 +167,14 @@ export interface EggSkin {
   priceGold?: number;
   hpBonus: number;
   colors: EggSkinColors;
+  // [피드백 2 & 3] 의상이 갖춰진 고유 계란 여부 및 번들 의상 세트
+  hasFixedOutfit?: boolean;
+  bundledCostumes?: {
+    hat?: string;
+    top?: string;
+    bottom?: string;
+    hand?: string;
+  };
 }
 
 export interface AchievementItem {

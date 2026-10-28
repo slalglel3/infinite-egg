@@ -148,22 +148,29 @@ export class MapGenerator {
       return;
     }
 
-    // 2. [롱/중거리 직선 질주] (35% 확률)
-    if (rand < 0.85) {
-      const runSteps = isHard ? (Math.random() < 0.5 ? 2 : 3) : (Math.random() < 0.5 ? 4 : 3);
-      segments.push(this.createStraightStep(runSteps, this.shouldSpawnItem(currentMeters)));
+    // 2. [롱/중거리 직선 질주] (30% 확률)
+    if (rand < 0.82) {
+      const runSteps = isHard ? (Math.random() < 0.5 ? 2.2 : 3) : (Math.random() < 0.5 ? 3.5 : 2.5);
+      // [피드백 11 반영] 200m 이상부터 일정 확률(30%)로 금이 간 위험한 도로 생성! 점프해서 넘지 않으면 붕괴!
+      const shouldCrack = currentMeters >= 200 && Math.random() < 0.30;
+      segments.push(this.createStraightStep(runSteps, this.shouldSpawnItem(currentMeters), shouldCrack));
       segments.push(this.createTurnSegment());
       return;
     }
 
-    // 3. [1스텝 지그재그 특수 구간] (15% 확률로 가끔만 깜짝 스릴 등장)
-    const zigzagCount = isHard ? 3 : 2;
+    // 3. [다양한 길이의 짧은 방향 전환 리듬 구간] (18% 확률)
+    // [피드백 6 반영] 1.0스텝만 반복되지 않고 0.8 ~ 1.8스텝의 다양한 길이의 짧은 길이 불규칙하게 반복!
+    const zigzagCount = isHard ? 4 : 3;
+    const stepChoices = isHard ? [0.8, 1.1, 1.4, 1.6] : [1.0, 1.3, 1.5, 1.8];
     for (let z = 0; z < zigzagCount; z++) {
-      segments.push(this.createStraightStep(1, false));
+      const steps = stepChoices[Math.floor(Math.random() * stepChoices.length)];
+      // 가끔 짧은 길에도 금 간 구간 배치
+      const crackInShort = currentMeters >= 400 && Math.random() < 0.20;
+      segments.push(this.createStraightStep(steps, false, crackInShort));
       segments.push(this.createTurnSegment());
     }
     // 지그재그 직후에는 숨 돌릴 수 있도록 2스텝 직선로 부여
-    segments.push(this.createStraightStep(2, this.shouldSpawnItem(currentMeters)));
+    segments.push(this.createStraightStep(2, this.shouldSpawnItem(currentMeters), false));
   }
 
   // [피드백 6] 반창고 발생 빈도 증가 (60m마다 50% 확률)
@@ -179,7 +186,7 @@ export class MapGenerator {
   }
 
   // 스텝 단위 도로 생성
-  private createStraightStep(steps: number, hasItem: boolean): SlopeSegment {
+  private createStraightStep(steps: number, hasItem: boolean, isCracked: boolean = false): SlopeSegment {
     this.currentId++;
     const length = steps * GAME_CONSTANTS.STEP_LENGTH;
     const dirSign = this.currentDirection === 'RIGHT_DOWN' ? 1 : -1;
@@ -197,7 +204,7 @@ export class MapGenerator {
     this.straightCountInCurrentDir++;
 
     let item = undefined;
-    if (hasItem) {
+    if (hasItem && !isCracked) {
       item = {
         type: 'BANDAGE' as const,
         x: startX + dx * 0.5,
@@ -217,6 +224,8 @@ export class MapGenerator {
       length,
       item,
       isPassed: false,
+      isCracked,
+      isCollapsed: false,
     };
   }
 

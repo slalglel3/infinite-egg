@@ -35,7 +35,8 @@ export const GAME_CONSTANTS = {
   // 내구도
   BASE_HP: 100,
   HP_PER_LEVEL: 0.05,
-  DAMAGE_PER_HEIGHT_PIXEL: 0.32,
+  // [피드백 12 반영] 높이 차이에 따른 충격 내구도 감소량 2배 상향 (0.32 -> 0.64)
+  DAMAGE_PER_HEIGHT_PIXEL: 0.64,
   MISJUMP_DAMAGE: 14,
 
   // [피드백 6] 반창고 발생 빈도 및 회복량

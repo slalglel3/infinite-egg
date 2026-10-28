@@ -192,7 +192,7 @@ export function selectEggSkin(skinId: string): UserProgress {
   return current;
 }
 
-// 골드로 계란 구매/해금
+// 골드로 계란 구매/해금 (의상 계란인 경우 의상 세트 동시 지급!)
 export function buyEggSkinWithGold(skinId: string, price: number): { success: boolean; progress: UserProgress; message?: string } {
   const current = loadUserProgress();
   if (current.unlockedEggIds.includes(skinId)) {
@@ -202,10 +202,21 @@ export function buyEggSkinWithGold(skinId: string, price: number): { success: bo
     return { success: false, progress: current, message: '골드가 부족합니다.' };
   }
 
+  const skin = EGG_SKINS.find((s) => s.id === skinId);
+  const newUnlockedCostumes = [...current.unlockedCostumeIds];
+  if (skin?.bundledCostumes) {
+    Object.values(skin.bundledCostumes).forEach((cId) => {
+      if (cId && !newUnlockedCostumes.includes(cId)) {
+        newUnlockedCostumes.push(cId);
+      }
+    });
+  }
+
   const updated: UserProgress = {
     ...current,
     gold: current.gold - price,
     unlockedEggIds: [...current.unlockedEggIds, skinId],
+    unlockedCostumeIds: newUnlockedCostumes,
     selectedEggId: skinId, // 구매 즉시 자동 장착
   };
 
@@ -287,6 +298,17 @@ export function equipCostume(
     equippedCostumes: newEquipped,
   };
 
+  saveUserProgress(updated);
+  return { success: true, progress: updated };
+}
+
+// [피드백 4 반영] 모든 의상 일괄 해제
+export function clearAllCostumes(): { success: boolean; progress: UserProgress } {
+  const current = loadUserProgress();
+  const updated: UserProgress = {
+    ...current,
+    equippedCostumes: {},
+  };
   saveUserProgress(updated);
   return { success: true, progress: updated };
 }

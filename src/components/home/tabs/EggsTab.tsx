@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { UserProgress, EggSkin, CostumeSlot, CostumeItem } from '../../../types/game';
 import { EGG_SKINS, getEggSkinById } from '../../../data/eggSkins';
 import { COSTUME_ITEMS, COSTUME_SETS, getCostumesBySlot } from '../../../data/eggCostumes';
-import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet } from '../../../utils/storage';
-import { Check, Lock, Sparkles, Shield, Coins, Play, Shirt, Egg, Sparkle } from 'lucide-react';
+import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet, clearAllCostumes } from '../../../utils/storage';
+import { Check, Lock, Sparkles, Shield, Coins, Play, Shirt, Egg, Sparkle, RotateCcw, AlertCircle } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import { CostumeSvgLayers } from '../CostumeSvgLayers';
 
@@ -21,6 +21,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
   const [costumeSlot, setCostumeSlot] = useState<CostumeSlot>('hat');
 
   const previewSkin = getEggSkinById(selectedPreviewId);
+  const equippedSkin = getEggSkinById(progress.selectedEggId);
   const isEquipped = progress.selectedEggId === previewSkin.id;
   const isUnlocked = progress.unlockedEggIds.includes(previewSkin.id);
 
@@ -61,6 +62,24 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
     }
   };
 
+  // [피드백 4] 특정 슬롯 의상 단독 해제
+  const handleRemoveSlotCostume = (slot: CostumeSlot) => {
+    sound.playTurn();
+    const res = equipCostume(slot, undefined);
+    if (res.success) {
+      onUpdateProgress(res.progress);
+    }
+  };
+
+  // [피드백 4] 모든 의상 일괄 해제
+  const handleClearAllCostumes = () => {
+    sound.playImpact(5);
+    const res = clearAllCostumes();
+    if (res.success) {
+      onUpdateProgress(res.progress);
+    }
+  };
+
   // 코스튬 구매
   const handleBuyCostumeItem = (item: CostumeItem, currency: 'GOLD' | 'SHELLS') => {
     const res = buyCostume(item.id, currency);
@@ -93,6 +112,9 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
         return 'bg-gray-200 text-gray-700';
     }
   };
+
+  // [피드백 2 & 3] 의상 계란 여부 확인
+  const isCustomizableSkin = !equippedSkin.hasFixedOutfit;
 
   return (
     <div className="flex-1 flex flex-col px-4 py-2 safe-container overflow-hidden">
@@ -178,12 +200,12 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
               <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={previewSkin.colors.cheekColor} opacity="0.85" />
               <path d="M 44 70 Q 51 76 58 70" stroke={previewSkin.colors.eyeColor} strokeWidth="2.8" fill="none" strokeLinecap="round" />
 
-              {/* 의상 레이어 실시간 렌더링 */}
+              {/* 의상 레이어 실시간 렌더링 (고유 의상 계란이면 번들 의상, 순수 계란이면 유저 장착 의상) */}
               <CostumeSvgLayers
-                hatId={progress.equippedCostumes.hat}
-                topId={progress.equippedCostumes.top}
-                bottomId={progress.equippedCostumes.bottom}
-                handId={progress.equippedCostumes.hand}
+                hatId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.hat : progress.equippedCostumes.hat}
+                topId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.top : progress.equippedCostumes.top}
+                bottomId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.bottom : progress.equippedCostumes.bottom}
+                handId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.hand : progress.equippedCostumes.hand}
               />
             </svg>
 
@@ -329,39 +351,96 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
           </div>
         </div>
       ) : (
-        /* 의상 코디 탭: 4대 부위(모자, 상의, 하의, 손) & 테마 세트 */
-        <div className="flex-1 mt-2.5 flex flex-col min-h-0">
-          {/* 부위 슬롯 스위처 */}
-          <div className="grid grid-cols-4 gap-1.5 pb-2">
-            {[
-              { slot: 'hat' as const, label: '모자', icon: '🎩' },
-              { slot: 'top' as const, label: '상의', icon: '👔' },
-              { slot: 'bottom' as const, label: '하의', icon: '👖' },
-              { slot: 'hand' as const, label: '손', icon: '🪄' },
-            ].map((tab) => {
-              const isSlotActive = costumeSlot === tab.slot;
-              const equippedItem = progress.equippedCostumes[tab.slot];
-              return (
-                <button
-                  key={tab.slot}
-                  type="button"
-                  onClick={() => {
-                    setCostumeSlot(tab.slot);
-                    sound.playTurn();
-                  }}
-                  className={`p-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 transition-all cursor-pointer border ${
-                    isSlotActive
-                      ? 'bg-amber-500 text-white border-amber-600 shadow-md'
-                      : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                  {equippedItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-                </button>
-              );
-            })}
+        /* 의상 코디 탭: [피드백 3 & 4] 순수 달걀만 커스텀 가능, 개별 해제 및 일괄 해제 탑재 */
+        <div className="flex-1 mt-2 flex flex-col min-h-0">
+          {/* [피드백 3] 고유 의상 계란 착용 시 친절한 안내 & 전환 배너 */}
+          {!isCustomizableSkin && (
+            <div className="mb-2 p-2.5 rounded-2xl bg-amber-50 border-2 border-amber-300 flex items-center justify-between gap-2 shadow-sm animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={18} className="text-amber-600 shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-black text-amber-950">
+                    [{equippedSkin.name}]은(는) 고유 유니폼을 착용한 계란입니다.
+                  </span>
+                  <span className="text-[10px] text-amber-800 font-semibold">
+                    자유롭게 의상을 갈아입히려면 기본 달걀 등 순수 달걀을 선택해주세요!
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playPerfect();
+                  const updated = selectEggSkin('classic');
+                  onUpdateProgress(updated);
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] px-2.5 py-1.5 rounded-xl shadow shrink-0 active:scale-95 cursor-pointer"
+              >
+                기본 달걀로 전환
+              </button>
+            </div>
+          )}
+
+          {/* 슬롯 스위처 및 [일괄 해제] 바 */}
+          <div className="flex items-center justify-between pb-1.5">
+            <div className="flex-1 grid grid-cols-4 gap-1.5 mr-2">
+              {[
+                { slot: 'hat' as const, label: '모자', icon: '🎩' },
+                { slot: 'top' as const, label: '상의', icon: '👔' },
+                { slot: 'bottom' as const, label: '하의', icon: '👖' },
+                { slot: 'hand' as const, label: '손', icon: '🪄' },
+              ].map((tab) => {
+                const isSlotActive = costumeSlot === tab.slot;
+                const equippedItem = progress.equippedCostumes[tab.slot];
+                return (
+                  <button
+                    key={tab.slot}
+                    type="button"
+                    onClick={() => {
+                      setCostumeSlot(tab.slot);
+                      sound.playTurn();
+                    }}
+                    className={`p-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 transition-all cursor-pointer border ${
+                      isSlotActive
+                        ? 'bg-amber-500 text-white border-amber-600 shadow-md'
+                        : 'bg-white text-gray-700 border-amber-200 hover:bg-amber-50'
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {equippedItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* [피드백 4 반영] 모든 의상 일괄 해제 버튼 */}
+            <button
+              type="button"
+              onClick={handleClearAllCostumes}
+              className="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-700 border border-rose-300 rounded-xl text-[11px] font-black flex items-center gap-1 active:scale-95 transition-all cursor-pointer shrink-0 shadow-sm"
+              title="현재 착용한 모든 의상을 벗습니다"
+            >
+              <RotateCcw size={12} />
+              <span>모두 벗기</span>
+            </button>
           </div>
+
+          {/* 현재 선택된 슬롯의 착용 상태 및 개별 해제 버튼 */}
+          {progress.equippedCostumes[costumeSlot] && (
+            <div className="flex items-center justify-between px-2 py-1 mb-1.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <span className="text-[11px] font-bold text-emerald-800">
+                현재 부위 착용 중
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveSlotCostume(costumeSlot)}
+                className="text-[10px] font-black text-rose-600 hover:text-rose-700 underline cursor-pointer"
+              >
+                이 부위 벗기 ✕
+              </button>
+            </div>
+          )}
 
           {/* 슬롯별 의상 아이템 리스트 */}
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 pb-4">
