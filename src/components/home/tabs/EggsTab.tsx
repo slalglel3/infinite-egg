@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProgress, EggSkin, CostumeSlot, CostumeItem } from '../../../types/game';
 import { EGG_SKINS, getEggSkinById } from '../../../data/eggSkins';
 import { COSTUME_ITEMS, COSTUME_SETS, getCostumesBySlot } from '../../../data/eggCostumes';
-import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet, clearAllCostumes, isTutorialSeen, markTutorialSeen } from '../../../utils/storage';
+import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostumeSet, clearAllCostumes } from '../../../utils/storage';
 import { Check, Lock, Sparkles, Shield, Coins, Play, Shirt, Egg, Sparkle, RotateCcw, AlertCircle } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import { CostumeSvgLayers } from '../CostumeSvgLayers';
@@ -19,7 +19,6 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
   const [subTab, setSubTab] = useState<SubTab>('SKINS');
   const [selectedPreviewId, setSelectedPreviewId] = useState<string>(progress.selectedEggId);
   const [costumeSlot, setCostumeSlot] = useState<CostumeSlot>('hat');
-  const [showTutorial, setShowTutorial] = useState(!isTutorialSeen('EGGS'));
 
   const previewSkin = getEggSkinById(selectedPreviewId);
   const equippedSkin = getEggSkinById(progress.selectedEggId);
@@ -562,33 +561,6 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* [피드백 7 구현] 계란 도감 최초 진입 튜토리얼 팝업 */}
-      {showTutorial && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
-          <div className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-3.5 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
-              <span className="text-3xl">🥚</span>
-            </div>
-            <h3 className="text-lg font-black text-gray-900 tracking-tight">계란 도감 & 의상 코디</h3>
-            <p className="text-xs text-gray-600 font-semibold leading-relaxed">
-              다양한 개성을 가진 계란을 수집하고 플레이하세요!<br /><br />
-              💡 <strong>독립 의상 계란</strong>(경찰란 등)을 획득하면 전용 4부위 의상이 영구 해금되며, <strong>기본 달걀</strong>을 자유롭게 나만의 스타일로 코디할 수 있습니다.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                sound.playTurn();
-                markTutorialSeen('EGGS');
-                setShowTutorial(false);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-black text-sm rounded-2xl shadow-lg hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all cursor-pointer"
-            >
-              확인하고 둘러보기
-            </button>
           </div>
         </div>
       )}

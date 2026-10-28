@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../../types/game';
-import { saveUserProgress, claimDailyFreeGold, isTutorialSeen, markTutorialSeen } from '../../../utils/storage';
+import { saveUserProgress, claimDailyFreeGold } from '../../../utils/storage';
 import { ShoppingBag, Coins, Sparkles, Crown, Zap, Gift, Check, ArrowRight } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import confetti from 'canvas-confetti';
@@ -13,7 +13,6 @@ interface ShopTabProps {
 
 export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) => {
   const [showHatchModal, setShowHatchModal] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(!isTutorialSeen('SHOP'));
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const isFreeGoldClaimedToday = progress.lastFreeGoldDate === todayStr;
@@ -220,33 +219,6 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
           </span>
         </div>
       </div>
-
-      {/* [피드백 7 구현] 달걀 상점 최초 진입 튜토리얼 모달 */}
-      {showTutorial && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
-          <div className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-3.5 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
-              <ShoppingBag size={34} className="fill-amber-500 text-amber-500" />
-            </div>
-            <h3 className="text-lg font-black text-gray-900 tracking-tight">달걀 상점 안내</h3>
-            <p className="text-xs text-gray-600 font-semibold leading-relaxed">
-              매일 무료 골드를 받고 알 부화기에서 새로운 계란을 부화시켜보세요!<br /><br />
-              🎁 <strong>황금 부화기</strong>에서 리본을 풀면 전설의 계란이 태어납니다. 이미 보유한 계란은 <strong>계란 껍데기</strong>로 환급되어 골드로 환전할 수 있습니다!
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                sound.playTurn();
-                markTutorialSeen('SHOP');
-                setShowTutorial(false);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-black text-sm rounded-2xl shadow-lg hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all cursor-pointer"
-            >
-              상점 둘러보기!
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 부화 모달 (리본 풀기 인터랙션) */}
       {showHatchModal && (

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../../types/game';
 import { ACHIEVEMENTS, getAchievementProgress } from '../../../data/achievements';
-import { claimAchievementReward, isTutorialSeen, markTutorialSeen } from '../../../utils/storage';
+import { claimAchievementReward } from '../../../utils/storage';
 import { Award, CheckCircle, Coins, Sparkles, Gift } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import confetti from 'canvas-confetti';
@@ -15,8 +15,6 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
   progress,
   onUpdateProgress,
 }) => {
-  const [showTutorial, setShowTutorial] = useState(!isTutorialSeen('ACHIEVEMENTS'));
-
   const handleClaim = (achId: string) => {
     sound.playHeal();
     confetti({
@@ -138,33 +136,6 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
           );
         })}
       </div>
-
-      {/* [피드백 7 구현] 도전 과제 최초 진입 튜토리얼 모달 */}
-      {showTutorial && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
-          <div className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border-4 border-amber-300 flex flex-col items-center gap-3.5 text-center">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-inner">
-              <Award size={34} className="fill-amber-500 text-amber-500" />
-            </div>
-            <h3 className="text-lg font-black text-gray-900 tracking-tight">도전 과제 시스템</h3>
-            <p className="text-xs text-gray-600 font-semibold leading-relaxed">
-              플레이를 통해 다양한 과제를 완수하고 푸짐한 보상을 획득하세요!<br /><br />
-              🏆 <strong>목표를 달성한 카드</strong>는 황금빛으로 빛나며 터치하면 보너스 골드와 레벨업 경험치가 즉시 지급됩니다!
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                sound.playTurn();
-                markTutorialSeen('ACHIEVEMENTS');
-                setShowTutorial(false);
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-black text-sm rounded-2xl shadow-lg hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all cursor-pointer"
-            >
-              도전하러 가기!
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
