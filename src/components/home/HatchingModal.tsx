@@ -6,6 +6,7 @@ import { Sparkles, Check, Gift, PackageOpen } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import confetti from 'canvas-confetti';
 import { CostumeSvgLayers } from './CostumeSvgLayers';
+import { EggIllustration } from '../common/EggIllustration';
 
 interface HatchingModalProps {
   progress: UserProgress;
@@ -358,46 +359,12 @@ export const HatchingModal: React.FC<HatchingModalProps> = ({
 
           {/* 중앙 부화한 달걀 일러스트 쇼케이스 (고유 의상 포함) */}
           <div className="relative w-48 h-54 my-3 flex items-center justify-center p-3 bg-white/10 rounded-3xl border border-white/20 shadow-2xl backdrop-blur-md">
-            <svg viewBox="0 0 100 116" className="w-38 h-46 drop-shadow-2xl overflow-visible">
-              <defs>
-                <radialGradient id={`hatchedGrad-${hatchResult.skin.id}`} cx="42%" cy="36%" r="65%">
-                  <stop offset="0%" stopColor={hatchResult.skin.colors.top} />
-                  <stop offset="22%" stopColor={hatchResult.skin.colors.mid1} />
-                  <stop offset="65%" stopColor={hatchResult.skin.colors.mid2} />
-                  <stop offset="92%" stopColor={hatchResult.skin.colors.bottom} />
-                  <stop offset="100%" stopColor={hatchResult.skin.colors.shadow} />
-                </radialGradient>
-              </defs>
-              <path
-                d="M 50 10 C 74 10, 92 38, 92 65 C 92 90, 75 106, 50 106 C 25 106, 8 90, 8 65 C 8 38, 26 10, 50 10 Z"
-                fill={`url(#hatchedGrad-${hatchResult.skin.id})`}
-                stroke={hatchResult.skin.colors.line}
-                strokeWidth="3.2"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M 42 16 C 30 22, 17 40, 17 56 C 17 62, 20 66, 24 60 C 27 46, 36 28, 46 20 C 47 18, 45 16, 42 16 Z"
-                fill="#ffffff"
-                opacity="0.7"
-              />
-              <circle cx="38" cy="62" r="4.2" fill={hatchResult.skin.colors.eyeColor} />
-              <circle cx="64" cy="62" r="4.2" fill={hatchResult.skin.colors.eyeColor} />
-              <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
-              <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
-              <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={hatchResult.skin.colors.cheekColor} opacity="0.85" />
-              <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={hatchResult.skin.colors.cheekColor} opacity="0.85" />
-              <path d="M 44 70 Q 51 76 58 70" stroke={hatchResult.skin.colors.eyeColor} strokeWidth="2.8" fill="none" strokeLinecap="round" />
-
-              {/* [피드백 2] 의상 계란인 경우 고유 의상 함께 렌더링 */}
-              {hatchResult.skin.bundledCostumes && (
-                <CostumeSvgLayers
-                  hatId={hatchResult.skin.bundledCostumes.hat}
-                  topId={hatchResult.skin.bundledCostumes.top}
-                  bottomId={hatchResult.skin.bundledCostumes.bottom}
-                  handId={hatchResult.skin.bundledCostumes.hand}
-                />
-              )}
-            </svg>
+            <EggIllustration
+              skin={hatchResult.skin}
+              idPrefix={`hatch-${hatchResult.skin.id}-`}
+              equippedCostumes={hatchResult.skin.bundledCostumes}
+              className="w-38 h-46 drop-shadow-2xl overflow-visible"
+            />
           </div>
 
           <h3 className="text-xl font-black text-amber-300">

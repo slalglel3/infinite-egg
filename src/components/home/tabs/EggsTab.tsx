@@ -6,6 +6,7 @@ import { selectEggSkin, buyEggSkinWithGold, equipCostume, buyCostume, equipCostu
 import { Check, Lock, Sparkles, Shield, Coins, Play, Shirt, Egg, Sparkle, RotateCcw, AlertCircle } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import { CostumeSvgLayers } from '../CostumeSvgLayers';
+import { EggIllustration } from '../../common/EggIllustration';
 
 interface EggsTabProps {
   progress: UserProgress;
@@ -165,131 +166,12 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
         <div className="flex items-center gap-3">
           {/* 달걀 + 의상 비주얼 프리뷰 (세로 비율 단축 통통한 실물 달걀 곡선) */}
           <div className="relative w-22 h-26 shrink-0 flex items-center justify-center p-1 bg-gradient-to-b from-sky-50 to-amber-50 rounded-2xl border border-amber-100 shadow-inner overflow-hidden">
-            <svg viewBox="0 0 100 116" className="w-18 h-22 drop-shadow-md overflow-visible">
-              <defs>
-                <radialGradient id={`previewGrad-${previewSkin.id}`} cx="42%" cy="36%" r="65%">
-                  <stop offset="0%" stopColor={previewSkin.colors.top} />
-                  <stop offset="22%" stopColor={previewSkin.colors.mid1} />
-                  <stop offset="65%" stopColor={previewSkin.colors.mid2} />
-                  <stop offset="92%" stopColor={previewSkin.colors.bottom} />
-                  <stop offset="100%" stopColor={previewSkin.colors.shadow} />
-                </radialGradient>
-                <linearGradient id="previewHighlightGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#fff8eb" stopOpacity="0.2" />
-                </linearGradient>
-              </defs>
-
-              {/* 통통한 실물 달걀 베지어 패스 */}
-              <path
-                d="M 50 10 C 74 10, 92 38, 92 65 C 92 90, 75 106, 50 106 C 25 106, 8 90, 8 65 C 8 38, 26 10, 50 10 Z"
-                fill={`url(#previewGrad-${previewSkin.id})`}
-                stroke={previewSkin.colors.line}
-                strokeWidth="3.2"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M 42 16 C 30 22, 17 40, 17 56 C 17 62, 20 66, 24 60 C 27 46, 36 28, 46 20 C 47 18, 45 16, 42 16 Z"
-                fill="url(#previewHighlightGrad)"
-              />
-
-              {/* [신규 특수 계란 4종] 프리뷰 패턴 & 악세서리 */}
-              {previewSkin.colors.pattern === 'METAL_BOLTS' && (
-                <g fill="#94a3b8" stroke="#334155" strokeWidth="1.2">
-                  {[
-                    { cx: 32, cy: 22 },
-                    { cx: 68, cy: 22 },
-                    { cx: 16, cy: 46 },
-                    { cx: 84, cy: 46 },
-                    { cx: 15, cy: 74 },
-                    { cx: 85, cy: 74 },
-                    { cx: 30, cy: 98 },
-                    { cx: 70, cy: 98 },
-                  ].map((b, i) => (
-                    <g key={i}>
-                      <circle cx={b.cx} cy={b.cy} r="3.5" />
-                      <line x1={b.cx - 2} y1={b.cy} x2={b.cx + 2} y2={b.cy} stroke="#1e293b" strokeWidth="0.9" />
-                      <line x1={b.cx} y1={b.cy - 2} x2={b.cx} y2={b.cy + 2} stroke="#1e293b" strokeWidth="0.9" />
-                    </g>
-                  ))}
-                </g>
-              )}
-
-              {previewSkin.colors.pattern === 'POISON_BUBBLES' && (
-                <g>
-                  {[
-                    { cx: 32, cy: 36, r: 5.5 },
-                    { cx: 72, cy: 48, r: 6.5 },
-                    { cx: 28, cy: 76, r: 5.8 },
-                    { cx: 64, cy: 88, r: 4.8 },
-                  ].map((b, i) => (
-                    <g key={i}>
-                      <circle cx={b.cx} cy={b.cy} r={b.r} fill="#22c55e" opacity="0.75" stroke="#bbf7d0" strokeWidth="1.2" />
-                      <circle cx={b.cx - b.r * 0.3} cy={b.cy - b.r * 0.3} r={b.r * 0.28} fill="#ffffff" />
-                    </g>
-                  ))}
-                </g>
-              )}
-
-              {previewSkin.colors.pattern === 'ANGEL_WINGS' && (
-                <g>
-                  <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#facc15" strokeWidth="3.2" />
-                  <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#fef08a" strokeWidth="1.6" opacity="0.8" />
-                  <path d="M 12 50 C 26 56, 38 68, 38 88 C 22 92, 10 75, 12 50 Z" fill="#ffffff" stroke="#fde047" strokeWidth="1.6" />
-                  <path d="M 88 50 C 74 56, 62 68, 62 88 C 78 92, 90 75, 88 50 Z" fill="#ffffff" stroke="#fde047" strokeWidth="1.6" />
-                </g>
-              )}
-
-              {previewSkin.colors.pattern === 'DEVIL' && (
-                <g>
-                  <path d="M 32 20 Q 14 6 18 -6 Q 28 6 38 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
-                  <path d="M 68 20 Q 86 6 82 -6 Q 72 6 62 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
-                  <path d="M 14 52 L 35 84 L 16 78 Z" fill="#450a0a" stroke="#dc2626" strokeWidth="1.5" />
-                  <path d="M 86 52 L 65 84 L 84 78 Z" fill="#450a0a" stroke="#dc2626" strokeWidth="1.5" />
-                </g>
-              )}
-
-              {/* 프리뷰 표정 */}
-              {previewSkin.specialType === 'METAL' ? (
-                <g>
-                  <circle cx="38" cy="62" r="3.2" fill="#334155" />
-                  <circle cx="64" cy="62" r="8" fill="rgba(74, 222, 128, 0.35)" />
-                  <circle cx="64" cy="62" r="5" fill="#22c55e" stroke="#15803d" strokeWidth="1.8" />
-                  <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
-                  <line x1="44" y1="72" x2="56" y2="72" stroke="#334155" strokeWidth="2.5" strokeLinecap="round" />
-                </g>
-              ) : previewSkin.specialType === 'DEVIL' ? (
-                <g>
-                  <circle cx="38" cy="62" r="4.2" fill="#ef4444" />
-                  <circle cx="64" cy="62" r="4.2" fill="#ef4444" />
-                  <circle cx="36.5" cy="60.5" r="1.6" fill="#fca5a5" />
-                  <circle cx="62.5" cy="60.5" r="1.6" fill="#fca5a5" />
-                  <ellipse cx="29" cy="70" rx="4.5" ry="2.5" fill="#7f1d1d" opacity="0.6" />
-                  <ellipse cx="73" cy="70" rx="4.5" ry="2.5" fill="#7f1d1d" opacity="0.6" />
-                  <path d="M 44 68 Q 51 77 58 68 Z" fill="#020617" />
-                  <polygon points="45,68 47,72 49,68" fill="#ffffff" />
-                  <polygon points="53,68 55,72 57,68" fill="#ffffff" />
-                </g>
-              ) : (
-                <g>
-                  <circle cx="38" cy="62" r="4.2" fill={previewSkin.colors.eyeColor} />
-                  <circle cx="64" cy="62" r="4.2" fill={previewSkin.colors.eyeColor} />
-                  <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
-                  <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
-                  <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={previewSkin.colors.cheekColor} opacity="0.85" />
-                  <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={previewSkin.colors.cheekColor} opacity="0.85" />
-                  <path d="M 44 70 Q 51 76 58 70" stroke={previewSkin.colors.eyeColor} strokeWidth="2.8" fill="none" strokeLinecap="round" />
-                </g>
-              )}
-
-              {/* 의상 레이어 실시간 렌더링 (고유 의상 계란이면 번들 의상, 순수 계란이면 유저 장착 의상) */}
-              <CostumeSvgLayers
-                hatId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.hat : progress.equippedCostumes.hat}
-                topId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.top : progress.equippedCostumes.top}
-                bottomId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.bottom : progress.equippedCostumes.bottom}
-                handId={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes?.hand : progress.equippedCostumes.hand}
-              />
-            </svg>
+            <EggIllustration
+              skin={previewSkin}
+              idPrefix="tab-preview-"
+              equippedCostumes={progress.equippedCostumes}
+              className="w-18 h-22 drop-shadow-md overflow-visible"
+            />
 
             {!isUnlocked && (
               <div className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
@@ -399,82 +281,14 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress, on
 
                   {/* 계란 큼직한 일러스트 (피드백 3: 미해금 독립 의상 계란도 의상 착용 상태로 반투명 렌더링) */}
                   <div className="relative w-16 h-20 flex items-center justify-center my-1">
-                    <svg
-                      viewBox="0 0 100 116"
+                    <EggIllustration
+                      skin={skin}
+                      idPrefix={`tab-grid-${skin.id}-`}
+                      equippedCostumes={skin.hasFixedOutfit ? skin.bundledCostumes : undefined}
                       className={`w-14 h-18 drop-shadow-md overflow-visible transition-opacity ${
                         !isSkinUnlocked ? 'opacity-55' : 'opacity-100'
                       }`}
-                    >
-                      <defs>
-                        <radialGradient id={`miniGrad-${skin.id}`} cx="38%" cy="32%" r="65%">
-                          <stop offset="0%" stopColor={skin.colors.top} />
-                          <stop offset="20%" stopColor={skin.colors.mid1} />
-                          <stop offset="65%" stopColor={skin.colors.mid2} />
-                          <stop offset="90%" stopColor={skin.colors.bottom} />
-                          <stop offset="100%" stopColor={skin.colors.shadow} />
-                        </radialGradient>
-                      </defs>
-                      <path
-                        d="M 50 10 C 74 10, 92 38, 92 65 C 92 90, 75 106, 50 106 C 25 106, 8 90, 8 65 C 8 38, 26 10, 50 10 Z"
-                        fill={`url(#miniGrad-${skin.id})`}
-                        stroke={skin.colors.line}
-                        strokeWidth="3.5"
-                        strokeLinejoin="round"
-                      />
-
-                      {/* 미니 카드 특수 패턴 */}
-                      {skin.specialType === 'ANGEL' && (
-                        <ellipse cx="50" cy="2" rx="16" ry="4" fill="none" stroke="#facc15" strokeWidth="2.5" />
-                      )}
-                      {skin.specialType === 'DEVIL' && (
-                        <g>
-                          <path d="M 34 20 L 22 2 L 38 18 Z" fill="#dc2626" />
-                          <path d="M 66 20 L 78 2 L 62 18 Z" fill="#dc2626" />
-                        </g>
-                      )}
-                      {skin.specialType === 'POISON' && (
-                        <g fill="#22c55e" opacity="0.8">
-                          <circle cx="34" cy="40" r="3.5" />
-                          <circle cx="68" cy="50" r="4.2" />
-                        </g>
-                      )}
-                      {skin.specialType === 'METAL' && (
-                        <g fill="#94a3b8">
-                          <circle cx="20" cy="50" r="2.2" />
-                          <circle cx="80" cy="50" r="2.2" />
-                          <circle cx="35" cy="24" r="2.2" />
-                          <circle cx="65" cy="24" r="2.2" />
-                        </g>
-                      )}
-
-                      {/* 눈 */}
-                      {skin.specialType === 'METAL' ? (
-                        <g>
-                          <circle cx="40" cy="64" r="2.5" fill="#334155" />
-                          <circle cx="60" cy="64" r="4.5" fill="#22c55e" stroke="#15803d" strokeWidth="1.2" />
-                        </g>
-                      ) : skin.specialType === 'DEVIL' ? (
-                        <g>
-                          <circle cx="40" cy="64" r="3.2" fill="#ef4444" />
-                          <circle cx="60" cy="64" r="3.2" fill="#ef4444" />
-                        </g>
-                      ) : (
-                        <g>
-                          <circle cx="40" cy="64" r="3.2" fill={skin.colors.eyeColor} />
-                          <circle cx="60" cy="64" r="3.2" fill={skin.colors.eyeColor} />
-                        </g>
-                      )}
-
-                      {/* [피드백 3 완벽 구현] 독립 의상 계란은 리스트에서도 고유 의상을 입은 모습으로 렌더링! */}
-                      {skin.hasFixedOutfit && skin.bundledCostumes && (
-                        <CostumeSvgLayers
-                          hatId={skin.bundledCostumes.hat}
-                          topId={skin.bundledCostumes.top}
-                          bottomId={skin.bundledCostumes.bottom}
-                          handId={skin.bundledCostumes.hand}
-                        />
-                      )}
-                    </svg>
+                    />
 
                     {!isSkinUnlocked && (
                       <div className="absolute inset-0 bg-black/40 rounded-2xl flex flex-col items-center justify-center gap-0.5 backdrop-blur-[0.5px]">
