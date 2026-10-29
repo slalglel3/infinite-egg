@@ -32,12 +32,12 @@ export function getInitialProgress(): UserProgress {
     bestDistanceMeters: 0,
     totalDistanceMeters: 0,
     totalGamesPlayed: 0,
-    gold: 300,
-    eggShells: 0,
+    gold: 9999,
+    eggShells: 500,
     selectedEggId: 'classic',
-    unlockedEggIds: ['classic'],
+    unlockedEggIds: EGG_SKINS.map((s) => s.id),
     equippedCostumes: {},
-    unlockedCostumeIds: [],
+    unlockedCostumeIds: COSTUME_ITEMS.map((c) => c.id),
     lastFreeGoldDate: undefined,
     achievementProgress: {},
     claimedAchievementIds: [],
@@ -51,9 +51,13 @@ export function loadUserProgress(): UserProgress {
       const data = JSON.parse(raw);
       const { level, neededForNext } = calculateLevelFromExp(data.exp || 0);
       
-      const unlockedEggIds: string[] = Array.isArray(data.unlockedEggIds) && data.unlockedEggIds.length > 0
-        ? data.unlockedEggIds
-        : ['classic'];
+      const allSkinIds = EGG_SKINS.map((s) => s.id);
+      const allCostumeIds = COSTUME_ITEMS.map((c) => c.id);
+      const userUnlocked = Array.isArray(data.unlockedEggIds) ? data.unlockedEggIds : ['classic'];
+      const unlockedEggIds: string[] = Array.from(new Set([...userUnlocked, ...allSkinIds]));
+
+      const userUnlockedCostumes = Array.isArray(data.unlockedCostumeIds) ? data.unlockedCostumeIds : [];
+      const unlockedCostumeIds: string[] = Array.from(new Set([...userUnlockedCostumes, ...allCostumeIds]));
 
       // 기존 기록 기반으로 달성 가능한 계란 자동 해금 검사
       const bestDist = data.bestDistanceMeters || 0;
@@ -77,12 +81,12 @@ export function loadUserProgress(): UserProgress {
         bestDistanceMeters: bestDist,
         totalDistanceMeters: data.totalDistanceMeters || 0,
         totalGamesPlayed: games,
-        gold: typeof data.gold === 'number' ? data.gold : 300, // 기본 웰컴 골드
-        eggShells: typeof data.eggShells === 'number' ? data.eggShells : 0,
+        gold: Math.max(typeof data.gold === 'number' ? data.gold : 300, 5000), // 테스트 편의 골드 보장
+        eggShells: Math.max(typeof data.eggShells === 'number' ? data.eggShells : 0, 500),
         selectedEggId: data.selectedEggId || 'classic',
         unlockedEggIds,
         equippedCostumes: data.equippedCostumes || {},
-        unlockedCostumeIds: Array.isArray(data.unlockedCostumeIds) ? data.unlockedCostumeIds : [],
+        unlockedCostumeIds,
         lastFreeGoldDate: data.lastFreeGoldDate,
         achievementProgress: data.achievementProgress || {},
         claimedAchievementIds: data.claimedAchievementIds || [],

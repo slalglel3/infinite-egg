@@ -35,8 +35,7 @@ export const EVENT_MAPS: EventMapItem[] = [
     speedMultiplier: 1.15,
     bandageRate: 0.5,
     rewardText: '한정판 [전설의 칭호] 획득',
-    isOpen: false,
-    dDayText: '시즌 2 오픈 (D-3)',
+    isOpen: true,
   },
   {
     id: 'galaxy_night',
@@ -48,7 +47,6 @@ export const EVENT_MAPS: EventMapItem[] = [
     speedMultiplier: 0.9,
     bandageRate: 1.5,
     rewardText: '은하수 오로라란 스킨 할인권',
-    isOpen: false,
-    dDayText: '다음 주말 공개',
+    isOpen: true,
   },
 ];
