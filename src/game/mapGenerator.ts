@@ -8,6 +8,7 @@ export class MapGenerator {
   private currentDirection: SlopeDirection = 'RIGHT_DOWN';
   private straightCountInCurrentDir: number = 0;
   private lastItemMeter: number = 0;
+  public bandageMultiplier: number = 1.0;
 
   constructor() {
     this.reset();
@@ -173,11 +174,12 @@ export class MapGenerator {
     segments.push(this.createStraightStep(2, this.shouldSpawnItem(currentMeters), false));
   }
 
-  // [피드백 6] 반창고 발생 빈도 증가 (60m마다 50% 확률)
+  // [피드백 6] 반창고 발생 빈도 증가 (60m마다 50% 확률, 이벤트 맵 배율 반영)
   private shouldSpawnItem(currentMeters: number): boolean {
+    const chance = Math.min(0.95, GAME_CONSTANTS.BANDAGE_SPAWN_CHANCE * this.bandageMultiplier);
     if (
       currentMeters - this.lastItemMeter >= GAME_CONSTANTS.BANDAGE_MIN_INTERVAL_M &&
-      Math.random() < GAME_CONSTANTS.BANDAGE_SPAWN_CHANCE
+      Math.random() < chance
     ) {
       this.lastItemMeter = currentMeters;
       return true;

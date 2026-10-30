@@ -1,4 +1,4 @@
-import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection, EggSplat, EggSkin } from '../types/game';
+import { Egg, SlopeSegment, Particle, GameStats, SlopeDirection, EggSplat, EggSkin, EventMapItem } from '../types/game';
 import { GAME_CONSTANTS } from './constants';
 import { MapGenerator } from './mapGenerator';
 import { EggRenderer } from './eggRenderer';
@@ -19,6 +19,7 @@ export class GameEngine {
   private mapGen: MapGenerator;
   private eggRenderer: EggRenderer;
   private currentSkin: EggSkin = getEggSkinById('classic');
+  public currentEventMap: EventMapItem | null = null;
 
   public egg: Egg;
   public segments: SlopeSegment[] = [];
@@ -118,12 +119,15 @@ export class GameEngine {
   public restart(
     userLevel: number = 1,
     skin?: EggSkin,
-    costumes?: { hat?: string; top?: string; bottom?: string; hand?: string }
+    costumes?: { hat?: string; top?: string; bottom?: string; hand?: string },
+    eventMap?: EventMapItem | null
   ): void {
     if (skin) {
       this.setSkin(skin);
     }
     this.setCostumes(costumes);
+    this.currentEventMap = eventMap || null;
+    this.mapGen.bandageMultiplier = this.currentEventMap ? this.currentEventMap.bandageRate : 1.0;
 
     this.mapGen.reset(0, 0);
     this.segments = this.mapGen.generateInitialMap();
@@ -131,6 +135,8 @@ export class GameEngine {
     const hpBonus = this.currentSkin.hpBonus || 0;
     const maxHp = GAME_CONSTANTS.BASE_HP + (userLevel - 1) * GAME_CONSTANTS.HP_PER_LEVEL + hpBonus;
     const firstSeg = this.segments[0];
+
+    const speedMult = this.currentEventMap ? this.currentEventMap.speedMultiplier : 1.0;
 
     this.egg = {
       x: firstSeg.startX,
@@ -159,7 +165,7 @@ export class GameEngine {
 
     this.stats = {
       distanceMeters: 0,
-      speed: GAME_CONSTANTS.INITIAL_SPEED,
+      speed: GAME_CONSTANTS.INITIAL_SPEED * speedMult,
       hp: maxHp,
       maxHp,
       perfectLandings: 0,
@@ -280,10 +286,12 @@ export class GameEngine {
         return;
       }
 
-      // 2. 코너 진입 전 42px ~ 95px 선입력 버퍼링 구간 (부드럽고 쫀득한 손맛 보장)
+      // 2. 코너 진입 전 42px ~ 95px 선입력 버퍼링 구간 (저속/고속 무관 100% 코너 도달 보장 가변 윈도우)
       if (distToTurn <= 95) {
         this.turnBuffered = true;
-        this.turnBufferTimer = 0.16; // 160ms 버퍼 윈도우
+        // 초반 저속(260px/s) 이동 시간(약 0.21초) + 안전 마진을 고려한 속도 비례 가변 보존 시간
+        const travelTimeToCorner = (distToTurn - 35) / Math.max(100, this.stats.speed);
+        this.turnBufferTimer = Math.max(0.35, travelTimeToCorner + 0.15);
         this.turnBufferSegIndex = turnSegIndex;
         this.turnBufferDir = newDir;
         sound.playTurn();
@@ -398,11 +406,12 @@ export class GameEngine {
     this.stats.distanceMeters = Math.max(this.stats.distanceMeters, currentMeters);
 
     const speedStepCount = Math.floor(this.stats.distanceMeters / GAME_CONSTANTS.SPEED_INCREASE_INTERVAL_M);
-    const targetSpeed = Math.min(
+    const speedMult = this.currentEventMap ? this.currentEventMap.speedMultiplier : 1.0;
+    const baseTargetSpeed = Math.min(
       GAME_CONSTANTS.MAX_SPEED,
       GAME_CONSTANTS.INITIAL_SPEED + speedStepCount * GAME_CONSTANTS.SPEED_INCREASE_STEP
     );
-    this.stats.speed = targetSpeed;
+    this.stats.speed = baseTargetSpeed * speedMult;
 
     switch (this.egg.state) {
       case 'ROLLING':
@@ -458,9 +467,9 @@ export class GameEngine {
       });
     }
 
-    // 지면 노면 스키드마크 & 고유 궤적(Trail) 생성 (초당 약 30회)
+    // 지면 노면 스키드마크 & 고유 궤적(Trail) 생성 (초당 약 45회 촘촘한 리본 스폰)
     this.trailSpawnTimer += dt;
-    if (this.trailSpawnTimer >= 0.035) {
+    if (this.trailSpawnTimer >= 0.022) {
       this.trailSpawnTimer = 0;
       this.spawnEggTrail();
     }
@@ -986,14 +995,14 @@ export class GameEngine {
 
   // 지면 밀착형 궤적(Trail/Skidmark) 생성
   private spawnEggTrail(): void {
-    if (this.trails.length >= 60) {
+    if (this.trails.length >= 80) {
       this.trails.shift();
     }
 
     const special = this.currentSkin.specialType;
     let type: EggTrailPoint['type'] = 'SKID';
-    let color = '#334155';
-    let radius = 6;
+    let color = 'rgba(255, 255, 255, 0.75)';
+    let radius = 6.5;
 
     if (this.currentSkin.id === 'metal_egg' || special === 'METAL') {
       type = 'SPARK';
@@ -1034,9 +1043,15 @@ export class GameEngine {
 
       switch (trail.type) {
         case 'SKID': {
-          ctx.fillStyle = trail.color;
+          // [VOC-04 반영] 타이어 자국 대신 신선한 계란 흰자의 촉촉한 윤기 & 미세 껍질 광택 궤적
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.beginPath();
           ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.45, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          // 중심부 반짝이는 달걀 껍질 미세 광채 하이라이트
+          ctx.fillStyle = '#fef3c7';
+          ctx.beginPath();
+          ctx.arc(trail.x, trail.y, trail.radius * 0.35, 0, Math.PI * 2);
           ctx.fill();
           break;
         }

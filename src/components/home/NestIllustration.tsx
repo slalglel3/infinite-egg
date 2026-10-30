@@ -3,6 +3,7 @@ import { EggSkin } from '../../types/game';
 import { Sparkles, Heart } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import { EggIllustration } from '../common/EggIllustration';
+import { loadUserProgress, saveUserProgress } from '../../utils/storage';
 
 interface NestIllustrationProps {
   skin: EggSkin;
@@ -22,6 +23,8 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
   const [showHeart, setShowHeart] = useState(false);
   const [reactionText, setReactionText] = useState('방긋! ❤️');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tapStreakRef = useRef(0);
+  const resetStreakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 랜덤 움직임 루프 (1.8초 ~ 3.2초 주기마다 무작위 액션 실행)
   useEffect(() => {
@@ -58,10 +61,51 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
     };
   }, []);
 
-  // 유저 직접 탭/클릭 시 반응 (다채로운 아케이드 리액션)
+  // 유저 직접 탭/클릭 시 반응 (스킨별 고유 대사 & 10회 연속 탭 이스터에그)
   const handleEggClick = () => {
-    const reactions = ['방긋! ❤️', '통통! ✨', '얏호~! 🌟', '달릴 준비 완료! 🥚', '데굴데굴~ 💨', '헤헤! 😊'];
-    const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+    // 1. 연속 탭 이스터에그 카운트 (2.2초 내 10회 탭 시 골드 보상!)
+    tapStreakRef.current += 1;
+    if (resetStreakTimerRef.current) clearTimeout(resetStreakTimerRef.current);
+    resetStreakTimerRef.current = setTimeout(() => {
+      tapStreakRef.current = 0;
+    }, 2200);
+
+    if (tapStreakRef.current >= 10) {
+      tapStreakRef.current = 0;
+      setReactionText('어지러워요~! 💫 (골드 +10 발견!)');
+      sound.playPerfect();
+
+      try {
+        const p = loadUserProgress();
+        p.gold += 10;
+        saveUserProgress(p);
+      } catch (e) {
+        console.error('Failed to reward gold:', e);
+      }
+
+      setMotion('TOUCH_JUMP');
+      setShowHeart(true);
+      setTimeout(() => setMotion('IDLE'), 600);
+      setTimeout(() => setShowHeart(false), 1600);
+      if (onEggClick) onEggClick();
+      return;
+    }
+
+    // 2. 캐릭터 스킨별 고유 감정 표현 & 대사 분기
+    const special = skin.specialType;
+    let pool = ['방긋! ❤️', '통통! ✨', '얏호~! 🌟', '달릴 준비 완료! 🥚', '데굴데굴~ 💨', '헤헤! 😊'];
+
+    if (skin.id === 'metal_egg' || special === 'METAL') {
+      pool = ['시스템 풀가동 🤖', '치지직.. 삐빅! ⚙️', '출력 120% 상승! ⚡', '최강 합금 계란이다 🛡️'];
+    } else if (special === 'POISON') {
+      pool = ['쉭쉭! 조심해 🧪', '보글보글~ 독성 주의 🫧', '닿으면 중독된다구 💚', '짜릿짜릿해 ⚡'];
+    } else if (special === 'ANGEL') {
+      pool = ['축복이 함께하길 ✨', '포근포근해요~ 🕊️', '빛이 인도할 거예요 🌟', '천사의 날개짓 💖'];
+    } else if (special === 'DEVIL') {
+      pool = ['크하하! 심연을 보아라 😈', '다 태워버린다! 🔥', '어딜 만져! 💀', '크큭.. 더 세게 쳐봐! 🦇'];
+    }
+
+    const randomReaction = pool[Math.floor(Math.random() * pool.length)];
     setReactionText(randomReaction);
 
     setMotion('TOUCH_JUMP');

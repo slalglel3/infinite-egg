@@ -113,7 +113,7 @@ export function App() {
     }
 
     const currentSkin = getEggSkinById(userProgress.selectedEggId);
-    engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes);
+    engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes, eventMap || null);
     setStats({ ...engine.stats });
     setGameState('PLAYING');
   };
@@ -184,7 +184,7 @@ export function App() {
           leveledUp={leveledUp}
           isNewRecord={isNewRecord}
           earnedGold={lastEarnedGold}
-          onRestart={() => handleStartGame()}
+          onRestart={() => handleStartGame(activeEventMap || undefined)}
           onGoHome={handleGoHome}
         />
       )}
