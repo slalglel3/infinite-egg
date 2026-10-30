@@ -107,10 +107,10 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
                         e.stopPropagation();
                         handleClaim(ach.id);
                       }}
-                      className="btn-3d-amber text-xs px-3.5 py-1.5 rounded-2xl flex items-center gap-1 animate-bounce cursor-pointer"
+                      className="btn-3d-amber text-xs px-3.5 py-1.5 rounded-2xl flex items-center gap-1 animate-bounce cursor-pointer text-[#1e1b18]"
                     >
-                      <Gift size={14} />
-                      <span>보상 받기</span>
+                      <Gift size={14} className="text-[#1e1b18]" />
+                      <span className="text-[#1e1b18] font-black">보상 받기</span>
                     </button>
                   ) : null}
                 </div>

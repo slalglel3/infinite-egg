@@ -79,11 +79,15 @@ button {
   border: 3.5px solid #1e1b18 !important;
   border-radius: 1.25rem !important;
   box-shadow: 0 5px 0 #92400e, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
+  color: #1e1b18 !important;
   font-weight: 900 !important;
-  text-shadow: -1.5px -1.5px 0 #1e1b18, 1.5px -1.5px 0 #1e1b18, -1.5px 1.5px 0 #1e1b18, 1.5px 1.5px 0 #1e1b18, 0 2px 0 #1e1b18 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) !important;
   transition: all 0.08s ease-in-out !important;
   user-select: none;
+}
+.btn-3d-amber * {
+  color: #1e1b18 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
 .btn-3d-amber:active {
   transform: translateY(3.5px) !important;
@@ -97,9 +101,15 @@ button {
   box-shadow: 0 5px 0 #065f46, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
   color: #ffffff !important;
   font-weight: 900 !important;
+  -webkit-text-stroke: 0.6px #064e3b;
   text-shadow: -1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 2px 0 #064e3b !important;
   transition: all 0.08s ease-in-out !important;
   user-select: none;
+}
+.btn-3d-emerald * {
+  color: #ffffff !important;
+  -webkit-text-stroke: 0.6px #064e3b;
+  text-shadow: -1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 2px 0 #064e3b !important;
 }
 .btn-3d-emerald:active {
   transform: translateY(3.5px) !important;
@@ -113,6 +123,7 @@ button {
   box-shadow: 0 5px 0 #075985, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
   color: #ffffff !important;
   font-weight: 900 !important;
+  -webkit-text-stroke: 0.6px #082f49;
   text-shadow: -1.5px -1.5px 0 #082f49, 1.5px -1.5px 0 #082f49, -1.5px 1.5px 0 #082f49, 1.5px 1.5px 0 #082f49, 0 2px 0 #082f49 !important;
   transition: all 0.08s ease-in-out !important;
   user-select: none;
@@ -129,6 +140,7 @@ button {
   box-shadow: 0 5px 0 #9f1239, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
   color: #ffffff !important;
   font-weight: 900 !important;
+  -webkit-text-stroke: 0.6px #4c0519;
   text-shadow: -1.5px -1.5px 0 #4c0519, 1.5px -1.5px 0 #4c0519, -1.5px 1.5px 0 #4c0519, 1.5px 1.5px 0 #4c0519, 0 2px 0 #4c0519 !important;
   transition: all 0.08s ease-in-out !important;
   user-select: none;

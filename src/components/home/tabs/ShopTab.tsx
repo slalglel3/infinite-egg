@@ -129,8 +129,11 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
             <span className="text-[10px] font-black bg-white text-orange-600 px-2.5 py-0.5 rounded-full shadow-md border border-black/10">
               BEST 가챠
             </span>
-            <span className="text-xs font-black text-yellow-200 flex items-center gap-1 drop-shadow">
-              <Sparkles size={14} />
+            <span
+              style={{ textShadow: '-1px -1px 0 #18181b, 1px -1px 0 #18181b, -1px 1px 0 #18181b, 1px 1px 0 #18181b' }}
+              className="text-xs font-black text-amber-200 flex items-center gap-1"
+            >
+              <Sparkles size={14} className="text-yellow-300" />
               <span>전설 알 & 의상 세트</span>
             </span>
           </div>
@@ -147,7 +150,10 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
               >
                 황금 둥지 알 부화기
               </h3>
-              <p className="text-xs font-black text-yellow-100 mt-1 drop-shadow">
+              <p
+                style={{ textShadow: '0 1.5px 3px rgba(0,0,0,0.7)' }}
+                className="text-xs font-black text-white mt-1"
+              >
                 터치 시 리본 풀기 인터랙티브 부화! (중복 시 껍데기 환급)
               </p>
             </div>
@@ -159,12 +165,15 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
 
           {/* 부화 시작 3D 버튼 바 */}
           <div className="mt-2 pt-2 border-t border-white/30 flex items-center justify-between z-10">
-            <div className="flex items-center gap-1 font-black text-yellow-200">
+            <div
+              style={{ textShadow: '-1px -1px 0 #18181b, 1px -1px 0 #18181b, -1px 1px 0 #18181b, 1px 1px 0 #18181b' }}
+              className="flex items-center gap-1 font-black text-amber-200"
+            >
               <Coins size={16} className="text-yellow-300" />
               <span className="text-lg">250 골드</span>
             </div>
 
-            <span className="btn-3d-amber py-2 px-4 rounded-xl text-xs font-black flex items-center gap-1 shadow-lg">
+            <span className="btn-3d-amber py-2 px-4 rounded-xl text-xs font-black flex items-center gap-1 shadow-lg text-[#1e1b18]">
               <span>부화 시작 ▶</span>
             </span>
           </div>
@@ -182,11 +191,11 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-black text-white drop-shadow">계란 껍데기 환전</span>
-                <span className="text-[9px] font-black bg-white/25 px-1.5 py-0.2 rounded-full text-yellow-200">
+                <span className="text-[9px] font-black bg-black/40 px-1.5 py-0.2 rounded-full text-amber-200 border border-white/20">
                   보유: {progress.eggShells || 0}개
                 </span>
               </div>
-              <p className="text-[11px] font-extrabold text-rose-100 mt-0.5">
+              <p className="text-[11px] font-extrabold text-white mt-0.5 drop-shadow-sm">
                 껍데기 50개 ➔ 300 골드로 즉시 교환
               </p>
             </div>

@@ -34,15 +34,15 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <header className="w-full flex items-center justify-between p-3 pt-safe z-30 select-none">
-      {/* 1. 좌측: 운빨존많겜 스타일 레벨 방패 엠블럼 */}
+      {/* 1. 좌측: 운빨존많겜 스타일 레벨 엠블럼 (글자 겹침 원천 방지 레이아웃) */}
       <div className="flex items-center gap-2">
         <div className="relative flex flex-col items-center">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-600 border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e] flex items-center justify-center text-white font-black text-sm drop-shadow">
-            <span className="text-[10px] text-amber-200 block -mt-3.5 absolute font-extrabold">LV</span>
-            <span className="mt-1 text-base">{progress.level}</span>
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e] flex flex-col items-center justify-center text-white drop-shadow leading-none py-1">
+            <span className="text-[9px] text-amber-100 font-black tracking-tight">LV</span>
+            <span className="text-sm font-black text-white leading-none mt-0.5">{progress.level}</span>
           </div>
           {/* 미니 경험치 게이지 */}
-          <div className="w-10 h-1.5 bg-[#1e1b18] rounded-full overflow-hidden mt-1 p-0.2 border border-white/40 shadow-sm">
+          <div className="w-11 h-1.5 bg-[#1e1b18] rounded-full overflow-hidden mt-1 p-0.2 border border-white/40 shadow-sm">
             <div
               className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
               style={{ width: `${expPercent}%` }}

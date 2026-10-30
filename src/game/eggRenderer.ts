@@ -262,77 +262,77 @@ export class EggRenderer {
         ctx.fill();
       }
     }
-    // 8. [순백의 천사란] 황금 헤일로 & 깃털 날개
+    // 8. [순백의 천사란] 황금 헤일로 & 3단 입체 깃털 날개
     else if (pattern === 'ANGEL_WINGS' || special === 'ANGEL') {
       // 황금 헤일로
       ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 3.2;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.ellipse(50, 0, 22, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(50, -2, 22, 6, 0, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.strokeStyle = '#fef08a';
-      ctx.lineWidth = 1.6;
-      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = 1.8;
+      ctx.globalAlpha = 0.9;
       ctx.beginPath();
-      ctx.ellipse(50, 0, 22, 5.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(50, -2, 22, 6, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1.0;
 
-      // 날개 (점프 시 펼침, 평소엔 접힘)
+      // 날개 (점프 시 펼침, 평소엔 접힘 - 풍성한 3단 깃털 볼륨)
       ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#fde047';
-      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.8;
 
       if (egg.state === 'JUMPING') {
-        const leftWingSpread = new Path2D('M 20 54 C -4 30, -12 50, -4 74 C 4 66, 12 70, 22 66 Z');
-        const rightWingSpread = new Path2D('M 80 54 C 104 30, 112 50, 104 74 C 96 66, 88 70, 78 66 Z');
+        const leftWingSpread = new Path2D('M 18 50 C 6 36, -8 24, -20 32 C -24 38, -16 48, -4 54 C -16 58, -18 68, -6 74 C 4 72, 12 68, 18 64 Z');
+        const rightWingSpread = new Path2D('M 82 50 C 94 36, 108 24, 120 32 C 124 38, 116 48, 104 54 C 116 58, 118 68, 106 74 C 96 72, 88 68, 82 64 Z');
         ctx.fill(leftWingSpread);
         ctx.stroke(leftWingSpread);
         ctx.fill(rightWingSpread);
         ctx.stroke(rightWingSpread);
       } else {
-        const leftWingFold = new Path2D('M 12 50 C 26 56, 38 68, 38 88 C 22 92, 10 75, 12 50 Z');
-        const rightWingFold = new Path2D('M 88 50 C 74 56, 62 68, 62 88 C 78 92, 90 75, 88 50 Z');
+        const leftWingFold = new Path2D('M 16 42 C 4 50, 2 68, 10 78 C 18 86, 28 88, 34 84 C 36 74, 30 62, 22 54 C 20 46, 18 42, 16 42 Z');
+        const rightWingFold = new Path2D('M 84 42 C 96 50, 98 68, 90 78 C 82 86, 72 88, 66 84 C 64 74, 70 62, 78 54 C 80 46, 82 42, 84 42 Z');
         ctx.fill(leftWingFold);
         ctx.stroke(leftWingFold);
         ctx.fill(rightWingFold);
         ctx.stroke(rightWingFold);
       }
     }
-    // 9. [심연의 악마란] 악마 뿔 & 박쥐 날개
+    // 9. [심연의 악마란] 악마 뿔 & 3단 박쥐/드래곤 날개
     else if (pattern === 'DEVIL' || special === 'DEVIL') {
       const stage = egg.devilStage !== undefined ? egg.devilStage : 2;
 
       // 뿔 (stage >= 1)
       if (stage >= 1) {
         ctx.fillStyle = '#dc2626';
-        ctx.strokeStyle = '#7f1d1d';
-        ctx.lineWidth = 1.8;
-        const leftHorn = new Path2D('M 32 20 Q 14 6 18 -6 Q 28 6 38 20 Z');
-        const rightHorn = new Path2D('M 68 20 Q 86 6 82 -6 Q 72 6 62 20 Z');
+        ctx.strokeStyle = '#450a0a';
+        ctx.lineWidth = 2.0;
+        const leftHorn = new Path2D('M 32 20 Q 14 4 16 -8 Q 28 4 38 20 Z');
+        const rightHorn = new Path2D('M 68 20 Q 86 4 84 -8 Q 72 4 62 20 Z');
         ctx.fill(leftHorn);
         ctx.stroke(leftHorn);
         ctx.fill(rightHorn);
         ctx.stroke(rightHorn);
       }
 
-      // 날개 (stage >= 2)
+      // 날개 (stage >= 2) - 날카로운 골격과 붉은 피막
       if (stage >= 2) {
         ctx.fillStyle = '#450a0a';
         ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2.0;
 
         if (egg.state === 'JUMPING') {
-          const leftBatSpread = new Path2D('M 22 52 L -6 32 L -2 50 L -12 60 L 0 66 L 16 68 Z');
-          const rightBatSpread = new Path2D('M 78 52 L 106 32 L 102 50 L 112 60 L 100 66 L 84 68 Z');
+          const leftBatSpread = new Path2D('M 18 50 L 4 30 L -8 18 L -6 28 L -20 38 C -14 48, -4 50, -2 56 C -14 62, -12 74, 4 74 C 12 72, 16 68, 20 60 Z');
+          const rightBatSpread = new Path2D('M 82 50 L 96 30 L 108 18 L 106 28 L 120 38 C 114 48, 104 50, 102 56 C 114 62, 112 74, 96 74 C 88 72, 84 68, 80 60 Z');
           ctx.fill(leftBatSpread);
           ctx.stroke(leftBatSpread);
           ctx.fill(rightBatSpread);
           ctx.stroke(rightBatSpread);
         } else {
-          const leftBatFold = new Path2D('M 14 52 L 35 84 L 16 78 Z');
-          const rightBatFold = new Path2D('M 86 52 L 65 84 L 84 78 Z');
+          const leftBatFold = new Path2D('M 16 46 L 4 36 L 6 48 L -4 60 C 6 62, 12 60, 16 54 L 8 68 C 18 70, 26 66, 30 62 Z');
+          const rightBatFold = new Path2D('M 84 46 L 96 36 L 94 48 L 104 60 C 94 62, 88 60, 84 54 L 92 68 C 82 70, 74 66, 70 62 Z');
           ctx.fill(leftBatFold);
           ctx.stroke(leftBatFold);
           ctx.fill(rightBatFold);
@@ -512,7 +512,7 @@ export class EggRenderer {
 
     // 1. 하의 (Bottom)
     if (bottom === 'police_bottom') {
-      const belt = new Path2D('M 16 80 Q 50 85 84 80 L 86 89 Q 50 94 14 89 Z');
+      const belt = new Path2D('M 16 89 Q 50 94 84 89 L 86 97 Q 50 102 14 97 Z');
       ctx.fillStyle = '#1e293b';
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.5;
@@ -523,10 +523,10 @@ export class EggRenderer {
       ctx.fillStyle = '#fbbf24';
       ctx.strokeStyle = '#d97706';
       ctx.lineWidth = 1.2;
-      ctx.fillRect(44, 80, 12, 10);
-      ctx.strokeRect(44, 80, 12, 10);
+      ctx.fillRect(44, 89, 12, 9);
+      ctx.strokeRect(44, 89, 12, 9);
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(47, 83, 6, 4);
+      ctx.fillRect(47, 91.5, 6, 4);
     } else if (bottom === 'cowboy_bottom') {
       const jeans = new Path2D('M 12 78 Q 50 84 88 78 C 88 98 75 106 50 106 C 25 106 12 98 12 78 Z');
       ctx.fillStyle = '#1d4ed8';
@@ -572,24 +572,24 @@ export class EggRenderer {
       ctx.stroke();
     }
 
-    // 2. 상의 (Top)
+    // 2. 상의 (Top) - 입(y: 70~74) 아래 목/가슴 위치(y: 78~102)로 정밀 배치
     if (top === 'police_top') {
-      const collar = new Path2D('M 38 74 L 50 81 L 62 74 L 50 72 Z');
+      const collar = new Path2D('M 36 80 L 50 87 L 64 80 L 50 78 Z');
       ctx.fillStyle = '#ffffff';
       ctx.strokeStyle = '#94a3b8';
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.fill(collar);
       ctx.stroke(collar);
 
-      const tie = new Path2D('M 48 78 L 52 78 L 54 92 L 50 96 L 46 92 Z');
+      const tie = new Path2D('M 48 84 L 52 84 L 55 97 L 50 102 L 45 97 Z');
       ctx.fillStyle = '#0f172a';
       ctx.fill(tie);
 
       ctx.fillStyle = '#fbbf24';
-      const badge = new Path2D('M 32 78 L 36 75 L 40 78 L 38 83 L 34 83 Z');
+      const badge = new Path2D('M 28 84 L 32 81 L 36 84 L 34 89 L 30 89 Z');
       ctx.fill(badge);
     } else if (top === 'cowboy_top') {
-      const bandana = new Path2D('M 40 75 L 60 75 L 50 87 Z');
+      const bandana = new Path2D('M 38 79 L 62 79 L 50 91 Z');
       ctx.fillStyle = '#dc2626';
       ctx.strokeStyle = '#991b1b';
       ctx.lineWidth = 1;
@@ -600,33 +600,37 @@ export class EggRenderer {
       ctx.lineWidth = 3;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.moveTo(36, 75);
-      ctx.quadraticCurveTo(50, 80, 64, 75);
+      ctx.moveTo(34, 79);
+      ctx.quadraticCurveTo(50, 84, 66, 79);
       ctx.stroke();
 
       ctx.fillStyle = '#92400e';
       ctx.globalAlpha = 0.9;
-      const vestL = new Path2D('M 18 78 L 32 78 L 30 92 L 16 92 Z');
-      const vestR = new Path2D('M 82 78 L 68 78 L 70 92 L 84 92 Z');
+      const vestL = new Path2D('M 16 82 L 30 82 L 28 96 L 14 96 Z');
+      const vestR = new Path2D('M 84 82 L 70 82 L 72 96 L 86 96 Z');
       ctx.fill(vestL);
       ctx.fill(vestR);
       ctx.globalAlpha = 1.0;
     } else if (top === 'mermaid_top') {
       ctx.fillStyle = '#c084fc';
-      ctx.strokeStyle = '#f3e8ff';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#7e22ce';
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.ellipse(38, 76, 6, 5, 0, 0, Math.PI * 2);
-      ctx.ellipse(62, 76, 6, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(34, 80, 8, 6.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(66, 80, 8, 6.5, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     } else if (top === 'king_top') {
-      const cape = new Path2D('M 22 74 C 32 78, 68 78, 78 74 L 84 92 C 68 96, 32 96, 16 92 Z');
+      const cape = new Path2D('M 22 78 Q 50 86 78 78 L 82 89 Q 50 97 18 89 Z');
       ctx.fillStyle = '#dc2626';
       ctx.strokeStyle = '#991b1b';
       ctx.lineWidth = 1.5;
       ctx.fill(cape);
       ctx.stroke(cape);
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(50, 86, 3.5, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // 3. 모자 (Hat)

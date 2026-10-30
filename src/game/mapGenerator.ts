@@ -242,8 +242,9 @@ export class MapGenerator {
     const endX = startX + dirSign * runLength * GAME_CONSTANTS.SLOPE_COS;
     const endY = startY + runLength * GAME_CONSTANTS.SLOPE_SIN;
 
-    const baseGap = 55;
-    const extraGap = Math.min(35, (currentMeters / 1500) * 35);
+    // [피드백 4 반영] 낭떠러지 점프 구간(GAP) 대폭 확장 (기본 92px ~ 최대 140px)
+    const baseGap = 92;
+    const extraGap = Math.min(48, (currentMeters / 1500) * 48);
     const gapDistance = baseGap + extraGap;
 
     const gapDx = dirSign * gapDistance * GAME_CONSTANTS.SLOPE_COS;

@@ -10,21 +10,21 @@ interface CostumeProps {
 export const CostumeSvgLayers: React.FC<CostumeProps> = ({ hatId, topId, bottomId, handId }) => {
   return (
     <g className="egg-costumes pointer-events-none select-none">
-      {/* 1. 하의 (Bottom) 레이어 - 계란 하단 (y: 80 ~ 106 부근) */}
+      {/* 1. 하의 (Bottom) 레이어 - 계란 하단 벨트 및 바지 (y: 89 ~ 106 부근) */}
       {bottomId === 'police_bottom' && (
         <g id="costume-police-bottom">
-          {/* 가죽 벨트 */}
+          {/* 가죽 벨트 (상의와 겹치지 않게 하단으로 자연스럽게 배치) */}
           <path
-            d="M 16 80 Q 50 85 84 80 L 86 89 Q 50 94 14 89 Z"
+            d="M 16 89 Q 50 94 84 89 L 86 97 Q 50 102 14 97 Z"
             fill="#1e293b"
             stroke="#0f172a"
             strokeWidth="1.5"
           />
           {/* 황금 버클 */}
-          <rect x="44" y="80" width="12" height="10" rx="2" fill="#fbbf24" stroke="#d97706" strokeWidth="1.2" />
-          <rect x="47" y="83" width="6" height="4" rx="1" fill="#1e293b" />
+          <rect x="44" y="89" width="12" height="9" rx="2" fill="#fbbf24" stroke="#d97706" strokeWidth="1.2" />
+          <rect x="47" y="91.5" width="6" height="4" rx="1" fill="#1e293b" />
           {/* 우측 수갑 파우치 */}
-          <rect x="68" y="82" width="10" height="9" rx="2" fill="#334155" stroke="#0f172a" strokeWidth="1" />
+          <rect x="68" y="90" width="10" height="9" rx="2" fill="#334155" stroke="#0f172a" strokeWidth="1" />
         </g>
       )}
 
@@ -77,26 +77,26 @@ export const CostumeSvgLayers: React.FC<CostumeProps> = ({ hatId, topId, bottomI
         </g>
       )}
 
-      {/* 2. 상의 (Top) 레이어 - [피드백 10] 얼굴(눈/볼터치/미소 y:60~76) 아래 목/가슴 위치(y: 74 ~ 94)로 정확히 배치 */}
+      {/* 2. 상의 (Top) 레이어 - 입(y: 70~74) 아래 목/가슴 위치(y: 79 ~ 102)로 완벽히 분리 배치 */}
       {topId === 'police_top' && (
         <g id="costume-police-top">
-          {/* 단정한 흰 셔츠 칼라 */}
-          <path d="M 38 74 L 50 81 L 62 74 L 50 72 Z" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
-          {/* 검정 넥타이 */}
-          <path d="M 48 78 L 52 78 L 54 92 L 50 96 L 46 92 Z" fill="#0f172a" />
-          {/* 황금 경찰 배지 (좌측 가슴) */}
-          <polygon points="32,78 36,75 40,78 38,83 34,83" fill="#fbbf24" stroke="#b45309" strokeWidth="0.8" />
+          {/* 단정한 흰 셔츠 칼라 (입에서 확실하게 떨어져 목둘레에 안착) */}
+          <path d="M 36 80 L 50 87 L 64 80 L 50 78 Z" fill="#ffffff" stroke="#94a3b8" strokeWidth="1.2" />
+          {/* 검정 제복 넥타이 (칼라 홈 아래에서 배 쪽으로 자연스럽게 떨어짐) */}
+          <path d="M 48 84 L 52 84 L 55 97 L 50 102 L 45 97 Z" fill="#0f172a" />
+          {/* 황금 경찰 배지 (좌측 가슴에 또렷하게 부착) */}
+          <polygon points="28,84 32,81 36,84 34,89 30,89" fill="#fbbf24" stroke="#b45309" strokeWidth="1" />
         </g>
       )}
 
       {topId === 'cowboy_top' && (
         <g id="costume-cowboy-top">
-          {/* 빨간 반다나 스카프 (목에 자연스럽게 두른 형태) */}
-          <polygon points="40,75 60,75 50,87" fill="#dc2626" stroke="#991b1b" strokeWidth="1" />
-          <path d="M 36 75 Q 50 80 64 75" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+          {/* 빨간 반다나 스카프 (입 아래 목에 자연스럽게 두른 형태) */}
+          <polygon points="38,79 62,79 50,91" fill="#dc2626" stroke="#991b1b" strokeWidth="1" />
+          <path d="M 34 79 Q 50 84 66 79" fill="none" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
           {/* 브라운 스웨이드 조끼 앞섶 */}
-          <path d="M 18 78 L 32 78 L 30 92 L 16 92 Z" fill="#92400e" opacity="0.9" />
-          <path d="M 82 78 L 68 78 L 70 92 L 84 92 Z" fill="#92400e" opacity="0.9" />
+          <path d="M 16 82 L 30 82 L 28 96 L 14 96 Z" fill="#92400e" opacity="0.9" />
+          <path d="M 84 82 L 70 82 L 72 96 L 86 96 Z" fill="#92400e" opacity="0.9" />
         </g>
       )}
 
@@ -115,11 +115,11 @@ export const CostumeSvgLayers: React.FC<CostumeProps> = ({ hatId, topId, bottomI
 
       {topId === 'king_top' && (
         <g id="costume-king-top">
-          {/* 붉은 벨벳 망토 칼라 & 흰 털장식 */}
-          <path d="M 24 74 Q 50 82 76 74 L 80 86 Q 50 94 20 86 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" />
-          <path d="M 22 75 Q 50 83 78 75" stroke="#f8fafc" strokeWidth="4" strokeLinecap="round" fill="none" />
+          {/* 붉은 벨벳 망토 칼라 & 흰 털장식 (목둘레에 자연스럽게 배치) */}
+          <path d="M 22 78 Q 50 86 78 78 L 82 89 Q 50 97 18 89 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" />
+          <path d="M 20 79 Q 50 87 80 79" stroke="#f8fafc" strokeWidth="4" strokeLinecap="round" fill="none" />
           {/* 망토 금장 보석 브로치 */}
-          <circle cx="50" cy="83" r="3.5" fill="#f59e0b" stroke="#78350f" strokeWidth="1" />
+          <circle cx="50" cy="86" r="3.5" fill="#f59e0b" stroke="#78350f" strokeWidth="1" />
         </g>
       )}
 

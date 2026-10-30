@@ -108,12 +108,12 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
             onClick={() => setSubTab('SKINS')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-xl font-black text-xs transition-all cursor-pointer ${
               subTab === 'SKINS'
-                ? 'btn-3d-amber text-white'
+                ? 'btn-3d-amber text-[#1e1b18]'
                 : 'text-gray-300 hover:text-white'
             }`}
           >
-            <Egg size={13} />
-            <span>계란 도감</span>
+            <Egg size={13} className={subTab === 'SKINS' ? 'stroke-[2.5] text-[#1e1b18]' : ''} />
+            <span className={subTab === 'SKINS' ? 'text-[#1e1b18]' : ''}>계란 도감</span>
           </button>
 
           <button
@@ -121,12 +121,12 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
             onClick={() => setSubTab('COSTUMES')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-xl font-black text-xs transition-all cursor-pointer ${
               subTab === 'COSTUMES'
-                ? 'btn-3d-amber text-white'
+                ? 'btn-3d-amber text-[#1e1b18]'
                 : 'text-gray-300 hover:text-white'
             }`}
           >
-            <Shirt size={13} />
-            <span>의상 코디</span>
+            <Shirt size={13} className={subTab === 'COSTUMES' ? 'stroke-[2.5] text-[#1e1b18]' : ''} />
+            <span className={subTab === 'COSTUMES' ? 'text-[#1e1b18]' : ''}>의상 코디</span>
           </button>
         </div>
 
@@ -205,18 +205,18 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
               <button
                 type="button"
                 onClick={() => handleSelectOrEquip(previewSkin)}
-                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md"
+                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md text-[#1e1b18]"
               >
-                <span>장착하기 (SELECT)</span>
+                <span className="text-[#1e1b18]">장착하기 (SELECT)</span>
               </button>
             ) : previewSkin.priceGold ? (
               <button
                 type="button"
                 onClick={handleBuySkin}
-                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md"
+                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md text-[#1e1b18]"
               >
-                <Coins size={14} />
-                <span>{previewSkin.priceGold.toLocaleString()} 골드로 해금</span>
+                <Coins size={14} className="text-[#1e1b18]" />
+                <span className="text-[#1e1b18]">{previewSkin.priceGold.toLocaleString()} 골드로 해금</span>
               </button>
             ) : (
               <div className="py-2 px-3 rounded-2xl bg-gray-200 border-2 border-gray-400 text-gray-700 flex items-center justify-center gap-1 text-xs font-black shadow-inner">

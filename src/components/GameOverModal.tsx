@@ -48,16 +48,16 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   }, [isNewRecord, stats.distanceMeters, onRestart]);
 
   return (
-    <div className="absolute inset-0 bg-black/75 backdrop-blur-[3px] flex items-center justify-center p-4 z-50 animate-fade-in select-none">
-      {/* 아케이드 머신 스타일 프레임 패널 */}
-      <div className="panel-arcade w-full max-w-[310px] p-4 flex flex-col items-center gap-2 text-center shadow-2xl border-4 border-[#1e1b18] animate-scale-up">
+    <div className="absolute inset-0 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-4 z-50 animate-fade-in select-none">
+      {/* 아케이드 머신 스타일 대형 프레임 패널 */}
+      <div className="panel-arcade w-full max-w-[350px] p-5 flex flex-col items-center gap-2.5 text-center shadow-2xl border-4 border-[#1e1b18] animate-scale-up">
         {/* 상단: 무한의 계단 스타일 3D GAME OVER 텍스트 */}
         <h2
           style={{
             fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-            textShadow: '-2px -2px 0 #18181b, 2px -2px 0 #18181b, -2px 2px 0 #18181b, 2px 2px 0 #18181b, 0 4px 0 #4c0519',
+            textShadow: '-2.5px -2.5px 0 #18181b, 2.5px -2.5px 0 #18181b, -2.5px 2.5px 0 #18181b, 2.5px 2.5px 0 #18181b, 0 5px 0 #4c0519',
           }}
-          className="text-3xl font-black text-rose-500 tracking-wider -mt-1"
+          className="text-4xl font-black text-rose-500 tracking-wider -mt-1"
         >
           GAME OVER
         </h2>
@@ -122,24 +122,39 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 REPLAY ] & [ 🏠 HOME ] */}
-        <div className="w-full grid grid-cols-2 gap-2 mt-1">
+        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 하기 ] & [ 🏠 홈으로 ] (모바일 터치 최적화 대형 버튼) */}
+        <div className="w-full grid grid-cols-2 gap-3 mt-2">
           <button
             type="button"
             onClick={onRestart}
-            className="btn-3d-emerald py-2.5 px-2 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-lg"
+            className="btn-3d-emerald h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-white active:scale-95 transition-transform"
           >
-            <RotateCcw size={15} className="stroke-[3]" />
-            <span>다시 하기</span>
+            <RotateCcw size={20} className="stroke-[3] text-white" />
+            <span
+              style={{
+                textShadow: '-1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 3px 0 #064e3b',
+                WebkitTextStroke: '0.8px #064e3b',
+              }}
+              className="text-white tracking-wide"
+            >
+              다시 하기
+            </span>
           </button>
 
           <button
             type="button"
             onClick={onGoHome}
-            className="btn-3d-amber py-2.5 px-2 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-lg"
+            className="btn-3d-amber h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-[#1e1b18] active:scale-95 transition-transform"
           >
-            <Home size={15} className="stroke-[2.5]" />
-            <span>홈으로</span>
+            <Home size={20} className="stroke-[3] text-[#1e1b18]" />
+            <span
+              style={{
+                textShadow: '0 1px 0 rgba(255, 255, 255, 0.4)',
+              }}
+              className="text-[#1e1b18] tracking-wide"
+            >
+              홈으로
+            </span>
           </button>
         </div>
       </div>

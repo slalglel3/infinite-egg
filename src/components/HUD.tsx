@@ -72,8 +72,8 @@ export const HUD: React.FC<HUDProps> = ({ stats, userLevel, onToggleMute, isMute
 
         {/* 우측: 레벨 뱃지 & 사운드 토글 */}
         <div className="flex items-center gap-1.5 pointer-events-auto">
-          <div className="flex items-center gap-1 bg-amber-500 text-white font-black px-2.5 py-1 rounded-xl text-xs border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e]">
-            <Award size={13} className="stroke-[2.5]" />
+          <div className="flex items-center gap-1 bg-amber-400 text-[#1e1b18] font-black px-2.5 py-1 rounded-xl text-xs border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e]">
+            <Award size={13} className="stroke-[2.5] text-[#1e1b18]" />
             <span>Lv.{userLevel}</span>
           </div>
 

@@ -83,16 +83,16 @@ export const MainTab: React.FC<MainTabProps> = ({
         <button
           type="button"
           onClick={handleStart}
-          className="btn-3d-amber w-full h-17 rounded-3xl flex items-center justify-center gap-3 cursor-pointer group"
+          className="btn-3d-amber w-full h-17 rounded-3xl flex items-center justify-center gap-3 cursor-pointer group text-[#1e1b18]"
         >
-          <div className="w-10 h-10 rounded-2xl bg-white/30 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-            <Play size={24} className="fill-white stroke-none ml-0.5" />
+          <div className="w-10 h-10 rounded-2xl bg-black/15 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+            <Play size={24} className="fill-[#1e1b18] stroke-[#1e1b18] ml-0.5" />
           </div>
           <span
             style={{
               fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
             }}
-            className="text-2xl sm:text-3xl font-black tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+            className="text-2xl sm:text-3xl font-black tracking-wider text-[#1e1b18] drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]"
           >
             PLAY ▶
           </span>

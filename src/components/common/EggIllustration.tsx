@@ -181,54 +181,84 @@ export const EggIllustration: React.FC<EggIllustrationProps> = ({
         </g>
       )}
 
-      {/* 4.8 [순백의 천사란] 머리 위 황금 헤일로 & 깃털 날개 */}
+      {/* 4.8 [순백의 천사란] 머리 위 황금 헤일로 & 3단 입체 깃털 날개 */}
       {colors.pattern === 'ANGEL_WINGS' && (
-        <g>
-          {/* 황금 헤일로 */}
-          <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#facc15" strokeWidth="3.2" />
-          <ellipse cx="50" cy="0" rx="22" ry="5.5" fill="none" stroke="#fef08a" strokeWidth="1.6" opacity="0.8" />
+        <g id="angel-features">
+          {/* 황금 헤일로 (찬란한 광채 림) */}
+          <ellipse cx="50" cy="-2" rx="22" ry="6" fill="none" stroke="#facc15" strokeWidth="3.5" />
+          <ellipse cx="50" cy="-2" rx="22" ry="6" fill="none" stroke="#fef08a" strokeWidth="1.8" opacity="0.9" />
 
-          {/* 날개 (점프 시 활짝 펼침 / 평소에는 몸을 포근히 감쌈) */}
+          {/* 천사 날개 (3단 깃털 레이어와 황금빛 림 디테일) */}
           {wingsSpread ? (
-            <g fill="#ffffff" stroke="#fde047" strokeWidth="1.6">
-              {/* 펼쳐진 좌측 날개 */}
-              <path d="M 20 54 C -4 30, -12 50, -4 74 C 4 66, 12 70, 22 66 Z" />
-              {/* 펼쳐진 우측 날개 */}
-              <path d="M 80 54 C 104 30, 112 50, 104 74 C 96 66, 88 70, 78 66 Z" />
+            <g fill="#ffffff" stroke="#f59e0b" strokeWidth="1.8" strokeLinejoin="round">
+              {/* 활짝 펼쳐진 좌측 3단 깃털 날개 */}
+              <path d="M 18 50 C 6 36, -8 24, -20 32 C -24 38, -16 48, -4 54 C -16 58, -18 68, -6 74 C 4 72, 12 68, 18 64 Z" />
+              <path d="M 2 46 C -8 40, -14 36, -18 34" stroke="#cbd5e1" strokeWidth="1.2" fill="none" />
+              <path d="M 4 58 C -4 56, -10 56, -14 56" stroke="#cbd5e1" strokeWidth="1.2" fill="none" />
+
+              {/* 활짝 펼쳐진 우측 3단 깃털 날개 */}
+              <path d="M 82 50 C 94 36, 108 24, 120 32 C 124 38, 116 48, 104 54 C 116 58, 118 68, 106 74 C 96 72, 88 68, 82 64 Z" />
+              <path d="M 98 46 C 108 40, 114 36, 118 34" stroke="#cbd5e1" strokeWidth="1.2" fill="none" />
+              <path d="M 96 58 C 104 56, 110 56, 114 56" stroke="#cbd5e1" strokeWidth="1.2" fill="none" />
             </g>
           ) : (
-            <g fill="#ffffff" stroke="#fde047" strokeWidth="1.6">
-              {/* 포근히 감싼 좌측 날개 */}
-              <path d="M 12 50 C 26 56, 38 68, 38 88 C 22 92, 10 75, 12 50 Z" />
-              {/* 포근히 감싼 우측 날개 */}
-              <path d="M 88 50 C 74 56, 62 68, 62 88 C 78 92, 90 75, 88 50 Z" />
+            <g fill="#ffffff" stroke="#f59e0b" strokeWidth="1.8" strokeLinejoin="round">
+              {/* 포근하게 계란을 감싼 좌측 볼륨 깃털 날개 */}
+              <path d="M 16 42 C 4 50, 2 68, 10 78 C 18 86, 28 88, 34 84 C 36 74, 30 62, 22 54 C 20 46, 18 42, 16 42 Z" />
+              {/* 깃털 겹침 음영 결 */}
+              <path d="M 10 60 Q 20 66 28 68" stroke="#cbd5e1" strokeWidth="1.3" fill="none" />
+              <path d="M 12 70 Q 20 76 28 78" stroke="#cbd5e1" strokeWidth="1.3" fill="none" />
+
+              {/* 포근하게 계란을 감싼 우측 볼륨 깃털 날개 */}
+              <path d="M 84 42 C 96 50, 98 68, 90 78 C 82 86, 72 88, 66 84 C 64 74, 70 62, 78 54 C 80 46, 82 42, 84 42 Z" />
+              {/* 깃털 겹침 음영 결 */}
+              <path d="M 90 60 Q 80 66 72 68" stroke="#cbd5e1" strokeWidth="1.3" fill="none" />
+              <path d="M 88 70 Q 80 76 72 78" stroke="#cbd5e1" strokeWidth="1.3" fill="none" />
             </g>
           )}
         </g>
       )}
 
-      {/* 4.9 [심연의 악마란] 악마 뿔 & 박쥐 날개 */}
+      {/* 4.9 [심연의 악마란] 악마 뿔 & 3단 박쥐/드래곤 날개 */}
       {colors.pattern === 'DEVIL' && (
-        <g>
+        <g id="devil-features">
           {/* 악마 뿔 (stage >= 1) */}
           {devilStage >= 1 && (
             <g>
-              <path d="M 32 20 Q 14 6 18 -6 Q 28 6 38 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
-              <path d="M 68 20 Q 86 6 82 -6 Q 72 6 62 20 Z" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1.8" />
+              <path d="M 32 20 Q 14 4 16 -8 Q 28 4 38 20 Z" fill="#dc2626" stroke="#450a0a" strokeWidth="2" />
+              <path d="M 68 20 Q 86 4 84 -8 Q 72 4 62 20 Z" fill="#dc2626" stroke="#450a0a" strokeWidth="2" />
             </g>
           )}
 
-          {/* 박쥐 날개 (stage >= 2) */}
+          {/* 박쥐/드래곤 날개 (stage >= 2) - 날카로운 골격과 붉은 피막 */}
           {devilStage >= 2 && (
             wingsSpread ? (
-              <g fill="#450a0a" stroke="#dc2626" strokeWidth="1.6">
-                <path d="M 22 52 L -6 32 L -2 50 L -12 60 L 0 66 L 16 68 Z" />
-                <path d="M 78 52 L 106 32 L 102 50 L 112 60 L 100 66 L 84 68 Z" />
+              <g fill="#450a0a" stroke="#dc2626" strokeWidth="2" strokeLinejoin="round">
+                {/* 펼쳐진 좌측 박쥐 날개 */}
+                <path d="M 18 50 L 4 30 L -8 18 L -6 28 L -20 38 C -14 48, -4 50, -2 56 C -14 62, -12 74, 4 74 C 12 72, 16 68, 20 60 Z" />
+                <line x1="-8" y1="18" x2="-2" y2="56" stroke="#ef4444" strokeWidth="1.4" />
+                <line x1="-8" y1="18" x2="4" y2="74" stroke="#ef4444" strokeWidth="1.4" />
+                {/* 뼈대 발톱 하이라이트 */}
+                <circle cx="-8" cy="18" r="2.2" fill="#fca5a5" />
+
+                {/* 펼쳐진 우측 박쥐 날개 */}
+                <path d="M 82 50 L 96 30 L 108 18 L 106 28 L 120 38 C 114 48, 104 50, 102 56 C 114 62, 112 74, 96 74 C 88 72, 84 68, 80 60 Z" />
+                <line x1="108" y1="18" x2="102" y2="56" stroke="#ef4444" strokeWidth="1.4" />
+                <line x1="108" y1="18" x2="96" y2="74" stroke="#ef4444" strokeWidth="1.4" />
+                {/* 뼈대 발톱 하이라이트 */}
+                <circle cx="108" cy="18" r="2.2" fill="#fca5a5" />
               </g>
             ) : (
-              <g fill="#450a0a" stroke="#dc2626" strokeWidth="1.5">
-                <path d="M 14 52 L 35 84 L 16 78 Z" />
-                <path d="M 86 52 L 65 84 L 84 78 Z" />
+              <g fill="#450a0a" stroke="#dc2626" strokeWidth="1.8" strokeLinejoin="round">
+                {/* 접힌 좌측 박쥐 날개 */}
+                <path d="M 16 46 L 4 36 L 6 48 L -4 60 C 6 62, 12 60, 16 54 L 8 68 C 18 70, 26 66, 30 62 Z" />
+                <line x1="4" y1="36" x2="-4" y2="60" stroke="#ef4444" strokeWidth="1.2" />
+                <circle cx="4" cy="36" r="1.8" fill="#fca5a5" />
+
+                {/* 접힌 우측 박쥐 날개 */}
+                <path d="M 84 46 L 96 36 L 94 48 L 104 60 C 94 62, 88 60, 84 54 L 92 68 C 82 70, 74 66, 70 62 Z" />
+                <line x1="96" y1="36" x2="104" y2="60" stroke="#ef4444" strokeWidth="1.2" />
+                <circle cx="96" cy="36" r="1.8" fill="#fca5a5" />
               </g>
             )
           )}

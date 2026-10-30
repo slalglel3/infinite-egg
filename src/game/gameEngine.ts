@@ -43,12 +43,6 @@ export class GameEngine {
   private isCurrentJumpMisjump: boolean = false;
   private jumpDistanceToEdge: number = 0;
 
-  // 방향 전환 선입력 버퍼링 (Input Buffering)
-  private turnBuffered: boolean = false;
-  private turnBufferTimer: number = 0;
-  private turnBufferSegIndex: number = -1;
-  private turnBufferDir: SlopeDirection = 'RIGHT_DOWN';
-
   // 계란 주행 궤적 (Trail & Skidmark)
   public trails: EggTrailPoint[] = [];
   private trailSpawnTimer: number = 0;
@@ -177,9 +171,6 @@ export class GameEngine {
     this.splats = [];
     this.trails = [];
     this.trailSpawnTimer = 0;
-    this.turnBuffered = false;
-    this.turnBufferTimer = 0;
-    this.turnBufferSegIndex = -1;
     this.cameraX = this.egg.x;
     this.cameraY = this.egg.y;
     this.isRunning = true;
@@ -272,8 +263,8 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 1. 코너 피벗 반경(42px 이내): 즉시 퍼펙트 턴 체결!
-      if (distToTurn <= 42) {
+      // 코너 끝점 38px 이내 도달 시: 퍼펙트 턴! (대미지 0)
+      if (distToTurn <= 38) {
         this.egg.direction = newDir;
         this.egg.currentSegmentIndex = turnSegIndex + 1;
         this.egg.x = turnSeg.startX;
@@ -282,23 +273,10 @@ export class GameEngine {
         sound.playPerfect();
         this.stats.perfectLandings++;
         this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
-        this.turnBuffered = false;
         return;
       }
 
-      // 2. 코너 진입 전 42px ~ 95px 선입력 버퍼링 구간 (저속/고속 무관 100% 코너 도달 보장 가변 윈도우)
-      if (distToTurn <= 95) {
-        this.turnBuffered = true;
-        // 초반 저속(260px/s) 이동 시간(약 0.21초) + 안전 마진을 고려한 속도 비례 가변 보존 시간
-        const travelTimeToCorner = (distToTurn - 35) / Math.max(100, this.stats.speed);
-        this.turnBufferTimer = Math.max(0.35, travelTimeToCorner + 0.15);
-        this.turnBufferSegIndex = turnSegIndex;
-        this.turnBufferDir = newDir;
-        sound.playTurn();
-        return;
-      }
-
-      // 3. 95px 초과: 너무 일찍 누른 경우 (수직 낙하 드롭)
+      // 너무 일찍 누른 경우 (수직 낙하 드롭으로 바닥 착지 대미지 또는 낭떠러지 추락)
       this.egg.direction = newDir;
       this.egg.state = 'DROPPING_TURN';
       this.egg.dropStartY = this.egg.y;
@@ -334,30 +312,6 @@ export class GameEngine {
       this.trails[i].alpha -= dt * 1.8;
       if (this.trails[i].alpha <= 0) {
         this.trails.splice(i, 1);
-      }
-    }
-
-    // 2. 방향 전환 선입력 버퍼링 (Input Buffering) 자동 턴 체결 판정
-    if (this.turnBuffered && this.egg.state === 'ROLLING') {
-      this.turnBufferTimer -= dt;
-      if (this.turnBufferSegIndex >= 0 && this.turnBufferSegIndex < this.segments.length) {
-        const turnSeg = this.segments[this.turnBufferSegIndex];
-        const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
-        if (distToTurn <= 42) {
-          // 코너 반경 도달! 지체없이 퍼펙트 턴 체결
-          this.egg.direction = this.turnBufferDir;
-          this.egg.currentSegmentIndex = this.turnBufferSegIndex + 1;
-          this.egg.x = turnSeg.startX;
-          this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
-          sound.playTurn();
-          sound.playPerfect();
-          this.stats.perfectLandings++;
-          this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
-          this.turnBuffered = false;
-        }
-      }
-      if (this.turnBufferTimer <= 0) {
-        this.turnBuffered = false;
       }
     }
 
