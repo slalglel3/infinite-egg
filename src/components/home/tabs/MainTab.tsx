@@ -1,7 +1,7 @@
 import React from 'react';
 import { UserProgress, EggSkin } from '../../../types/game';
 import { NestIllustration } from '../NestIllustration';
-import { Play, Trophy, Sparkles, Footprints, ShieldAlert } from 'lucide-react';
+import { Play, Trophy, Footprints, Sparkles, Shirt } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 
 interface MainTabProps {
@@ -23,66 +23,80 @@ export const MainTab: React.FC<MainTabProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-between px-5 py-2 safe-container overflow-y-auto">
-      {/* 1. 상단 미니 배너: 타이틀 로고 */}
-      <div className="flex flex-col items-center text-center mt-1">
-        <h1 className="text-3xl font-black text-amber-500 drop-shadow-[0_2px_6px_rgba(245,158,11,0.3)] tracking-tight">
+    <div className="flex-1 flex flex-col items-center justify-between px-4 py-2 safe-container overflow-hidden select-none">
+      {/* 1. 상단: 무한의 계단 스타일 아케이드 전광판 타이틀 */}
+      <div className="flex flex-col items-center text-center mt-0.5">
+        <h1
+          style={{
+            fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
+            textShadow: '-2px -2px 0 #18181b, 2px -2px 0 #18181b, -2px 2px 0 #18181b, 2px 2px 0 #18181b, 0 4px 0 #09090b',
+          }}
+          className="text-3xl sm:text-4xl font-black text-amber-400 tracking-wider"
+        >
           무한의 계란
         </h1>
-        <p className="text-xs font-bold text-sky-800/80 mt-0.5">
-          Infinite Egg • 아늑한 둥지에서 출발!
-        </p>
+
+        {/* 아케이드 BEST 전광판 */}
+        <div className="mt-1 flex items-center gap-1.5 bg-[#1e1b18] px-3.5 py-1 rounded-full border-2 border-[#f59e0b] shadow-[0_3px_0_#92400e]">
+          <Trophy size={14} className="text-yellow-400 fill-yellow-400" />
+          <span className="text-xs font-black text-white/90">BEST</span>
+          <span className="text-sm font-black text-amber-300 tracking-tight">
+            {progress.bestDistanceMeters.toLocaleString()} m
+          </span>
+        </div>
       </div>
 
-      {/* 2. 중앙: 아름다운 계란 둥지 (Nest) */}
-      <div className="my-auto py-2 flex flex-col items-center">
+      {/* 2. 중앙: 웅장한 계란 둥지 (Nest) 쇼케이스 */}
+      <div className="my-auto py-1 flex flex-col items-center">
         <NestIllustration
           skin={currentSkin}
           equippedCostumes={progress.equippedCostumes}
           onEggClick={onGoToEggsTab}
         />
-        
-        {/* 계란 및 의상 변경 퀵 버튼 */}
+
+        {/* 퀵 코디 이동 3D 캡슐 버튼 */}
         <button
           type="button"
           onClick={onGoToEggsTab}
-          className="mt-2 text-xs font-extrabold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3.5 py-1.5 rounded-full border border-amber-300 shadow-sm active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+          className="btn-3d-square mt-2 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-black text-[#1e1b18] cursor-pointer"
         >
-          <span>계란 & 의상 코디 ↷</span>
+          <Shirt size={14} className="text-amber-600" />
+          <span>의상 코디실 ↷</span>
         </button>
       </div>
 
-      {/* 3. 하단 컨트롤 & 거대한 게임 시작 버튼 */}
-      <div className="w-full max-w-sm flex flex-col gap-3 mb-3">
-        {/* 플레이 통계 요약 미니 카드 */}
-        <div className="grid grid-cols-2 gap-2 bg-white/80 backdrop-blur-md p-2.5 rounded-2xl border border-amber-200 shadow-sm text-center">
-          <div className="flex items-center justify-center gap-1.5 text-xs text-gray-700 font-bold">
+      {/* 3. 하단 컨트롤러: 초대형 3D [ ▶ PLAY ] 아케이드 버튼 */}
+      <div className="w-full max-w-sm flex flex-col gap-2.5 mb-2">
+        {/* 아케이드 플레이 미니 통계 바 */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center justify-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-xl border-2 border-[#1e1b18] shadow-[0_3px_0_#1e1b18] text-center">
             <Trophy size={14} className="text-amber-500" />
-            <span>최고 {progress.bestDistanceMeters.toLocaleString()}m</span>
+            <span className="text-xs font-black text-[#1e1b18]">{progress.bestDistanceMeters.toLocaleString()}m</span>
           </div>
-          <div className="flex items-center justify-center gap-1.5 text-xs text-gray-700 font-bold">
+          <div className="flex items-center justify-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-xl border-2 border-[#1e1b18] shadow-[0_3px_0_#1e1b18] text-center">
             <Footprints size={14} className="text-sky-500" />
-            <span>총 {progress.totalGamesPlayed}판 질주</span>
+            <span className="text-xs font-black text-[#1e1b18]">{progress.totalGamesPlayed}판 질주</span>
           </div>
         </div>
 
-        {/* 무한의 계단 / 협타디 스타일 큼직하고 강렬한 [게임 시작] 버튼 */}
+        {/* 초대형 3D 주황 아케이드 [ PLAY ] 버튼 */}
         <button
           type="button"
           onClick={handleStart}
-          className="w-full h-18 rounded-3xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-3 border-white/80 shadow-[0_10px_25px_rgba(245,158,11,0.5)] active:translate-y-1 active:shadow-md transition-all flex items-center justify-center gap-3 text-white font-black text-2xl select-none cursor-pointer group"
+          className="btn-3d-amber w-full h-17 rounded-3xl flex items-center justify-center gap-3 cursor-pointer group"
         >
-          <div className="w-10 h-10 rounded-2xl bg-white/25 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+          <div className="w-10 h-10 rounded-2xl bg-white/30 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
             <Play size={24} className="fill-white stroke-none ml-0.5" />
           </div>
-          <span className="tracking-wide drop-shadow-md">게임 시작</span>
+          <span
+            style={{
+              fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
+            }}
+            className="text-2xl sm:text-3xl font-black tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+          >
+            PLAY ▶
+          </span>
         </button>
-
-        {/* 팁 안내 */}
-        <div className="flex items-center justify-center gap-1.5 text-[11px] text-sky-900/70 font-semibold text-center">
-          <ShieldAlert size={12} className="text-amber-600" />
-          <span>팁: 방향 전환 직후 바로 점프가 나올 수 있으니 긴장을 늦추지 마세요!</span>
-        </div>
       </div>
     </div>
   );

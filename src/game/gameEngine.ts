@@ -942,18 +942,19 @@ export class GameEngine {
     ctx.restore();
   }
 
-  // [피드백 5 완벽 구현] 6대 바이옴 연속 보간 배경 렌더링 (설산 -> 침엽수림 -> 초원 -> 지하동굴 -> 지각 -> 맨틀)
+  // [무한의 계단 영감 전면 고도화] 6대 바이옴 생생한 패럴랙스 배경 및 랜드마크 오브젝트 렌더링
   private drawDynamicBiomeBackground(ctx: CanvasRenderingContext2D): void {
     const meters = this.stats.distanceMeters;
+    const animTick = (Date.now() * 0.003); // 애니메이션 틱
 
     // 바이옴 키프레임 (거리, 상단색, 중단색, 하단색)
     const BIOMES = [
-      { m: 0, top: '#1e40af', mid: '#60a5fa', bot: '#e0f2fe' },     // 설산
-      { m: 450, top: '#0284c7', mid: '#7dd3fc', bot: '#f0fdf4' },   // 고산림
-      { m: 900, top: '#38bdf8', mid: '#bae6fd', bot: '#ecfdf5' },   // 초원/숲
-      { m: 1400, top: '#0f172a', mid: '#1e1b4b', bot: '#09090b' },  // 지하 동굴
-      { m: 1950, top: '#18181b', mid: '#450a0a', bot: '#7f1d1d' },  // 지각/화산암
-      { m: 2500, top: '#450a0a', mid: '#991b1b', bot: '#facc15' },  // 지구 중심 맨틀
+      { m: 0, top: '#1d4ed8', mid: '#60a5fa', bot: '#dbeafe' },     // 설산 정상
+      { m: 400, top: '#0284c7', mid: '#38bdf8', bot: '#f0fdf4' },   // 폭포 & 침엽수림
+      { m: 900, top: '#38bdf8', mid: '#bae6fd', bot: '#ecfdf5' },   // 동화 초원 & 풍차
+      { m: 1450, top: '#0f172a', mid: '#1e1b4b', bot: '#020617' },  // 발광 수정 동굴
+      { m: 2050, top: '#18181b', mid: '#450a0a', bot: '#7f1d1d' },  // 화산암 & 마그마
+      { m: 2600, top: '#450a0a', mid: '#991b1b', bot: '#facc15' },  // 지구 중심 맨틀
     ];
 
     // 현재 거리에 해당하는 인접 키프레임 탐색 및 보간율 t 계산
@@ -985,42 +986,75 @@ export class GameEngine {
       return Math.cos((dist / radiusM) * (Math.PI / 2));
     };
 
-    // 1. 설산 지형 (0m ~ 500m)
-    const snowAlpha = getZoneAlpha(150, 350);
+    // -------------------------------------------------------------
+    // 1. 설산 정상 & 알프스 롯지 (0m ~ 450m)
+    // -------------------------------------------------------------
+    const snowAlpha = getZoneAlpha(180, 360);
     if (snowAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = snowAlpha;
-      // 원경 만년설 봉우리
-      ctx.fillStyle = '#f8fafc';
+
+      // 1-1. 원경 만년설 웅장한 삼각 봉우리
+      ctx.fillStyle = '#f1f5f9';
       ctx.beginPath();
-      const snowFarOffset = -(this.cameraX * 0.12) % 340;
+      const snowFarOffset = -(this.cameraX * 0.1) % 360;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = snowFarOffset - 340; x < this.screenWidth + 340; x += 340) {
-        ctx.lineTo(x, this.screenHeight - 180);
-        ctx.lineTo(x + 170, this.screenHeight - 370);
-        ctx.lineTo(x + 340, this.screenHeight - 180);
+      for (let x = snowFarOffset - 360; x < this.screenWidth + 360; x += 360) {
+        ctx.lineTo(x, this.screenHeight - 160);
+        ctx.lineTo(x + 180, this.screenHeight - 400);
+        ctx.lineTo(x + 360, this.screenHeight - 160);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      // 빙하 푸른빛 음영
-      ctx.fillStyle = '#bfdbfe';
+      // 1-2. 중경 빙하 푸른빛 음영 산맥
+      ctx.fillStyle = '#93c5fd';
       ctx.beginPath();
-      const snowMidOffset = -(this.cameraX * 0.22) % 260;
+      const snowMidOffset = -(this.cameraX * 0.2) % 280;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = snowMidOffset - 260; x < this.screenWidth + 260; x += 260) {
-        ctx.lineTo(x, this.screenHeight - 140);
-        ctx.lineTo(x + 130, this.screenHeight - 270);
-        ctx.lineTo(x + 260, this.screenHeight - 140);
+      for (let x = snowMidOffset - 280; x < this.screenWidth + 280; x += 280) {
+        ctx.lineTo(x, this.screenHeight - 130);
+        ctx.lineTo(x + 140, this.screenHeight - 280);
+        ctx.lineTo(x + 280, this.screenHeight - 130);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      // [피드백 9] 살랑살랑 흩날리는 만년설 눈송이 효과
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-      for (let i = 0; i < 25; i++) {
-        const sx = ((i * 47) - (this.cameraX * 0.4) + Math.sin(meters * 0.05 + i) * 20) % this.screenWidth;
-        const sy = ((i * 31) + (meters * 1.5)) % this.screenHeight;
+      // 1-3. 알프스 통나무 롯지 산장 & 눈 덮인 지붕
+      const lodgeX = (220 - (this.cameraX * 0.25)) % (this.screenWidth + 400) - 100;
+      const lodgeY = this.screenHeight - 140;
+      // 산장 벽체
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(lodgeX, lodgeY, 70, 50);
+      // 창문 (노란 불빛)
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(lodgeX + 15, lodgeY + 15, 16, 16);
+      ctx.fillRect(lodgeX + 42, lodgeY + 15, 16, 16);
+      // 눈 덮인 삼각 지붕
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(lodgeX - 10, lodgeY);
+      ctx.lineTo(lodgeX + 35, lodgeY - 35);
+      ctx.lineTo(lodgeX + 80, lodgeY);
+      ctx.closePath();
+      ctx.fill();
+      // 굴뚝 & 모락모락 솟는 연기
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(lodgeX + 50, lodgeY - 45, 10, 20);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      for (let s = 0; s < 3; s++) {
+        const smkY = lodgeY - 50 - (s * 15) - (animTick * 10) % 30;
+        const smkX = lodgeX + 55 + Math.sin(animTick + s) * 8;
+        ctx.beginPath();
+        ctx.arc(smkX, smkY, 5 + s * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 1-4. 흩날리는 만년설 눈보라
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      for (let i = 0; i < 30; i++) {
+        const sx = ((i * 41) - (this.cameraX * 0.35) + Math.sin(animTick + i) * 25) % this.screenWidth;
+        const sy = ((i * 37) + (meters * 1.8) + (animTick * 20)) % this.screenHeight;
         ctx.beginPath();
         ctx.arc((sx + this.screenWidth) % this.screenWidth, sy, 1.5 + (i % 3), 0, Math.PI * 2);
         ctx.fill();
@@ -1029,145 +1063,270 @@ export class GameEngine {
       ctx.restore();
     }
 
-    // 2. 침엽수림 지형 (300m ~ 850m)
-    const highlandAlpha = getZoneAlpha(500, 350);
+    // -------------------------------------------------------------
+    // 2. 알프스 침엽수림 & 쏟아지는 폭포 (350m ~ 950m)
+    // -------------------------------------------------------------
+    const highlandAlpha = getZoneAlpha(600, 380);
     if (highlandAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = highlandAlpha;
-      ctx.fillStyle = '#94a3b8';
+
+      // 2-1. 거대한 절벽 바위
+      ctx.fillStyle = '#475569';
       ctx.beginPath();
-      const rockOffset = -(this.cameraX * 0.15) % 300;
+      const rockOffset = -(this.cameraX * 0.15) % 320;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = rockOffset - 300; x < this.screenWidth + 300; x += 300) {
+      for (let x = rockOffset - 320; x < this.screenWidth + 320; x += 320) {
         ctx.lineTo(x, this.screenHeight - 160);
-        ctx.lineTo(x + 150, this.screenHeight - 300);
-        ctx.lineTo(x + 300, this.screenHeight - 160);
+        ctx.lineTo(x + 160, this.screenHeight - 340);
+        ctx.lineTo(x + 320, this.screenHeight - 160);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      // 다층 전나무 숲 실루엣
-      ctx.fillStyle = '#14532d';
-      ctx.beginPath();
-      const treeFarOffset = -(this.cameraX * 0.18) % 240;
-      ctx.moveTo(0, this.screenHeight);
-      for (let x = treeFarOffset - 240; x < this.screenWidth + 240; x += 240) {
-        ctx.quadraticCurveTo(x + 120, this.screenHeight - 220, x + 240, this.screenHeight - 150);
+      // 2-2. 콸콸 쏟아지는 시원한 폭포수 (애니메이션 물줄기)
+      const wfallX = (180 - (this.cameraX * 0.15)) % (this.screenWidth + 300) - 50;
+      const wfallGrad = ctx.createLinearGradient(wfallX, this.screenHeight - 340, wfallX, this.screenHeight);
+      wfallGrad.addColorStop(0, '#e0f2fe');
+      wfallGrad.addColorStop(0.5, '#38bdf8');
+      wfallGrad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = wfallGrad;
+      ctx.fillRect(wfallX + 60, this.screenHeight - 340, 40, 340);
+
+      // 폭포 거품 및 튀는 물보라
+      ctx.fillStyle = '#ffffff';
+      for (let w = 0; w < 12; w++) {
+        const wy = (this.screenHeight - 340) + ((w * 28 + animTick * 180) % 340);
+        const wx = wfallX + 60 + (w % 4) * 8 + Math.sin(animTick * 3 + w) * 4;
+        ctx.fillRect(wx, wy, 8, 14);
       }
-      ctx.lineTo(this.screenWidth, this.screenHeight);
+      // 하단 웅덩이 물안개
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.beginPath();
+      ctx.arc(wfallX + 80, this.screenHeight - 10, 45 + Math.sin(animTick * 2) * 5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = '#166534';
-      ctx.beginPath();
-      const treeOffset = -(this.cameraX * 0.25) % 200;
-      ctx.moveTo(0, this.screenHeight);
-      for (let x = treeOffset - 200; x < this.screenWidth + 200; x += 200) {
-        ctx.quadraticCurveTo(x + 100, this.screenHeight - 190, x + 200, this.screenHeight - 120);
+      // 2-3. 다층 짙은 전나무 숲 실루엣
+      ctx.fillStyle = '#064e3b';
+      const treeOffset = -(this.cameraX * 0.25) % 180;
+      for (let x = treeOffset - 180; x < this.screenWidth + 180; x += 180) {
+        const tx = x + 40;
+        const ty = this.screenHeight - 130;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + 25, ty - 65);
+        ctx.lineTo(tx + 50, ty);
+        ctx.closePath();
+        ctx.fill();
       }
-      ctx.lineTo(this.screenWidth, this.screenHeight);
-      ctx.fill();
+
       ctx.restore();
     }
 
-    // 3. 푸른 초원 & 숲 지형 (700m ~ 1350m)
-    const meadowAlpha = getZoneAlpha(950, 400);
+    // -------------------------------------------------------------
+    // 3. 목가적인 동화 초원 & 풍차 (800m ~ 1500m)
+    // -------------------------------------------------------------
+    const meadowAlpha = getZoneAlpha(1150, 400);
     if (meadowAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = meadowAlpha;
 
-      // [피드백 9] 따스한 햇살 갓레이 광선 레이어
-      const sunGrad = ctx.createRadialGradient(this.screenWidth * 0.8, 40, 10, this.screenWidth * 0.8, 40, 260);
-      sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+      // 3-1. 따스한 햇살 갓레이
+      const sunGrad = ctx.createRadialGradient(this.screenWidth * 0.85, 50, 10, this.screenWidth * 0.85, 50, 280);
+      sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.4)');
       sunGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
       ctx.fillStyle = sunGrad;
-      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight * 0.6);
+      ctx.fillRect(0, 0, this.screenWidth, this.screenHeight * 0.7);
 
-      const cloudOffset = -(this.cameraX * 0.05);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-      this.drawCloud(ctx, (cloudOffset + 100) % (this.screenWidth + 200) - 100, 80, 55);
-      this.drawCloud(ctx, (cloudOffset + 420) % (this.screenWidth + 200) - 100, 130, 45);
+      // 3-2. 뭉게구름 층
+      const cloudOffset = -(this.cameraX * 0.06);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      this.drawCloud(ctx, (cloudOffset + 80) % (this.screenWidth + 250) - 100, 90, 60);
+      this.drawCloud(ctx, (cloudOffset + 380) % (this.screenWidth + 250) - 100, 140, 50);
 
-      ctx.fillStyle = '#86efac';
+      // 3-3. 회전하는 풍차 (Windmill 랜드마크)
+      const wmillX = (280 - (this.cameraX * 0.18)) % (this.screenWidth + 400) - 80;
+      const wmillY = this.screenHeight - 150;
+      // 풍차 몸체 타워
+      ctx.fillStyle = '#fef3c7';
       ctx.beginPath();
-      const hillOffset = -(this.cameraX * 0.18) % 260;
+      ctx.moveTo(wmillX + 15, wmillY);
+      ctx.lineTo(wmillX + 25, wmillY - 80);
+      ctx.lineTo(wmillX + 45, wmillY - 80);
+      ctx.lineTo(wmillX + 55, wmillY);
+      ctx.closePath();
+      ctx.fill();
+      // 풍차 붉은 지붕
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.moveTo(wmillX + 20, wmillY - 80);
+      ctx.lineTo(wmillX + 35, wmillY - 105);
+      ctx.lineTo(wmillX + 50, wmillY - 80);
+      ctx.closePath();
+      ctx.fill();
+      // 회전하는 4개 날개 (애니메이션 회전)
+      ctx.save();
+      ctx.translate(wmillX + 35, wmillY - 80);
+      ctx.rotate(animTick * 1.2);
+      ctx.fillStyle = '#78350f';
+      for (let b = 0; b < 4; b++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.fillRect(-2, -45, 4, 45);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(2, -42, 10, 30);
+        ctx.fillStyle = '#78350f';
+      }
+      ctx.restore();
+
+      // 3-4. 부드러운 초원 능선
+      ctx.fillStyle = '#4ade80';
+      ctx.beginPath();
+      const hillOffset = -(this.cameraX * 0.2) % 300;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = hillOffset - 260; x < this.screenWidth + 260; x += 260) {
-        ctx.quadraticCurveTo(x + 130, this.screenHeight - 220, x + 260, this.screenHeight - 140);
+      for (let x = hillOffset - 300; x < this.screenWidth + 300; x += 300) {
+        ctx.quadraticCurveTo(x + 150, this.screenHeight - 220, x + 300, this.screenHeight - 130);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+
+      // 3-5. 흩날리는 꽃잎 & 민들레 씨앗
+      ctx.fillStyle = '#fbcfe8';
+      for (let p = 0; p < 15; p++) {
+        const px = ((p * 53) - (this.cameraX * 0.3) + Math.cos(animTick + p) * 20) % this.screenWidth;
+        const py = ((p * 43) + (animTick * 35)) % this.screenHeight;
+        ctx.beginPath();
+        ctx.arc((px + this.screenWidth) % this.screenWidth, py, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
 
-    // 4. 지하 동굴 지형 (1200m ~ 1850m)
-    const caveAlpha = getZoneAlpha(1500, 400);
+    // -------------------------------------------------------------
+    // 4. 신비로운 발광 수정 동굴 (1400m ~ 2100m)
+    // -------------------------------------------------------------
+    const caveAlpha = getZoneAlpha(1750, 420);
     if (caveAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = caveAlpha;
-      ctx.fillStyle = '#334155';
+
+      // 4-1. 천장 거대 암석 종유석
+      ctx.fillStyle = '#1e293b';
       ctx.beginPath();
       const stalactiteOffset = -(this.cameraX * 0.15) % 180;
       ctx.moveTo(0, 0);
       for (let x = stalactiteOffset - 180; x < this.screenWidth + 180; x += 180) {
-        ctx.lineTo(x + 60, 0);
-        ctx.lineTo(x + 90, 120 + ((x % 3) * 30));
-        ctx.lineTo(x + 120, 0);
+        ctx.lineTo(x + 50, 0);
+        ctx.lineTo(x + 90, 140 + ((Math.abs(x) % 4) * 25));
+        ctx.lineTo(x + 130, 0);
       }
       ctx.lineTo(this.screenWidth, 0);
       ctx.fill();
 
-      // [피드백 9] 은은하게 빛나는 신비로운 수정 기둥
-      ctx.fillStyle = '#818cf8';
-      ctx.shadowColor = '#6366f1';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      const crystalOffset = -(this.cameraX * 0.3) % 240;
+      // 4-2. 영롱하게 빛나는 대형 크리스탈 수정 기둥 (네온 글로우)
+      const crystalColors = ['#a855f7', '#06b6d4', '#ec4899'];
+      const crystalOffset = -(this.cameraX * 0.28) % 240;
       for (let x = crystalOffset - 240; x < this.screenWidth + 240; x += 240) {
-        ctx.moveTo(x + 100, this.screenHeight);
-        ctx.lineTo(x + 115, this.screenHeight - 160);
-        ctx.lineTo(x + 130, this.screenHeight);
+        const cColor = crystalColors[Math.abs(Math.floor(x / 240)) % crystalColors.length];
+        ctx.shadowColor = cColor;
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = cColor;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 90, this.screenHeight);
+        ctx.lineTo(x + 110, this.screenHeight - 190);
+        ctx.lineTo(x + 125, this.screenHeight - 210);
+        ctx.lineTo(x + 140, this.screenHeight - 170);
+        ctx.lineTo(x + 155, this.screenHeight);
+        ctx.closePath();
+        ctx.fill();
       }
-      ctx.fill();
       ctx.shadowBlur = 0;
+
+      // 4-3. 뚝뚝 떨어지는 동굴 물방울 & 반딧불이
+      ctx.fillStyle = '#38bdf8';
+      for (let d = 0; d < 12; d++) {
+        const dx = ((d * 67) - (this.cameraX * 0.2)) % this.screenWidth;
+        const dy = ((d * 83) + (animTick * 120)) % this.screenHeight;
+        ctx.beginPath();
+        ctx.arc((dx + this.screenWidth) % this.screenWidth, dy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
 
-    // 5. 지각 & 화산암 (1700m ~ 2400m)
-    const crustAlpha = getZoneAlpha(2050, 450);
+    // -------------------------------------------------------------
+    // 5. 지각 화산암 & 마그마 분출구 (2000m ~ 2650m)
+    // -------------------------------------------------------------
+    const crustAlpha = getZoneAlpha(2300, 450);
     if (crustAlpha > 0.01) {
       ctx.save();
       ctx.globalAlpha = crustAlpha;
-      ctx.fillStyle = '#27272a';
+
+      // 5-1. 검붉은 화산암 절벽
+      ctx.fillStyle = '#18181b';
       ctx.beginPath();
-      const magmaHillOffset = -(this.cameraX * 0.2) % 250;
+      const magmaHillOffset = -(this.cameraX * 0.2) % 260;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = magmaHillOffset - 250; x < this.screenWidth + 250; x += 250) {
-        ctx.lineTo(x, this.screenHeight - 100);
-        ctx.lineTo(x + 125, this.screenHeight - 210);
-        ctx.lineTo(x + 250, this.screenHeight - 100);
+      for (let x = magmaHillOffset - 260; x < this.screenWidth + 260; x += 260) {
+        ctx.lineTo(x, this.screenHeight - 110);
+        ctx.lineTo(x + 130, this.screenHeight - 240);
+        ctx.lineTo(x + 260, this.screenHeight - 110);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
 
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-      ctx.fillRect(0, this.screenHeight - 150, this.screenWidth, 150);
+      // 5-2. 끓어오르는 용암 분출구 & 화염 광휘
+      const magmaGrad = ctx.createLinearGradient(0, this.screenHeight - 140, 0, this.screenHeight);
+      magmaGrad.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
+      magmaGrad.addColorStop(0.5, 'rgba(249, 115, 22, 0.85)');
+      magmaGrad.addColorStop(1, '#ef4444');
+      ctx.fillStyle = magmaGrad;
+      ctx.fillRect(0, this.screenHeight - 90, this.screenWidth, 90);
+
+      // 튀는 불티 파티클
+      ctx.fillStyle = '#fef08a';
+      for (let f = 0; f < 25; f++) {
+        const fx = ((f * 39) - (this.cameraX * 0.4) + Math.sin(animTick * 2 + f) * 15) % this.screenWidth;
+        const fy = this.screenHeight - ((f * 29 + animTick * 110) % 220);
+        ctx.beginPath();
+        ctx.arc((fx + this.screenWidth) % this.screenWidth, fy, 1.5 + (f % 2.5), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     }
 
-    // 6. 맨틀 & 용암 코어 (2250m+)
-    if (meters >= 2250) {
-      const mantleAlpha = Math.min(1, (meters - 2250) / 300);
+    // -------------------------------------------------------------
+    // 6. 지구 맨틀 & 심연의 코어 (2550m+)
+    // -------------------------------------------------------------
+    if (meters >= 2550) {
+      const mantleAlpha = Math.min(1, (meters - 2550) / 250);
       ctx.save();
       ctx.globalAlpha = mantleAlpha;
+
+      // 끓어오르는 용암 파도
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
-      const lavaOffset = -(this.cameraX * 0.3) % 180;
+      const lavaOffset = -(this.cameraX * 0.35) % 160;
       ctx.moveTo(0, this.screenHeight);
-      for (let x = lavaOffset - 180; x < this.screenWidth + 180; x += 180) {
-        ctx.quadraticCurveTo(x + 90, this.screenHeight - 180, x + 180, this.screenHeight - 90);
+      for (let x = lavaOffset - 160; x < this.screenWidth + 160; x += 160) {
+        ctx.quadraticCurveTo(x + 80, this.screenHeight - 160 + Math.sin(animTick * 3 + x) * 15, x + 160, this.screenHeight - 80);
       }
       ctx.lineTo(this.screenWidth, this.screenHeight);
       ctx.fill();
+
+      // 황금빛 마그마 맥
+      ctx.fillStyle = '#facc15';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 15;
+      for (let m = 0; m < 5; m++) {
+        const mx = (m * 90 + lavaOffset) % this.screenWidth;
+        ctx.fillRect((mx + this.screenWidth) % this.screenWidth, this.screenHeight - 40, 45, 12);
+      }
+      ctx.shadowBlur = 0;
+
       ctx.restore();
     }
   }

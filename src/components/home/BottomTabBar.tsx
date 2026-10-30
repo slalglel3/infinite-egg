@@ -34,7 +34,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   return (
-    <nav className="w-full bg-white/95 backdrop-blur-lg border-t-2 border-amber-200/80 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] px-2 pt-2 pb-safe z-30 flex items-center justify-around">
+    <nav className="w-full bg-[#1e1b18] border-t-3 border-[#3f3a34] shadow-[0_-8px_25px_rgba(0,0,0,0.4)] px-2 pt-1 pb-safe z-30 flex items-center justify-around select-none">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -45,20 +45,20 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             key={tab.id}
             type="button"
             onClick={() => handleTabClick(tab.id)}
-            className={`relative flex flex-col items-center justify-center flex-1 py-1.5 transition-all select-none cursor-pointer ${
+            className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all select-none cursor-pointer ${
               isActive ? 'scale-105' : 'opacity-65 hover:opacity-90'
             }`}
           >
-            {/* 메인 탭 특별 원형 하이라이트 또는 일반 탭 활성 캡슐 */}
+            {/* 3D 탭 버튼 캡슐 */}
             <div
               className={`flex items-center justify-center transition-all ${
                 isMain
                   ? isActive
-                    ? 'w-12 h-12 -mt-4 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 text-white shadow-lg shadow-amber-500/40 border-2 border-white'
-                    : 'w-11 h-11 -mt-3 rounded-2xl bg-amber-100 text-amber-700'
+                    ? 'btn-3d-amber w-12 h-12 -mt-4 rounded-2xl flex items-center justify-center'
+                    : 'w-11 h-11 -mt-3 rounded-2xl bg-[#2b2724] text-amber-400 border-2 border-[#3f3a34]'
                   : isActive
-                  ? 'w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 font-bold'
-                  : 'w-10 h-10 text-gray-500'
+                  ? 'w-10 h-10 rounded-2xl bg-amber-400 text-[#1e1b18] border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e]'
+                  : 'w-10 h-10 text-gray-400'
               }`}
             >
               <Icon size={isMain ? 24 : 20} className={isActive ? 'stroke-[2.5]' : 'stroke-2'} />
@@ -66,8 +66,8 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
             {/* 탭 라벨 */}
             <span
-              className={`text-[11px] font-black mt-0.5 tracking-tight ${
-                isActive ? 'text-amber-800' : 'text-gray-500 font-bold'
+              className={`text-[11px] font-black mt-1 tracking-tight ${
+                isActive ? 'text-amber-400' : 'text-gray-400'
               }`}
             >
               {tab.label}
@@ -75,14 +75,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
 
             {/* 도전 과제 보상 획득 가능 붉은 배지 */}
             {tab.id === 'ACHIEVEMENTS' && achievementBadgeCount > 0 && (
-              <span className="absolute top-0 right-3 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm animate-pulse">
+              <span className="absolute top-0 right-3 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm animate-pulse border border-[#4c0519]">
                 {achievementBadgeCount}
               </span>
-            )}
-
-            {/* 활성 인디케이터 점 */}
-            {isActive && !isMain && (
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-0.5" />
             )}
           </button>
         );

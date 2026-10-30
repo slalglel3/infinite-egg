@@ -119,10 +119,11 @@ export const StartScreen: React.FC<StartScreenProps> = ({ progress, onStart }) =
       {/* 하단: 게임 시작 버튼 */}
       <div className="w-full max-w-sm mb-4">
         <button
+          type="button"
           onClick={onStart}
-          className="w-full h-16 rounded-3xl bg-gradient-to-b from-amber-400 to-amber-500 border-4 border-white shadow-[0_10px_25px_rgba(245,158,11,0.5)] active:translate-y-1 active:shadow-md transition-all flex items-center justify-center gap-3 text-white font-black text-2xl tracking-wide select-none cursor-pointer"
+          className="btn-3d-amber w-full h-16 rounded-3xl flex items-center justify-center gap-3 text-2xl tracking-wide select-none cursor-pointer"
         >
-          <Play size={26} className="fill-white" />
+          <Play size={26} className="fill-white stroke-none" />
           <span>게임 시작!</span>
         </button>
       </div>

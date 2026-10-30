@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../types/game';
-import { Trophy, Coins, Sparkles, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Trophy, Coins, Volume2, VolumeX, RotateCcw, Plus, Shield } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import { resetAllProgress } from '../../utils/storage';
 
@@ -27,78 +27,84 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     alert('모든 게임 진행 상태가 성공적으로 초기화되었습니다!');
   };
 
+  const expPercent = Math.min(
+    100,
+    (progress.exp / (progress.exp + progress.nextLevelExp)) * 100
+  );
+
   return (
-    <header className="w-full flex items-center justify-between p-4 pt-safe z-20">
-      {/* 1. 레벨 & 경험치 카드 */}
-      <div className="flex items-center gap-2.5 bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl shadow-md border-2 border-amber-200">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-white font-black text-sm shadow-sm">
-          {progress.level}
-        </div>
-        <div className="flex flex-col">
-          <div className="flex items-center gap-1">
-            <span className="font-extrabold text-xs text-gray-800">레벨 {progress.level}</span>
-            <Sparkles size={11} className="text-amber-500" />
+    <header className="w-full flex items-center justify-between p-3 pt-safe z-30 select-none">
+      {/* 1. 좌측: 운빨존많겜 스타일 레벨 방패 엠블럼 */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex flex-col items-center">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-b from-amber-400 to-amber-600 border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e] flex items-center justify-center text-white font-black text-sm drop-shadow">
+            <span className="text-[10px] text-amber-200 block -mt-3.5 absolute font-extrabold">LV</span>
+            <span className="mt-1 text-base">{progress.level}</span>
           </div>
-          <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden mt-0.5">
+          {/* 미니 경험치 게이지 */}
+          <div className="w-10 h-1.5 bg-[#1e1b18] rounded-full overflow-hidden mt-1 p-0.2 border border-white/40 shadow-sm">
             <div
-              className="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all"
-              style={{
-                width: `${Math.min(100, (progress.exp / (progress.exp + progress.nextLevelExp)) * 100)}%`,
-              }}
+              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
+              style={{ width: `${expPercent}%` }}
             />
           </div>
         </div>
       </div>
 
-      {/* 2. 보유 골드 & 최고 기록 & 사운드 & 초기화 버튼 */}
-      <div className="flex items-center gap-2">
-        {/* 보유 골드 */}
-        <div className="flex items-center gap-1.5 bg-amber-500/90 text-white backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-md border border-amber-300">
-          <Coins size={16} className="text-yellow-200" />
-          <span className="font-black text-xs tracking-wide">
-            {progress.gold.toLocaleString()}
-          </span>
+      {/* 2. 중앙/우측: 운빨존많겜 스타일 독립 알약형 캡슐 HUD (골드, 계란 껍데기, 최고 기록) */}
+      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+        {/* 골드 캡슐 */}
+        <div className="hud-capsule">
+          <Coins size={14} className="text-amber-500 fill-amber-400 shrink-0" />
+          <span className="text-xs font-black tracking-tight">{progress.gold.toLocaleString()}</span>
+          <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-xs ml-0.5 border border-[#064e3b]">
+            <Plus size={10} className="stroke-[3]" />
+          </div>
         </div>
 
-        {/* 최고 기록 */}
-        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-2xl shadow-md border border-amber-200 text-amber-700">
-          <Trophy size={14} className="text-amber-600" />
-          <span className="font-black text-xs">
-            {progress.bestDistanceMeters.toLocaleString()}m
-          </span>
+        {/* 계란 껍데기 캡슐 */}
+        <div className="hud-capsule" title="계란 껍데기 재화">
+          <span className="text-xs shrink-0">🥚</span>
+          <span className="text-xs font-black tracking-tight text-rose-700">{progress.eggShells || 0}</span>
+        </div>
+
+        {/* 최고 기록 캡슐 */}
+        <div className="hud-capsule bg-amber-50">
+          <Trophy size={13} className="text-amber-600 shrink-0" />
+          <span className="text-xs font-black tracking-tight text-amber-900">{progress.bestDistanceMeters.toLocaleString()}m</span>
         </div>
 
         {/* 음소거 버튼 */}
         <button
           type="button"
           onClick={onToggleMute}
-          className="w-9 h-9 rounded-2xl bg-white/90 backdrop-blur-md border border-amber-200 flex items-center justify-center text-amber-700 shadow-md active:scale-90 transition-transform cursor-pointer"
+          className="btn-3d-square w-8 h-8 rounded-xl flex items-center justify-center shrink-0 cursor-pointer"
           title={isMuted ? '음소거 해제' : '음소거'}
         >
-          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          {isMuted ? <VolumeX size={15} className="text-rose-600" /> : <Volume2 size={15} className="text-emerald-600" />}
         </button>
 
-        {/* [피드백 10 반영] 게임 상태 초기화 버튼 */}
+        {/* 리셋 버튼 */}
         <button
           type="button"
           onClick={() => setShowResetConfirm(true)}
-          className="w-9 h-9 rounded-2xl bg-rose-50 border border-rose-300 flex items-center justify-center text-rose-600 shadow-md active:scale-90 transition-transform cursor-pointer"
+          className="btn-3d-square w-8 h-8 rounded-xl flex items-center justify-center shrink-0 cursor-pointer hover:bg-rose-50"
           title="게임 데이터 리셋"
         >
-          <RotateCcw size={15} />
+          <RotateCcw size={14} className="text-gray-600" />
         </button>
       </div>
 
       {/* 데이터 리셋 확인 모달 */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-5 max-w-xs w-full shadow-2xl border-2 border-rose-300 flex flex-col gap-3 text-center animate-scale-up">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="panel-arcade p-5 max-w-xs w-full shadow-2xl flex flex-col gap-3 text-center animate-scale-up">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-400 text-rose-600 flex items-center justify-center mx-auto shadow-sm">
               <RotateCcw size={24} />
             </div>
-            <h3 className="text-base font-black text-gray-800">게임 데이터 초기화</h3>
-            <p className="text-xs text-gray-600 font-semibold leading-relaxed">
-              모든 레벨, 획득한 계란 스킨, 의상, 최고 기록 및 보유 골드가 완전히 초기화됩니다.<br />
+            <h3 className="text-lg font-black text-[#1e1b18]">게임 데이터 초기화</h3>
+            <p className="text-xs text-gray-700 font-bold leading-relaxed">
+              모든 계란 스킨, 의상, 최고 기록 및 골드가 완전히 초기화됩니다.<br />
               <strong className="text-rose-600">이 작업은 되돌릴 수 없습니다.</strong>
             </p>
 
@@ -106,16 +112,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(false)}
-                className="flex-1 py-2 rounded-xl bg-gray-200 text-gray-700 font-black text-xs cursor-pointer"
+                className="btn-3d-square flex-1 py-2 rounded-xl text-xs font-black cursor-pointer"
               >
                 취소
               </button>
               <button
                 type="button"
                 onClick={handleResetData}
-                className="flex-1 py-2 rounded-xl bg-rose-600 text-white font-black text-xs cursor-pointer shadow-md hover:bg-rose-700"
+                className="btn-3d-rose flex-1 py-2 rounded-xl text-xs font-black cursor-pointer shadow-md"
               >
-                초기화 확인
+                초기화
               </button>
             </div>
           </div>

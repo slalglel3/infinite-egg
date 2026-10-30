@@ -107,7 +107,7 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
                         e.stopPropagation();
                         handleClaim(ach.id);
                       }}
-                      className="bg-gradient-to-r from-amber-400 to-amber-500 text-white font-black text-xs px-3.5 py-2 rounded-2xl shadow-lg active:scale-95 transition-all flex items-center gap-1 animate-bounce cursor-pointer"
+                      className="btn-3d-amber text-xs px-3.5 py-1.5 rounded-2xl flex items-center gap-1 animate-bounce cursor-pointer"
                     >
                       <Gift size={14} />
                       <span>보상 받기</span>

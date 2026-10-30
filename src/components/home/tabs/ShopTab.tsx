@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../../types/game';
 import { saveUserProgress, claimDailyFreeGold } from '../../../utils/storage';
-import { ShoppingBag, Coins, Sparkles, Crown, Zap, Gift, Check, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Coins, Sparkles, Gift, Check, ArrowRight } from 'lucide-react';
 import { sound } from '../../../audio/sound';
 import confetti from 'canvas-confetti';
 import { HatchingModal } from '../HatchingModal';
@@ -31,7 +31,7 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
     }
   };
 
-  // [피드백 6 연동] 황금 둥지 알 부화기 시작 (카드 자체 클릭)
+  // 황금 알 부화기 시작
   const handleStartHatch = () => {
     if (progress.gold < 250) {
       sound.playImpact(5);
@@ -46,7 +46,7 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
     setShowHatchModal(true);
   };
 
-  // 계란 껍데기로 골드 교환 (50 껍데기 -> 300 골드)
+  // 계란 껍데기 50개 -> 300 골드 환전
   const handleExchangeShells = () => {
     if ((progress.eggShells || 0) < 50) {
       sound.playImpact(5);
@@ -62,165 +62,144 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
     };
     saveUserProgress(updated);
     onUpdateProgress(updated);
-    alert('계란 껍데기 50개를 300 골드로 성공적으로 교환했습니다!');
   };
 
   return (
-    <div className="flex-1 flex flex-col px-4 py-2 safe-container overflow-hidden">
-      {/* 상단 헤더 & 재화 배지 */}
-      <div className="flex items-center justify-between pb-2 px-1">
-        <h2 className="text-lg font-black text-gray-800 flex items-center gap-1.5">
-          <ShoppingBag size={20} className="text-amber-500 fill-amber-500" />
-          달걀 상점
+    <div className="flex-1 flex flex-col px-3 py-1.5 safe-container overflow-hidden select-none">
+      {/* 상단 헤더 */}
+      <div className="flex items-center justify-between pb-1.5 px-0.5">
+        <h2 className="text-base font-black text-[#1e1b18] flex items-center gap-1.5">
+          <ShoppingBag size={18} className="text-amber-500 fill-amber-500" />
+          <span>신비한 상점</span>
         </h2>
 
-        {/* 2대 재화 (골드 & 계란 껍데기) */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-black shadow-md border border-amber-300">
-            <Coins size={14} className="text-yellow-200" />
-            <span>{progress.gold.toLocaleString()}</span>
+        {/* 2대 재화 캡슐 */}
+        <div className="flex items-center gap-1.5">
+          <div className="hud-capsule">
+            <Coins size={13} className="text-amber-500 fill-amber-400" />
+            <span className="text-xs font-black">{progress.gold.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-1 bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-black shadow-md border border-rose-300" title="계란 껍데기 재화">
-            <span>🥚 {progress.eggShells || 0}</span>
+          <div className="hud-capsule" title="계란 껍데기">
+            <span className="text-xs">🥚</span>
+            <span className="text-xs font-black text-rose-700">{progress.eggShells || 0}</span>
           </div>
         </div>
       </div>
 
-      {/* [피드백 6 & 7 & 8] 큼직하고 세련된 상점 액션 타일 리스트 */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3.5 pb-4 pr-1">
-        {/* 1. [황금 둥지 알 부화기] - 카드 전체가 거대한 인터랙티브 가챠 버튼! */}
-        <div
-          onClick={handleStartHatch}
-          className="rounded-3xl p-5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-2xl border-3 border-white/60 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none ring-2 ring-white/40"
-        >
-          {/* 빛나는 블러 배경 */}
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/20 rounded-full blur-2xl pointer-events-none" />
-
-          <div className="flex items-center justify-between mb-2 relative z-10">
-            <span className="text-xs font-black bg-white text-orange-600 px-3 py-1 rounded-full shadow-md">
-              BEST 가챠
-            </span>
-            <span className="text-xs font-black text-yellow-200 flex items-center gap-1 drop-shadow">
-              <Sparkles size={15} />
-              리본 풀기 인터랙티브 부화!
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between my-2 relative z-10">
-            <div>
-              <h3 className="text-2xl font-black tracking-tight drop-shadow-md">
-                황금 둥지 알 부화기
-              </h3>
-              <p className="text-xs text-yellow-100 font-extrabold mt-1">
-                전설의 계란 & 전용 의상 세트 부화 (중복 시 껍데기 환급)
-              </p>
-            </div>
-
-            <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-3xl shadow-inner shrink-0 ml-2 animate-bounce">
+      {/* 상점 3대 아케이드 액션 패널 */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 pb-4 pr-0.5">
+        {/* 1. [일일 무료 선물 보물상자] */}
+        <div className="panel-arcade p-3 flex items-center justify-between bg-gradient-to-r from-emerald-50 to-amber-50 border-3 border-[#1e1b18]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-12 h-12 rounded-2xl bg-amber-400 border-2 border-[#1e1b18] flex items-center justify-center text-2xl shadow-[0_3px_0_#92400e]">
               🎁
             </div>
-          </div>
-
-          {/* 터치하여 바로 시작 버튼 배너 */}
-          <div className="mt-4 pt-3 border-t border-white/30 flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-1.5 font-black text-yellow-200">
-              <Coins size={20} className="text-yellow-300" />
-              <span className="text-xl">250 골드</span>
+            <div>
+              <span className="text-xs font-black text-[#1e1b18] block">매일 무료 골드 선물</span>
+              <span className="text-[11px] font-extrabold text-emerald-700 block mt-0.5">
+                {isFreeGoldClaimedToday ? '✓ 오늘 수령 완료' : '+100 골드 즉시 지급!'}
+              </span>
             </div>
-
-            <span className="bg-white text-orange-600 font-black text-xs px-4 py-2 rounded-xl shadow-lg flex items-center gap-1">
-              <Gift size={15} />
-              <span>터치하여 부화 시작 ▶</span>
-            </span>
           </div>
-        </div>
 
-        {/* 2. [매일 무료 선물 & 골드 충전소] - 큼직한 원터치 액션 타일 */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* 매일 무료 선물 버튼 */}
           <button
             type="button"
             disabled={isFreeGoldClaimedToday}
             onClick={handleFreeGold}
-            className={`p-4 rounded-3xl border-3 flex flex-col items-center justify-center gap-2 transition-all select-none shadow-md ${
+            className={`py-2 px-3.5 rounded-2xl font-black text-xs cursor-pointer shadow-md flex items-center gap-1 shrink-0 ${
               isFreeGoldClaimedToday
-                ? 'bg-gray-100 border-gray-300 opacity-65 cursor-not-allowed'
-                : 'bg-gradient-to-b from-emerald-50 to-emerald-100 border-emerald-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer ring-2 ring-emerald-200'
+                ? 'bg-gray-300 text-gray-500 border-2 border-gray-400 cursor-not-allowed opacity-75'
+                : 'btn-3d-emerald'
             }`}
           >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm ${
-              isFreeGoldClaimedToday ? 'bg-gray-200 text-gray-400' : 'bg-emerald-500 text-white animate-pulse'
-            }`}>
-              {isFreeGoldClaimedToday ? <Check size={22} /> : '🎁'}
-            </div>
-            <div className="text-center">
-              <span className="text-sm font-black text-gray-900 block">매일 무료 선물</span>
-              <span className={`text-xs font-black mt-0.5 block ${
-                isFreeGoldClaimedToday ? 'text-gray-400' : 'text-emerald-700'
-              }`}>
-                {isFreeGoldClaimedToday ? '오늘 수령 완료' : '+100 골드 받기'}
-              </span>
-            </div>
+            {isFreeGoldClaimedToday ? <Check size={14} /> : <Gift size={14} />}
+            <span>{isFreeGoldClaimedToday ? '수령 완료' : 'FREE GET!'}</span>
           </button>
+        </div>
 
-          {/* 인앱 결제 (준비중) */}
-          <div className="p-4 rounded-3xl bg-gray-50 border-3 border-gray-200 flex flex-col items-center justify-center gap-2 opacity-70 select-none">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-2xl text-amber-600">
-              💰
+        {/* 2. [전설의 황금 알 부화기 (Egg Gacha)] — 메인 킬러 콘텐츠 */}
+        <div
+          onClick={handleStartHatch}
+          className="panel-arcade p-4 bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 text-white shadow-2xl relative overflow-hidden cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all border-3 border-[#1e1b18]"
+        >
+          {/* 장식용 은은한 블러 원 */}
+          <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/20 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="flex items-center justify-between z-10 mb-1">
+            <span className="text-[10px] font-black bg-white text-orange-600 px-2.5 py-0.5 rounded-full shadow-md border border-black/10">
+              BEST 가챠
+            </span>
+            <span className="text-xs font-black text-yellow-200 flex items-center gap-1 drop-shadow">
+              <Sparkles size={14} />
+              <span>전설 알 & 의상 세트</span>
+            </span>
+          </div>
+
+          {/* 중앙 황금 알 일러스트 */}
+          <div className="flex items-center justify-between my-2 z-10">
+            <div>
+              <h3
+                style={{
+                  fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
+                  textShadow: '-1.5px -1.5px 0 #18181b, 1.5px -1.5px 0 #18181b, -1.5px 1.5px 0 #18181b, 1.5px 1.5px 0 #18181b, 0 3px 0 #09090b',
+                }}
+                className="text-2xl font-black text-white"
+              >
+                황금 둥지 알 부화기
+              </h3>
+              <p className="text-xs font-black text-yellow-100 mt-1 drop-shadow">
+                터치 시 리본 풀기 인터랙티브 부화! (중복 시 껍데기 환급)
+              </p>
             </div>
-            <div className="text-center">
-              <span className="text-sm font-black text-gray-800 block">골드 자루 (1,000)</span>
-              <span className="text-xs font-bold text-gray-500 mt-0.5 block">정식 출시 준비중</span>
+
+            <div className="w-16 h-16 rounded-2xl bg-white/25 backdrop-blur-md border-2 border-white/50 flex items-center justify-center text-3xl shadow-inner shrink-0 ml-2 animate-bounce">
+              ✨🥚
             </div>
+          </div>
+
+          {/* 부화 시작 3D 버튼 바 */}
+          <div className="mt-2 pt-2 border-t border-white/30 flex items-center justify-between z-10">
+            <div className="flex items-center gap-1 font-black text-yellow-200">
+              <Coins size={16} className="text-yellow-300" />
+              <span className="text-lg">250 골드</span>
+            </div>
+
+            <span className="btn-3d-amber py-2 px-4 rounded-xl text-xs font-black flex items-center gap-1 shadow-lg">
+              <span>부화 시작 ▶</span>
+            </span>
           </div>
         </div>
 
-        {/* 3. [계란 껍데기 환전소] - 카드 전체가 원클릭 환전 버튼! */}
+        {/* 3. [계란 껍데기 암시장 환전소] */}
         <div
           onClick={handleExchangeShells}
-          className="rounded-3xl p-4 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-600 text-white shadow-xl border-3 border-white/50 flex items-center justify-between cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all select-none"
+          className="panel-arcade p-3 bg-gradient-to-r from-rose-500 via-rose-600 to-amber-600 text-white flex items-center justify-between cursor-pointer hover:scale-[1.01] active:scale-[0.99] transition-all border-3 border-[#1e1b18]"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-2xl shadow-inner">
+          <div className="flex items-center gap-2.5">
+            <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border-2 border-white/40 flex items-center justify-center text-2xl shadow-inner shrink-0">
               🥚
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black text-white drop-shadow">계란 껍데기 환전</span>
-                <span className="text-[10px] font-black bg-white/25 px-2 py-0.5 rounded-full text-yellow-200">
+                <span className="text-xs font-black text-white drop-shadow">계란 껍데기 환전</span>
+                <span className="text-[9px] font-black bg-white/25 px-1.5 py-0.2 rounded-full text-yellow-200">
                   보유: {progress.eggShells || 0}개
                 </span>
               </div>
-              <p className="text-xs font-extrabold text-rose-100 mt-0.5">
+              <p className="text-[11px] font-extrabold text-rose-100 mt-0.5">
                 껍데기 50개 ➔ 300 골드로 즉시 교환
               </p>
             </div>
           </div>
 
-          <div className="bg-white text-rose-600 font-black text-xs px-3.5 py-2 rounded-xl shadow-md flex items-center gap-1 shrink-0">
-            <span>환전하기</span>
-            <ArrowRight size={13} />
+          <div className="btn-3d-square py-1.5 px-3 rounded-xl text-xs font-black flex items-center gap-1 text-[#1e1b18] shrink-0">
+            <span>환전</span>
+            <ArrowRight size={12} />
           </div>
-        </div>
-
-        {/* 4. [VIP 혜택] */}
-        <div className="rounded-3xl p-4 bg-white/95 border-2 border-amber-200 shadow-sm flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md text-xl">
-              <Crown size={22} />
-            </div>
-            <div>
-              <span className="text-sm font-black text-gray-900 block">광고 제거 VIP 패키지</span>
-              <span className="text-xs text-gray-500 font-bold block mt-0.5">쾌적한 무광고 + 영구 EXP 1.2배</span>
-            </div>
-          </div>
-          <span className="text-xs font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-xl border border-gray-200">
-            출시 예정
-          </span>
         </div>
       </div>
 
-      {/* 부화 모달 (리본 풀기 인터랙션) */}
+      {/* 부화 모달 (리본 풀기) */}
       {showHatchModal && (
         <HatchingModal
           progress={progress}
