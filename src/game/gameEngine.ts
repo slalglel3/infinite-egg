@@ -5,6 +5,16 @@ import { EggRenderer } from './eggRenderer';
 import { sound } from '../audio/sound';
 import { getEggSkinById } from '../data/eggSkins';
 
+export interface EggTrailPoint {
+  x: number;
+  y: number;
+  radius: number;
+  alpha: number;
+  color: string;
+  type: 'SKID' | 'SPARK' | 'SLIME' | 'HOLY' | 'DARK_FIRE';
+  rotation?: number;
+}
+
 export class GameEngine {
   private mapGen: MapGenerator;
   private eggRenderer: EggRenderer;
@@ -31,6 +41,16 @@ export class GameEngine {
   // 점프 판정용 (절벽 끝점과의 거리)
   private isCurrentJumpMisjump: boolean = false;
   private jumpDistanceToEdge: number = 0;
+
+  // 방향 전환 선입력 버퍼링 (Input Buffering)
+  private turnBuffered: boolean = false;
+  private turnBufferTimer: number = 0;
+  private turnBufferSegIndex: number = -1;
+  private turnBufferDir: SlopeDirection = 'RIGHT_DOWN';
+
+  // 계란 주행 궤적 (Trail & Skidmark)
+  public trails: EggTrailPoint[] = [];
+  private trailSpawnTimer: number = 0;
 
   // 대기 환경 파티클 타이머 (눈송이, 불티 등)
   private ambientParticleTimer: number = 0;
@@ -149,6 +169,11 @@ export class GameEngine {
 
     this.particles = [];
     this.splats = [];
+    this.trails = [];
+    this.trailSpawnTimer = 0;
+    this.turnBuffered = false;
+    this.turnBufferTimer = 0;
+    this.turnBufferSegIndex = -1;
     this.cameraX = this.egg.x;
     this.cameraY = this.egg.y;
     this.isRunning = true;
@@ -241,8 +266,8 @@ export class GameEngine {
       const turnSeg = this.segments[turnSegIndex];
       const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
 
-      // 코너 끝점 38px 이내 도달 시: 퍼펙트 턴! (대미지 0)
-      if (distToTurn <= 38) {
+      // 1. 코너 피벗 반경(42px 이내): 즉시 퍼펙트 턴 체결!
+      if (distToTurn <= 42) {
         this.egg.direction = newDir;
         this.egg.currentSegmentIndex = turnSegIndex + 1;
         this.egg.x = turnSeg.startX;
@@ -251,10 +276,21 @@ export class GameEngine {
         sound.playPerfect();
         this.stats.perfectLandings++;
         this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
+        this.turnBuffered = false;
         return;
       }
 
-      // 너무 일찍 누른 경우 (수직 낙하 드롭)
+      // 2. 코너 진입 전 42px ~ 95px 선입력 버퍼링 구간 (부드럽고 쫀득한 손맛 보장)
+      if (distToTurn <= 95) {
+        this.turnBuffered = true;
+        this.turnBufferTimer = 0.16; // 160ms 버퍼 윈도우
+        this.turnBufferSegIndex = turnSegIndex;
+        this.turnBufferDir = newDir;
+        sound.playTurn();
+        return;
+      }
+
+      // 3. 95px 초과: 너무 일찍 누른 경우 (수직 낙하 드롭)
       this.egg.direction = newDir;
       this.egg.state = 'DROPPING_TURN';
       this.egg.dropStartY = this.egg.y;
@@ -284,6 +320,38 @@ export class GameEngine {
 
     this.updateParticles(dt);
     this.updateAmbientParticles(dt);
+
+    // 1. 트레일 궤적 페이드아웃 및 청소
+    for (let i = this.trails.length - 1; i >= 0; i--) {
+      this.trails[i].alpha -= dt * 1.8;
+      if (this.trails[i].alpha <= 0) {
+        this.trails.splice(i, 1);
+      }
+    }
+
+    // 2. 방향 전환 선입력 버퍼링 (Input Buffering) 자동 턴 체결 판정
+    if (this.turnBuffered && this.egg.state === 'ROLLING') {
+      this.turnBufferTimer -= dt;
+      if (this.turnBufferSegIndex >= 0 && this.turnBufferSegIndex < this.segments.length) {
+        const turnSeg = this.segments[this.turnBufferSegIndex];
+        const distToTurn = Math.hypot(turnSeg.startX - this.egg.x, turnSeg.startY - this.egg.y);
+        if (distToTurn <= 42) {
+          // 코너 반경 도달! 지체없이 퍼펙트 턴 체결
+          this.egg.direction = this.turnBufferDir;
+          this.egg.currentSegmentIndex = this.turnBufferSegIndex + 1;
+          this.egg.x = turnSeg.startX;
+          this.egg.y = turnSeg.startY - GAME_CONSTANTS.EGG_RADIUS_Y + 4;
+          sound.playTurn();
+          sound.playPerfect();
+          this.stats.perfectLandings++;
+          this.spawnTextParticle(this.egg.x, this.egg.y - 25, 'PERFECT TURN!', '#10b981');
+          this.turnBuffered = false;
+        }
+      }
+      if (this.turnBufferTimer <= 0) {
+        this.turnBuffered = false;
+      }
+    }
 
     // 사망 연출 시퀀스 진행
     if (this.egg.state === 'SURPRISED_FALL') {
@@ -388,6 +456,13 @@ export class GameEngine {
         maxLife: 0.35,
         type: 'DUST',
       });
+    }
+
+    // 지면 노면 스키드마크 & 고유 궤적(Trail) 생성 (초당 약 30회)
+    this.trailSpawnTimer += dt;
+    if (this.trailSpawnTimer >= 0.035) {
+      this.trailSpawnTimer = 0;
+      this.spawnEggTrail();
     }
 
     // [신규 특수 계란 4종] 고유 주행 트레일 & 상시 오라
@@ -909,6 +984,114 @@ export class GameEngine {
     }
   }
 
+  // 지면 밀착형 궤적(Trail/Skidmark) 생성
+  private spawnEggTrail(): void {
+    if (this.trails.length >= 60) {
+      this.trails.shift();
+    }
+
+    const special = this.currentSkin.specialType;
+    let type: EggTrailPoint['type'] = 'SKID';
+    let color = '#334155';
+    let radius = 6;
+
+    if (this.currentSkin.id === 'metal_egg' || special === 'METAL') {
+      type = 'SPARK';
+      color = '#f97316';
+      radius = 7;
+    } else if (special === 'POISON') {
+      type = 'SLIME';
+      color = '#84cc16';
+      radius = 8;
+    } else if (special === 'ANGEL') {
+      type = 'HOLY';
+      color = '#fde047';
+      radius = 7;
+    } else if (special === 'DEVIL') {
+      type = 'DARK_FIRE';
+      color = '#9333ea';
+      radius = 8;
+    }
+
+    this.trails.push({
+      x: this.egg.x,
+      y: this.egg.y + GAME_CONSTANTS.EGG_RADIUS_Y - 2,
+      radius,
+      alpha: 0.75,
+      color,
+      type,
+      rotation: this.egg.rotation,
+    });
+  }
+
+  // 지면 밀착형 궤적(Trail/Skidmark) 렌더링
+  private drawTrails(ctx: CanvasRenderingContext2D): void {
+    if (this.trails.length === 0) return;
+
+    ctx.save();
+    for (const trail of this.trails) {
+      ctx.globalAlpha = Math.max(0, trail.alpha);
+
+      switch (trail.type) {
+        case 'SKID': {
+          ctx.fillStyle = trail.color;
+          ctx.beginPath();
+          ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.45, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'SPARK': {
+          ctx.fillStyle = trail.color;
+          ctx.beginPath();
+          ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.4, 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(trail.x, trail.y - 1, trail.radius * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'SLIME': {
+          ctx.fillStyle = trail.color;
+          ctx.beginPath();
+          ctx.ellipse(trail.x, trail.y, trail.radius * 1.1, trail.radius * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#15803d';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          break;
+        }
+        case 'HOLY': {
+          ctx.fillStyle = trail.color;
+          ctx.beginPath();
+          ctx.arc(trail.x, trail.y, trail.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(trail.x - trail.radius * 1.4, trail.y);
+          ctx.lineTo(trail.x + trail.radius * 1.4, trail.y);
+          ctx.moveTo(trail.x, trail.y - trail.radius * 1.4);
+          ctx.lineTo(trail.x, trail.y + trail.radius * 1.4);
+          ctx.stroke();
+          break;
+        }
+        case 'DARK_FIRE': {
+          ctx.fillStyle = trail.color;
+          ctx.beginPath();
+          ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.5, 0.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#450a0a';
+          ctx.beginPath();
+          ctx.arc(trail.x, trail.y, trail.radius * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+      }
+    }
+    ctx.restore();
+  }
+
   // ==========================================
   // 전체 화면 렌더링
   // ==========================================
@@ -927,6 +1110,7 @@ export class GameEngine {
     ctx.translate(-this.cameraX, -this.cameraY);
 
     this.drawAsphaltRoads(ctx);
+    this.drawTrails(ctx);
     this.drawItems(ctx);
 
     for (const splat of this.splats) {
@@ -1349,6 +1533,35 @@ export class GameEngine {
     return `rgb(${r},${g},${b})`;
   }
 
+  // 바이옴 고도에 따른 동적 도로 테마 (연석, 노면, 점선, 그림자) 계산
+  private getCurrentRoadTheme(): { curb: string; surface: string; line: string; shadow: string } {
+    const meters = this.stats.distanceMeters;
+    const ROAD_THEMES = [
+      { m: 0, curb: '#38bdf8', surface: '#e0f2fe', line: '#0284c7', shadow: '#0c4a6e' },       // 1. 설산 빙판 (화이트/아이스블루)
+      { m: 400, curb: '#15803d', surface: '#1e293b', line: '#a3e635', shadow: '#022c22' },     // 2. 알프스 전나무 숲 (에메랄드/라임)
+      { m: 900, curb: '#d97706', surface: '#78350f', line: '#fef08a', shadow: '#451a03' },     // 3. 동화 초원 벽돌/흙길 (황토/골드)
+      { m: 1450, curb: '#c026d3', surface: '#2e1065', line: '#06b6d4', shadow: '#1e083a' },    // 4. 수정 동굴 (마젠타/네온사이언)
+      { m: 2050, curb: '#ea580c', surface: '#450a0a', line: '#facc15', shadow: '#1f0404' },    // 5. 화산 마그마 (오렌지/용암 옐로우)
+      { m: 2600, curb: '#e11d48', surface: '#0f0208', line: '#fb7185', shadow: '#000000' },    // 6. 지구 맨틀 심연 코어 (크림슨/네온레드)
+    ];
+
+    let curIdx = 0;
+    while (curIdx < ROAD_THEMES.length - 2 && meters > ROAD_THEMES[curIdx + 1].m) {
+      curIdx++;
+    }
+    const t1 = ROAD_THEMES[curIdx];
+    const t2 = ROAD_THEMES[curIdx + 1];
+    const span = Math.max(1, t2.m - t1.m);
+    const t = Math.max(0, Math.min(1, (meters - t1.m) / span));
+
+    return {
+      curb: this.lerpColor(t1.curb, t2.curb, t),
+      surface: this.lerpColor(t1.surface, t2.surface, t),
+      line: this.lerpColor(t1.line, t2.line, t),
+      shadow: this.lerpColor(t1.shadow, t2.shadow, t),
+    };
+  }
+
   private drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, scale: number): void {
     ctx.beginPath();
     ctx.arc(cx, cy, scale * 0.5, 0, Math.PI * 2);
@@ -1446,8 +1659,10 @@ export class GameEngine {
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
+    const roadTheme = this.getCurrentRoadTheme();
+
     // A. 하단 3D 도로 그림자 (전체 체인 일괄)
-    ctx.strokeStyle = '#0f172a';
+    ctx.strokeStyle = roadTheme.shadow;
     ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 6;
     for (const chain of chains) {
       traceChain(chain, 8);
@@ -1455,25 +1670,25 @@ export class GameEngine {
     }
 
     // B. 도로 양옆 레이싱 연석 (전체 체인 일괄)
-    ctx.strokeStyle = '#ef4444';
+    ctx.strokeStyle = roadTheme.curb;
     ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
     for (const chain of chains) {
       traceChain(chain, 0);
       ctx.stroke();
     }
 
-    // C. 다크 아스팔트 노면 (전체 체인 일괄)
-    ctx.strokeStyle = '#1e293b';
+    // C. 다크 아스팔트 / 바이옴 노면 (전체 체인 일괄)
+    ctx.strokeStyle = roadTheme.surface;
     ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH - (GAME_CONSTANTS.CURB_WIDTH * 2);
     for (const chain of chains) {
       traceChain(chain, 0);
       ctx.stroke();
     }
 
-    // D. 중앙 노란색 점선 (전체 체인 일괄)
+    // D. 중앙 점선 (전체 체인 일괄)
     ctx.save();
     ctx.setLineDash([12, 10]);
-    ctx.strokeStyle = '#facc15';
+    ctx.strokeStyle = roadTheme.line;
     ctx.lineWidth = 3.0;
     for (const chain of chains) {
       traceChain(chain, 0);

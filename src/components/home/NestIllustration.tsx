@@ -20,6 +20,7 @@ type EggMotion = 'IDLE' | 'WIGGLE' | 'HOP' | 'TILT' | 'TOUCH_JUMP';
 export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equippedCostumes, onEggClick }) => {
   const [motion, setMotion] = useState<EggMotion>('IDLE');
   const [showHeart, setShowHeart] = useState(false);
+  const [reactionText, setReactionText] = useState('방긋! ❤️');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 랜덤 움직임 루프 (1.8초 ~ 3.2초 주기마다 무작위 액션 실행)
@@ -57,8 +58,12 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
     };
   }, []);
 
-  // 유저 직접 탭/클릭 시 반응
+  // 유저 직접 탭/클릭 시 반응 (다채로운 아케이드 리액션)
   const handleEggClick = () => {
+    const reactions = ['방긋! ❤️', '통통! ✨', '얏호~! 🌟', '달릴 준비 완료! 🥚', '데굴데굴~ 💨', '헤헤! 😊'];
+    const randomReaction = reactions[Math.floor(Math.random() * reactions.length)];
+    setReactionText(randomReaction);
+
     setMotion('TOUCH_JUMP');
     setShowHeart(true);
     sound.playJump();
@@ -69,7 +74,7 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
 
     setTimeout(() => {
       setShowHeart(false);
-    }, 1300);
+    }, 1200);
 
     if (onEggClick) onEggClick();
   };
@@ -99,9 +104,9 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
 
       {/* 탭 시 피어오르는 하트 이펙트 */}
       {showHeart && (
-        <div className="absolute -top-6 z-40 flex items-center gap-1 bg-white/95 px-3 py-1 rounded-full shadow-lg border border-pink-200 animate-bounce">
-          <Heart size={15} className="text-rose-500 fill-rose-500" />
-          <span className="text-xs font-black text-rose-600">방긋!</span>
+        <div className="absolute -top-7 z-40 flex items-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-full shadow-xl border-2 border-amber-300 animate-bounce">
+          <Heart size={16} className="text-rose-500 fill-rose-500 animate-pulse" />
+          <span className="text-xs font-black text-amber-900 tracking-tight">{reactionText}</span>
         </div>
       )}
 

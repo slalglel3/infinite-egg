@@ -28,6 +28,8 @@ export function App() {
   const [leveledUp, setLeveledUp] = useState(false);
   const [lastEarnedGold, setLastEarnedGold] = useState(0);
   const [isMuted, setIsMuted] = useState(sound.getMuted());
+  const [activeEventMap, setActiveEventMap] = useState<EventMapItem | null>(null);
+  const [showEventBanner, setShowEventBanner] = useState(false);
 
   // 싱글톤 GameEngine 인스턴스 유지
   const engineRef = useRef<GameEngine | null>(null);
@@ -99,7 +101,17 @@ export function App() {
   }, [engine, gameState]);
 
   // 게임 시작 (기본 모드 또는 이벤트 맵 모드)
-  const handleStartGame = (_eventMap?: EventMapItem) => {
+  const handleStartGame = (eventMap?: EventMapItem) => {
+    setActiveEventMap(eventMap || null);
+    if (eventMap) {
+      setShowEventBanner(true);
+      setTimeout(() => {
+        setShowEventBanner(false);
+      }, 2200);
+    } else {
+      setShowEventBanner(false);
+    }
+
     const currentSkin = getEggSkinById(userProgress.selectedEggId);
     engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes);
     setStats({ ...engine.stats });
@@ -132,6 +144,22 @@ export function App() {
             onToggleMute={handleToggleMute}
             isMuted={isMuted}
           />
+
+          {/* 이벤트 맵 인트로 아케이드 배너 팝업 */}
+          {showEventBanner && activeEventMap && (
+            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+              <div className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 border-2 border-white shadow-2xl flex items-center gap-3">
+                <span className="text-sm px-2 py-1 rounded-lg bg-black/40 font-black text-amber-300">
+                  {activeEventMap.tag}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-amber-200 tracking-wider">EVENT MAP ACTIVATED</span>
+                  <span className="text-sm font-black text-white text-stroke-black">{activeEventMap.title}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Controls onJump={handleJump} onTurn={handleTurn} />
         </>
       )}
