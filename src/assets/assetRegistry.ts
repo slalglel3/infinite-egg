@@ -6,6 +6,12 @@
  */
 
 // 1. 투명 PNG 에셋 정적 임포트 (Vite singlefile 인라인 지원)
+import screenHome from './screens/screen_home.png';
+import screenShop from './screens/screen_shop.png';
+import screenSkin from './screens/screen_skin.png';
+import screenMission from './screens/screen_mission.png';
+import screenChallenge from './screens/screen_challenge.png';
+
 import bgBarnSunlight from './backgrounds/bg_barn_sunlight.png';
 import bgBarnLoft from './backgrounds/bg_barn_loft.png';
 
@@ -41,6 +47,12 @@ import eggBabySprout from './eggs/egg_baby_sprout.png';
 
 // 2. 공통 UI 에셋 키 정의
 export type UIAssetKey =
+  // 5대 핵심 화면 풀스크린 마스터 에셋 (100% 무왜곡 매칭)
+  | 'screen_home'              // 3번 탭: 홈/로비 전체 마스터 화면
+  | 'screen_shop'              // 1번 탭: 상점 전체 마스터 화면
+  | 'screen_skin'              // 2번 탭: 스킨/보관함 전체 마스터 화면
+  | 'screen_mission'           // 4번 탭: 미션 전체 마스터 화면
+  | 'screen_challenge'         // 5번 탭: 도전 모드 전체 마스터 화면
   // 배경
   | 'bg_barn_sunlight'         // 헛간 햇살 배경 (홈/로비)
   | 'bg_barn_loft'             // 헛간 다락방 인게임 배경 (플레이)
@@ -85,6 +97,11 @@ export type EggAssetKey =
 
 // 4. 에셋 저장소 맵핑 (슬라이싱된 PNG 연결)
 const UI_ASSETS: Partial<Record<UIAssetKey, string>> = {
+  screen_home: screenHome,
+  screen_shop: screenShop,
+  screen_skin: screenSkin,
+  screen_mission: screenMission,
+  screen_challenge: screenChallenge,
   bg_barn_sunlight: bgBarnSunlight,
   bg_barn_loft: bgBarnLoft,
   header_profile_board: headerProfileBoard,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../types/game';
-import { Settings, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import { resetAllProgress } from '../../utils/storage';
 import { getUIAsset } from '../../assets/assetRegistry';
@@ -10,7 +10,7 @@ interface HomeHeaderProps {
   isMuted: boolean;
   onToggleMute: () => void;
   onUpdateProgress: (updated: UserProgress) => void;
-  isShellShopOpen?: boolean; // 계란 껍데기 상점 진입 시 상단에 껍데기 노출
+  isShellShopOpen?: boolean;
 }
 
 export const HomeHeader: React.FC<HomeHeaderProps> = ({
@@ -32,137 +32,67 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     alert('모든 게임 진행 상태가 성공적으로 초기화되었습니다!');
   };
 
-  const profBoard = getUIAsset('header_profile_board');
-  const wheatBoard = getUIAsset('header_wheat_board');
-  const featherBoard = getUIAsset('header_feather_board');
   const shellBoard = getUIAsset('header_shell_board');
-  const cogImg = getUIAsset('btn_settings_cog');
 
   return (
-    <header className="w-full flex items-center justify-between p-3 pt-safe z-30 select-none">
-      {/* 1. 좌측: 밧줄 목판 프로필 [닭 아바타 + LV.3 계란이] */}
-      <div className="flex items-center gap-2">
-        <div className="relative group cursor-pointer">
-          {profBoard ? (
-            <div className="relative h-10 drop-shadow-md flex items-center">
-              <img src={profBoard} alt="프로필" className="h-full object-contain pointer-events-none select-none" />
-              <div className="absolute inset-0 flex items-center pl-2.5 pr-2 gap-1.5">
-                <span className="text-base leading-none drop-shadow">🐔</span>
-                <div className="flex flex-col text-left leading-none">
-                  <span className="text-[9px] text-[#fde047] font-black drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">LV.{progress.level}</span>
-                  <span className="text-[11px] font-black text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">계란이</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3 py-1.5 rounded-2xl flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#fde047] border-2 border-[#5c371e] flex items-center justify-center text-lg shadow-inner shrink-0">
-                🐔
-              </div>
-              <div className="flex flex-col text-left leading-tight">
-                <span className="text-[10px] text-amber-300 font-black">LV.{progress.level}</span>
-                <span className="text-xs font-black text-amber-50">계란이</span>
-              </div>
-            </div>
-          )}
-        </div>
+    <header className="w-full h-[9%] relative z-30 select-none">
+      {/* 1. 좌측: 프로필 텍스트 오버레이 [LV.3 계란이] (X: 3% ~ 32%) */}
+      <div className="absolute top-[26%] left-[13.5%] flex flex-col text-left leading-tight pointer-events-none">
+        <span className="text-[10px] sm:text-[11px] text-[#fde047] font-black drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)]">
+          LV.{progress.level || 3}
+        </span>
+        <span className="text-[11px] sm:text-[12px] font-black text-white drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)]">
+          계란이
+        </span>
       </div>
 
-      {/* 2. 중앙 & 우측: 밧줄 목판 재화 시스템 (곡식 🌾, 황금 깃털 🪶, [옵션] 껍데기 🥚, 설정 ⚙️) */}
-      <div className="flex items-center gap-1.5">
-        {/* 활동력 곡식 목판 (24/50) */}
-        {wheatBoard ? (
-          <div className="relative h-10 drop-shadow-md flex items-center cursor-help" title="활동력 (출발 시 🌾 5 소모)">
-            <img src={wheatBoard} alt="곡식" className="h-full object-contain pointer-events-none select-none" />
-            <div className="absolute inset-0 flex items-center justify-end pr-2.5">
-              <span
-                style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-                className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
-              >
-                {progress.wheat ?? 24}/{progress.maxWheat ?? 50}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3 py-1.5 rounded-2xl flex items-center gap-1.5"
-            title="활동력 (출발 시 🌾 5 소모)"
-          >
-            <span className="text-sm">🌾</span>
-            <span className="text-xs font-black text-amber-100">
-              {progress.wheat ?? 24}/{progress.maxWheat ?? 50}
-            </span>
-          </div>
-        )}
-
-        {/* 황금 깃털 목판 (1,245) */}
-        {featherBoard ? (
-          <div className="relative h-10 drop-shadow-md flex items-center cursor-help" title="황금 깃털 (메인 재화)">
-            <img src={featherBoard} alt="황금 깃털" className="h-full object-contain pointer-events-none select-none" />
-            <div className="absolute inset-0 flex items-center justify-end pr-2.5">
-              <span
-                style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-                className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
-              >
-                {(progress.feathers ?? progress.gold).toLocaleString()}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3 py-1.5 rounded-2xl flex items-center gap-1.5"
-            title="황금 깃털 (메인 재화)"
-          >
-            <span className="text-sm text-yellow-400">🪶</span>
-            <span className="text-xs font-black text-amber-100">
-              {(progress.feathers ?? progress.gold).toLocaleString()}
-            </span>
-          </div>
-        )}
-
-        {/* 계란 껍데기 상점 진입 시에만 나타나는 계란 껍데기 재화 목판 */}
-        {isShellShopOpen && (
-          shellBoard ? (
-            <div className="relative h-10 drop-shadow-md flex items-center animate-bounce cursor-help" title="계란 껍데기 재화">
-              <img src={shellBoard} alt="계란 껍데기" className="h-full object-contain pointer-events-none select-none" />
-              <div className="absolute inset-0 flex items-center justify-end pr-2.5">
-                <span
-                  style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-                  className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
-                >
-                  {progress.eggShells || 0}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3 py-1.5 rounded-2xl flex items-center gap-1.5 animate-bounce"
-              title="계란 껍데기 재화"
-            >
-              <span className="text-sm">🥚</span>
-              <span className="text-xs font-black text-amber-100">
-                {progress.eggShells || 0}
-              </span>
-            </div>
-          )
-        )}
-
-        {/* 설정 목판 버튼 (톱니바퀴 - 슬라이싱 PNG 적용) */}
-        <button
-          type="button"
-          onClick={() => setShowSettings(true)}
-          className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-          title="게임 설정"
+      {/* 2. 중앙-좌측: 활동력 곡식 라이브 수량 오버레이 (X: 33% ~ 60%) */}
+      <div className="absolute top-[34%] left-[42%] w-[15%] text-right pr-1 pointer-events-none">
+        <span
+          style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
+          className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
         >
-          {cogImg ? (
-            <img src={cogImg} alt="설정" className="w-full h-full object-contain drop-shadow-md" />
-          ) : (
-            <div className="w-full h-full bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] rounded-2xl flex items-center justify-center">
-              <Settings size={18} className="text-amber-200 stroke-[2.5]" />
-            </div>
-          )}
-        </button>
+          {progress.wheat ?? 24}/{progress.maxWheat ?? 50}
+        </span>
       </div>
+
+      {/* 3. 중앙-우측: 황금 깃털 라이브 수량 오버레이 (X: 61% ~ 88%) */}
+      <div className="absolute top-[34%] left-[70%] w-[16%] text-right pr-1 pointer-events-none">
+        <span
+          style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
+          className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
+        >
+          {(progress.feathers ?? progress.gold).toLocaleString()}
+        </span>
+      </div>
+
+      {/* 4. 계란 껍데기 상점 진입 시 계란 껍데기 재화 목판 조건부 표시 */}
+      {isShellShopOpen && shellBoard && (
+        <div className="absolute top-[105%] right-3 h-9 drop-shadow-lg flex items-center z-40 animate-bounce cursor-help" title="계란 껍데기 재화">
+          <img src={shellBoard} alt="계란 껍데기" className="h-full object-contain pointer-events-none select-none" />
+          <div className="absolute inset-0 flex items-center justify-end pr-2.5">
+            <span
+              style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
+              className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
+            >
+              {progress.eggShells || 0}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 5. 우상단: 설정 톱니바퀴 터치 영역 (X: 88% ~ 98%) */}
+      <button
+        type="button"
+        onClick={() => {
+          sound.playTurn();
+          setShowSettings(true);
+        }}
+        className="absolute top-[18%] right-[2.5%] w-[10%] aspect-square cursor-pointer active:scale-90 transition-transform flex items-center justify-center rounded-2xl group"
+        title="게임 설정"
+      >
+        <div className="w-full h-full rounded-2xl group-active:bg-amber-400/20 transition-colors" />
+      </button>
 
       {/* 설정 팝업 모달 */}
       {showSettings && (
@@ -236,4 +166,3 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     </header>
   );
 };
-
