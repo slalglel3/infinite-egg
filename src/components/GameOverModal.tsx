@@ -118,8 +118,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
             {earnedGold > 0 && (
               <div className="flex items-center gap-1 text-yellow-300">
-                <Coins size={12} className="fill-yellow-300" />
-                <span>+{earnedGold} G</span>
+                <span className="text-sm">🪶</span>
+                <span>+{earnedGold} 깃털</span>
               </div>
             )}
 
@@ -131,38 +131,37 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 굴러가기 ] & [ 🏠 헛간 홈으로 ] */}
+        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 하기 ] & [ 🏠 홈으로 ] */}
         <div className="w-full grid grid-cols-2 gap-3 mt-2">
           <button
             type="button"
             onClick={onRestart}
-            className="btn-3d-emerald h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-white active:scale-95 transition-transform"
+            className="h-14 rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#d97706] border-4 border-[#451a03] shadow-[0_4px_0_#451a03] flex items-center justify-center gap-2 text-base font-black cursor-pointer text-white active:translate-y-1 active:shadow-none transition-all"
           >
             <RotateCcw size={18} className="stroke-[3] text-white" />
             <span
               style={{
-                textShadow: '-1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 3px 0 #064e3b',
-                WebkitTextStroke: '0.8px #064e3b',
+                textShadow: '-1.5px -1.5px 0 #451a03, 1.5px -1.5px 0 #451a03, -1.5px 1.5px 0 #451a03, 1.5px 1.5px 0 #451a03, 0 2.5px 0 #240e02',
               }}
               className="text-white tracking-wide"
             >
-              다시 굴러가기
+              다시 하기
             </span>
           </button>
 
           <button
             type="button"
             onClick={onGoHome}
-            className="btn-3d-amber h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-[#1e1b18] active:scale-95 transition-transform"
+            className="h-14 rounded-2xl bg-[#5c371e] text-[#f7e6c4] border-4 border-[#2b160a] shadow-[0_4px_0_#2b160a] flex items-center justify-center gap-2 text-base font-black cursor-pointer active:translate-y-1 active:shadow-none transition-all"
           >
-            <Home size={18} className="stroke-[3] text-[#1e1b18]" />
+            <Home size={18} className="stroke-[3] text-amber-200" />
             <span
               style={{
-                textShadow: '0 1px 0 rgba(255, 255, 255, 0.4)',
+                textShadow: '0 1.5px 0 #2b160a',
               }}
-              className="text-[#1e1b18] tracking-wide"
+              className="text-amber-100 tracking-wide"
             >
-              헛간 홈으로
+              홈으로
             </span>
           </button>
         </div>

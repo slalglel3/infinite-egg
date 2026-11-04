@@ -81,30 +81,31 @@ export const MainTab: React.FC<MainTabProps> = ({
           </div>
         </div>
 
-        {/* 초대형 쫀득한 골든 앰버 마스터 버튼 */}
-        <button
-          type="button"
-          onClick={handleStart}
-          className="btn-play-sunshine w-full h-16 rounded-3xl flex items-center justify-center gap-3 cursor-pointer group active:scale-95 transition-transform"
-        >
-          <div className="w-10 h-10 rounded-2xl bg-black/20 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
-            <Play size={22} className="fill-white stroke-none ml-0.5" />
+        {/* 밧줄 목판 프레임 위에 얹힌 [활동력 🌾 5] 태그 & [출발하기!] 대형 오렌지 3D 버튼 */}
+        <div className="w-full flex flex-col items-center">
+          {/* 활동력 소모 목판 태그 */}
+          <div className="bg-[#42220d] text-[#fde047] border-2 border-[#241005] px-3.5 py-0.5 rounded-t-xl text-xs font-black shadow-md flex items-center gap-1 z-10 -mb-1">
+            <span>활동력</span>
+            <span>🌾 5</span>
           </div>
-          <div className="flex flex-col text-left leading-none">
+
+          {/* 초대형 오렌지 3D 젤리 버튼 (출발하기!) */}
+          <button
+            type="button"
+            onClick={handleStart}
+            className="w-full h-16 rounded-3xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#d97706] border-4 border-[#451a03] shadow-[0_6px_0_#451a03] flex items-center justify-center gap-2 cursor-pointer group active:translate-y-1.5 active:shadow-[0_1px_0_#451a03] transition-all"
+          >
             <span
               style={{
                 fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-                WebkitTextStroke: '1px #2b1306',
+                textShadow: '-2px -2px 0 #451a03, 2px -2px 0 #451a03, -2px 2px 0 #451a03, 2px 2px 0 #451a03, 0 3px 0 #240e02',
               }}
-              className="text-2xl sm:text-3xl font-black text-white tracking-wider"
+              className="text-3xl font-black text-white tracking-wider"
             >
-              굴러가기!
+              출발하기!
             </span>
-            <span className="text-[10px] font-black text-yellow-100 tracking-widest mt-0.5 opacity-90">
-              PLAY GAME ▶
-            </span>
-          </div>
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   );

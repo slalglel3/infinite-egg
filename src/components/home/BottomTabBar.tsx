@@ -15,13 +15,13 @@ interface TabItem {
   icon: string;
 }
 
-// 달걀 공방 & 시골 헛간 아케이드 5대 핵심 탭
+// 팜하우스 테마 5대 핵심 탭 (좌측부터: 상점, 스킨, 홈, 미션, 도전)
 const TABS: TabItem[] = [
-  { id: 'EGGS', label: '도감', subLabel: 'EGGS', icon: '🥚' },
-  { id: 'EVENTS', label: '이벤트', subLabel: 'EVENTS', icon: '🔥' },
-  { id: 'MAIN', label: '홈', subLabel: 'HOME', icon: '🏠' },
-  { id: 'ACHIEVEMENTS', label: '도전과제', subLabel: 'QUEST', icon: '📜' },
   { id: 'SHOP', label: '상점', subLabel: 'SHOP', icon: '🏪' },
+  { id: 'SKINS', label: '스킨', subLabel: 'SKIN', icon: '👕' },
+  { id: 'MAIN', label: '홈', subLabel: 'HOME', icon: '🏠' },
+  { id: 'MISSIONS', label: '미션', subLabel: 'MISSION', icon: '📋' },
+  { id: 'CHALLENGE', label: '도전', subLabel: 'CHALLENGE', icon: '⚔️' },
 ];
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({
@@ -81,7 +81,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             </div>
 
             {/* 미션 알림 레드닷 뱃지 */}
-            {tab.id === 'ACHIEVEMENTS' && achievementBadgeCount > 0 && (
+            {tab.id === 'MISSIONS' && achievementBadgeCount > 0 && (
               <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-md animate-bounce border border-[#4c0519]">
                 {achievementBadgeCount}
               </span>

@@ -91,9 +91,9 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
                 {/* 보상 정보 & 액션 버튼 */}
                 <div className="shrink-0 flex items-center gap-2">
                   <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1 text-xs font-black text-amber-800">
-                      <Coins size={13} className="text-amber-500 fill-amber-400" />
-                      <span>+{ach.rewardGold}G</span>
+                    <div className="flex items-center gap-1 text-xs font-black text-amber-900">
+                      <span className="text-xs leading-none">🪶</span>
+                      <span>+{ach.rewardGold}</span>
                     </div>
                     <span className="text-[10px] text-emerald-700 font-extrabold">
                       +{ach.rewardExp} EXP

@@ -218,8 +218,8 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
                 onClick={handleBuySkin}
                 className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md text-[#1e1b18]"
               >
-                <Coins size={14} className="text-[#1e1b18]" />
-                <span className="text-[#1e1b18]">{previewSkin.priceGold.toLocaleString()} 골드로 입양</span>
+                <span className="text-sm leading-none">🪶</span>
+                <span className="text-[#1e1b18]">{previewSkin.priceGold.toLocaleString()} 깃털로 입양</span>
               </button>
             ) : (
               <div className="wood-badge py-2 px-3 rounded-2xl bg-[#1a0a03]/90 text-amber-200/90 flex items-center justify-center gap-1.5 text-xs font-black shadow-inner">

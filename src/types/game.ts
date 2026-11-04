@@ -109,8 +109,11 @@ export interface UserProgress {
   bestDistanceMeters: number;
   totalDistanceMeters: number;
   totalGamesPlayed: number;
-  gold: number;
-  eggShells: number; // 중복 계란 획득 시 지급되는 계란 껍데기 재화
+  wheat: number; // 활동력 (기본 최대 50, 출발 시 5 소모)
+  maxWheat: number; // 기본 50
+  feathers: number; // 황금 깃털 (기존 gold를 대체하는 메인 재화 🪶)
+  gold: number; // 호환성 유지용 (feathers와 동일 수치 동기화)
+  eggShells: number; // 중복 계란 획득 시 지급되는 계란 껍데기 재화 (껍데기 상점 진입 시 노출)
   selectedEggId: string;
   unlockedEggIds: string[];
   equippedCostumes: {
@@ -140,7 +143,7 @@ export interface CostumeItem {
   requiredEggSkinId?: string; // [피드백 2] 독립 의상 계란 귀속 ID (해당 계란 보유 필수)
 }
 
-export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'ACHIEVEMENTS' | 'SHOP';
+export type HomeTabType = 'SHOP' | 'SKINS' | 'MAIN' | 'MISSIONS' | 'CHALLENGE';
 
 export type EggRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 

@@ -55,12 +55,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <span className="absolute bottom-56 right-20 text-amber-300 text-sm opacity-60">🍂</span>
       </div>
 
-      {/* 1. 상단 공통 헤더 */}
+      {/* 1. 상단 공통 헤더 (상점 탭일 때만 껍데기 재화 추가 노출) */}
       <HomeHeader
         progress={progress}
         isMuted={isMuted}
         onToggleMute={onToggleMute}
         onUpdateProgress={onUpdateProgress}
+        isShellShopOpen={activeTab === 'SHOP'}
       />
 
       {/* 2. 중앙 탭 컨텐츠 렌더링 영역 */}
@@ -70,11 +71,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
             progress={progress}
             currentSkin={currentSkin}
             onStartGame={() => onStartGame()}
-            onGoToEggsTab={() => setActiveTab('EGGS')}
+            onGoToEggsTab={() => setActiveTab('SKINS')}
           />
         )}
 
-        {activeTab === 'EGGS' && (
+        {activeTab === 'SKINS' && (
           <EggsTab
             progress={progress}
             onUpdateProgress={onUpdateProgress}
@@ -82,13 +83,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
           />
         )}
 
-        {activeTab === 'EVENTS' && (
+        {activeTab === 'CHALLENGE' && (
           <EventsTab
             onStartEventGame={(eventMap) => onStartGame(eventMap)}
           />
         )}
 
-        {activeTab === 'ACHIEVEMENTS' && (
+        {activeTab === 'MISSIONS' && (
           <AchievementsTab
             progress={progress}
             onUpdateProgress={onUpdateProgress}

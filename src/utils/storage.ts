@@ -26,13 +26,16 @@ export function calculateLevelFromExp(totalExp: number): { level: number; expInL
 
 export function getInitialProgress(): UserProgress {
   return {
-    level: 1,
+    level: 3,
     exp: 0,
-    nextLevelExp: getRequiredExpForLevel(2),
+    nextLevelExp: getRequiredExpForLevel(4),
     bestDistanceMeters: 0,
     totalDistanceMeters: 0,
     totalGamesPlayed: 0,
-    gold: 9999,
+    wheat: 24,
+    maxWheat: 50,
+    feathers: 1245,
+    gold: 1245,
     eggShells: 500,
     selectedEggId: 'classic',
     unlockedEggIds: EGG_SKINS.map((s) => s.id),
@@ -74,14 +77,20 @@ export function loadUserProgress(): UserProgress {
         }
       }
 
+      const feathers = typeof data.feathers === 'number' ? data.feathers : (typeof data.gold === 'number' ? data.gold : 1245);
+      const wheat = typeof data.wheat === 'number' ? data.wheat : 24;
+
       return {
-        level,
+        level: Math.max(level, 3), // 이미지 규격 LV.3 반영
         exp: data.exp || 0,
         nextLevelExp: neededForNext,
         bestDistanceMeters: bestDist,
         totalDistanceMeters: data.totalDistanceMeters || 0,
         totalGamesPlayed: games,
-        gold: Math.max(typeof data.gold === 'number' ? data.gold : 300, 5000), // 테스트 편의 골드 보장
+        wheat,
+        maxWheat: 50,
+        feathers,
+        gold: feathers,
         eggShells: Math.max(typeof data.eggShells === 'number' ? data.eggShells : 0, 500),
         selectedEggId: data.selectedEggId || 'classic',
         unlockedEggIds,
@@ -169,6 +178,7 @@ export function addGameResult(stats: GameStats): {
     bestDistanceMeters,
     totalDistanceMeters,
     totalGamesPlayed,
+    feathers: newGold,
     gold: newGold,
     unlockedEggIds,
     achievementProgress: achProgress,
@@ -185,6 +195,27 @@ export function addGameResult(stats: GameStats): {
   };
 }
 
+// 활동력(곡식 🌾) 소모
+export function consumeWheat(amount: number = 5): { success: boolean; progress: UserProgress; message?: string } {
+  const current = loadUserProgress();
+  if (current.wheat < amount) {
+    return {
+      success: false,
+      progress: current,
+      message: `활동력(곡식 🌾)이 부족합니다! (필요: ${amount}, 보유: ${current.wheat})`,
+    };
+  }
+  const updated = {
+    ...current,
+    wheat: current.wheat - amount,
+  };
+  saveUserProgress(updated);
+  return {
+    success: true,
+    progress: updated,
+  };
+}
+
 // 계란 장착
 export function selectEggSkin(skinId: string): UserProgress {
   const current = loadUserProgress();
@@ -196,14 +227,15 @@ export function selectEggSkin(skinId: string): UserProgress {
   return current;
 }
 
-// 골드로 계란 구매/해금 (의상 계란인 경우 의상 세트 동시 지급!)
+// 골드/깃털로 계란 구매/해금 (의상 계란인 경우 의상 세트 동시 지급!)
 export function buyEggSkinWithGold(skinId: string, price: number): { success: boolean; progress: UserProgress; message?: string } {
   const current = loadUserProgress();
   if (current.unlockedEggIds.includes(skinId)) {
     return { success: false, progress: current, message: '이미 보유 중인 계란입니다.' };
   }
-  if (current.gold < price) {
-    return { success: false, progress: current, message: '골드가 부족합니다.' };
+  const currentFeathers = current.feathers ?? current.gold;
+  if (currentFeathers < price) {
+    return { success: false, progress: current, message: '깃털이 부족합니다.' };
   }
 
   const skin = EGG_SKINS.find((s) => s.id === skinId);
@@ -219,6 +251,7 @@ export function buyEggSkinWithGold(skinId: string, price: number): { success: bo
   const updated: UserProgress = {
     ...current,
     gold: current.gold - price,
+    feathers: currentFeathers - price,
     unlockedEggIds: [...current.unlockedEggIds, skinId],
     unlockedCostumeIds: newUnlockedCostumes,
     selectedEggId: skinId, // 구매 즉시 자동 장착
@@ -239,6 +272,7 @@ export function claimAchievementReward(achievementId: string): { success: boolea
   if (!item) return { success: false, progress: current };
 
   const newGold = current.gold + item.rewardGold;
+  const newFeathers = (current.feathers ?? current.gold) + item.rewardGold;
   const newExp = current.exp + item.rewardExp;
   const { level, neededForNext } = calculateLevelFromExp(newExp);
 
@@ -248,6 +282,7 @@ export function claimAchievementReward(achievementId: string): { success: boolea
     exp: newExp,
     nextLevelExp: neededForNext,
     gold: newGold,
+    feathers: newFeathers,
     claimedAchievementIds: [...current.claimedAchievementIds, achievementId],
   };
 
@@ -271,6 +306,7 @@ export function claimDailyFreeGold(): { success: boolean; progress: UserProgress
   const updated: UserProgress = {
     ...current,
     gold: current.gold + 100,
+    feathers: (current.feathers ?? current.gold) + 100,
     lastFreeGoldDate: today,
   };
 

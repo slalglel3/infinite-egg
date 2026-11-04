@@ -7,7 +7,7 @@ import { Controls } from './components/Controls';
 import { HomeView } from './components/home/HomeView';
 import { GameOverModal } from './components/GameOverModal';
 import { GameStats, UserProgress, EventMapItem } from './types/game';
-import { loadUserProgress, addGameResult } from './utils/storage';
+import { loadUserProgress, addGameResult, consumeWheat } from './utils/storage';
 import { getEggSkinById } from './data/eggSkins';
 import { sound } from './audio/sound';
 
@@ -102,6 +102,15 @@ export function App() {
 
   // 게임 시작 (기본 모드 또는 이벤트 맵 모드)
   const handleStartGame = (eventMap?: EventMapItem) => {
+    // 출발 시 활동력 5 소모
+    const wheatRes = consumeWheat(5);
+    if (!wheatRes.success) {
+      sound.playImpact(5);
+      alert(wheatRes.message);
+      return;
+    }
+    setUserProgress(wheatRes.progress);
+
     setActiveEventMap(eventMap || null);
     if (eventMap) {
       setShowEventBanner(true);
@@ -112,8 +121,8 @@ export function App() {
       setShowEventBanner(false);
     }
 
-    const currentSkin = getEggSkinById(userProgress.selectedEggId);
-    engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes, eventMap || null);
+    const currentSkin = getEggSkinById(wheatRes.progress.selectedEggId);
+    engine.restart(wheatRes.progress.level, currentSkin, wheatRes.progress.equippedCostumes, eventMap || null);
     setStats({ ...engine.stats });
     setGameState('PLAYING');
   };
