@@ -3,6 +3,7 @@ import { UserProgress } from '../../types/game';
 import { Settings, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import { resetAllProgress } from '../../utils/storage';
+import { getUIAsset } from '../../assets/assetRegistry';
 
 interface HomeHeaderProps {
   progress: UserProgress;
@@ -30,6 +31,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     setShowSettings(false);
     alert('모든 게임 진행 상태가 성공적으로 초기화되었습니다!');
   };
+
+  const cogImg = getUIAsset('btn_settings_cog');
 
   return (
     <header className="w-full flex items-center justify-between p-3 pt-safe z-30 select-none">
@@ -85,14 +88,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           </div>
         )}
 
-        {/* 설정 목판 버튼 (톱니바퀴) */}
+        {/* 설정 목판 버튼 (톱니바퀴 - 슬라이싱 PNG 적용) */}
         <button
           type="button"
           onClick={() => setShowSettings(true)}
-          className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer active:translate-y-0.5 active:shadow-[0_1px_0_#2b160a] transition-all"
+          className="w-9 h-9 rounded-2xl flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
           title="게임 설정"
         >
-          <Settings size={18} className="text-amber-200 stroke-[2.5]" />
+          {cogImg ? (
+            <img src={cogImg} alt="설정" className="w-full h-full object-contain drop-shadow-md" />
+          ) : (
+            <div className="w-full h-full bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] rounded-2xl flex items-center justify-center">
+              <Settings size={18} className="text-amber-200 stroke-[2.5]" />
+            </div>
+          )}
         </button>
       </div>
 

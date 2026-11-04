@@ -1,6 +1,7 @@
 import React from 'react';
 import { HomeTabType } from '../../types/game';
 import { sound } from '../../audio/sound';
+import { getUIAsset } from '../../assets/assetRegistry';
 
 interface BottomTabBarProps {
   activeTab: HomeTabType;
@@ -34,11 +35,25 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
     onTabChange(tab);
   };
 
+  const tabAssetMap: Record<HomeTabType, string | null> = {
+    SHOP: getUIAsset('tab_shop'),
+    SKINS: getUIAsset('tab_skin'),
+    MAIN: getUIAsset('tab_home_center'),
+    MISSIONS: getUIAsset('tab_mission'),
+    CHALLENGE: getUIAsset('tab_challenge'),
+  };
+
+  const dockPlank = getUIAsset('dock_wood_plank');
+
   return (
-    <nav className="w-full nav-wood-dock px-1.5 pt-1.5 pb-safe z-30 flex items-end justify-around select-none">
+    <nav 
+      className="w-full nav-wood-dock px-1.5 pt-1.5 pb-safe z-30 flex items-end justify-around select-none"
+      style={dockPlank ? { backgroundImage: `url(${dockPlank})`, backgroundSize: 'cover', backgroundPosition: 'bottom' } : undefined}
+    >
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         const isMain = tab.id === 'MAIN';
+        const assetImg = tabAssetMap[tab.id];
 
         return (
           <button
@@ -46,21 +61,31 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             type="button"
             onClick={() => handleTabClick(tab.id)}
             className={`relative flex flex-col items-center justify-end flex-1 pb-1 transition-all select-none cursor-pointer ${
-              isActive ? 'scale-105' : 'opacity-80 hover:opacity-100'
+              isActive ? 'scale-105' : 'opacity-85 hover:opacity-100'
             }`}
           >
             {/* 1. 상단 아이콘 영역 */}
             {isMain ? (
               /* 중앙 홈 탭: 볏짚 둥지 화환 (Straw Wreath) 원형 돌출 버튼 */
-              <div className="relative -mt-6 mb-0.5">
-                <div className="nav-straw-wreath w-13 h-13 rounded-full flex items-center justify-center text-2xl shadow-xl transition-transform active:scale-95">
-                  <span className="drop-shadow-md">🏠</span>
-                </div>
+              <div className="relative -mt-7 mb-0.5">
+                {assetImg ? (
+                  <div className="w-14 h-14 flex items-center justify-center transition-transform active:scale-95 drop-shadow-xl">
+                    <img src={assetImg} alt="홈" className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <div className="nav-straw-wreath w-13 h-13 rounded-full flex items-center justify-center text-2xl shadow-xl transition-transform active:scale-95">
+                    <span className="drop-shadow-md">🏠</span>
+                  </div>
+                )}
               </div>
             ) : (
               /* 일반 탭 아이콘 */
-              <div className="w-9 h-9 flex items-center justify-center text-2xl mb-0.5 transition-transform active:scale-95">
-                <span className="drop-shadow-sm">{tab.icon}</span>
+              <div className="w-10 h-10 flex items-center justify-center mb-0.5 transition-transform active:scale-95">
+                {assetImg ? (
+                  <img src={assetImg} alt={tab.label} className="w-full h-full object-contain drop-shadow-sm" />
+                ) : (
+                  <span className="text-2xl drop-shadow-sm">{tab.icon}</span>
+                )}
               </div>
             )}
 

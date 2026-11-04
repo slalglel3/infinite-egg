@@ -5,7 +5,41 @@
  * 에셋 파일이 없을 경우 기존 SVG/CSS 컴포넌트로 자동 폴백(Fallback)되어 게임이 깨지지 않습니다.
  */
 
-// 1. 공통 UI 에셋 키 정의
+// 1. 투명 PNG 에셋 정적 임포트 (Vite singlefile 인라인 지원)
+import bgBarnSunlight from './backgrounds/bg_barn_sunlight.png';
+import bgBarnLoft from './backgrounds/bg_barn_loft.png';
+
+import headerProfileBoard from './ui/header_profile_board.png';
+import headerWheatBoard from './ui/header_wheat_board.png';
+import headerFeatherBoard from './ui/header_feather_board.png';
+import headerShellBoard from './ui/header_shell_board.png';
+import btnSettingsCog from './ui/btn_settings_cog.png';
+
+import dockWoodPlank from './ui/dock_wood_plank.png';
+import tabShop from './ui/tab_shop.png';
+import tabSkin from './ui/tab_skin.png';
+import tabHomeCenter from './ui/tab_home_center.png';
+import tabMission from './ui/tab_mission.png';
+import tabChallenge from './ui/tab_challenge.png';
+
+import btnOrangeJellyLarge from './ui/btn_orange_jelly_large.png';
+import btnOrangeJellyMedium from './ui/btn_orange_jelly_medium.png';
+import btnWoodMedium from './ui/btn_wood_medium.png';
+import btnWoodSquare from './ui/btn_wood_square.png';
+import tagWheatCost from './ui/tag_wheat_cost.png';
+
+import nestStrawHero from './ui/nest_straw_hero.png';
+import panelRopeWoodLarge from './ui/panel_rope_wood_large.png';
+import panelWoodCardSlot from './ui/panel_wood_card_slot.png';
+
+import trackWoodenBridge from './tracks/track_wooden_bridge.png';
+import propGoldenFeather from './icons/prop_golden_feather.png';
+import iconTurnArrow from './icons/icon_turn_arrow.png';
+import iconJumpArrow from './icons/icon_jump_arrow.png';
+
+import eggBabySprout from './eggs/egg_baby_sprout.png';
+
+// 2. 공통 UI 에셋 키 정의
 export type UIAssetKey =
   // 배경
   | 'bg_barn_sunlight'         // 헛간 햇살 배경 (홈/로비)
@@ -39,7 +73,7 @@ export type UIAssetKey =
   | 'icon_turn_arrow'          // 회전 화살표 아이콘 (방향전환)
   | 'icon_jump_arrow';         // 솟구치는 곡선 화살표 아이콘 (점프)
 
-// 2. 캐릭터 스킨 에셋 키
+// 3. 캐릭터 스킨 에셋 키
 export type EggAssetKey =
   | 'egg_baby_sprout'          // 꼬마 에그 (새싹)
   | 'egg_cracked_shell'        // 껍질 깬 달걀
@@ -49,13 +83,37 @@ export type EggAssetKey =
   | 'egg_astronaut'            // 우주인 에그
   | 'egg_chicken_apron';       // 닭 앞치마 에그
 
-// 3. 에셋 저장소 맵핑 (UI 세션에서 PNG가 투입되면 여기에 import 연결)
+// 4. 에셋 저장소 맵핑 (슬라이싱된 PNG 연결)
 const UI_ASSETS: Partial<Record<UIAssetKey, string>> = {
-  // 예시: bg_barn_sunlight: new URL('./backgrounds/bg_barn_sunlight.png', import.meta.url).href,
+  bg_barn_sunlight: bgBarnSunlight,
+  bg_barn_loft: bgBarnLoft,
+  header_profile_board: headerProfileBoard,
+  header_wheat_board: headerWheatBoard,
+  header_feather_board: headerFeatherBoard,
+  header_shell_board: headerShellBoard,
+  btn_settings_cog: btnSettingsCog,
+  dock_wood_plank: dockWoodPlank,
+  tab_shop: tabShop,
+  tab_skin: tabSkin,
+  tab_home_center: tabHomeCenter,
+  tab_mission: tabMission,
+  tab_challenge: tabChallenge,
+  btn_orange_jelly_large: btnOrangeJellyLarge,
+  btn_orange_jelly_medium: btnOrangeJellyMedium,
+  btn_wood_medium: btnWoodMedium,
+  btn_wood_square: btnWoodSquare,
+  tag_wheat_cost: tagWheatCost,
+  nest_straw_hero: nestStrawHero,
+  panel_rope_wood_large: panelRopeWoodLarge,
+  panel_wood_card_slot: panelWoodCardSlot,
+  track_wooden_bridge: trackWoodenBridge,
+  prop_golden_feather: propGoldenFeather,
+  icon_turn_arrow: iconTurnArrow,
+  icon_jump_arrow: iconJumpArrow,
 };
 
 const EGG_ASSETS: Partial<Record<EggAssetKey, string>> = {
-  // 예시: egg_baby_sprout: new URL('./eggs/egg_baby_sprout.png', import.meta.url).href,
+  egg_baby_sprout: eggBabySprout,
 };
 
 /**

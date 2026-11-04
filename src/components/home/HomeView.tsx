@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserProgress, HomeTabType, EventMapItem } from '../../types/game';
 import { getEggSkinById } from '../../data/eggSkins';
 import { ACHIEVEMENTS, getAchievementProgress } from '../../data/achievements';
+import { getUIAsset } from '../../assets/assetRegistry';
 import { HomeHeader } from './HomeHeader';
 import { BottomTabBar } from './BottomTabBar';
 import { MainTab } from './tabs/MainTab';
@@ -37,8 +38,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return isDone && !isClaimed;
   }).length;
 
+  const bgSunlight = getUIAsset('bg_barn_sunlight');
+
   return (
-    <div className="absolute inset-0 bg-barn-workshop flex flex-col justify-between select-none z-20 overflow-hidden">
+    <div 
+      className="absolute inset-0 bg-barn-workshop flex flex-col justify-between select-none z-20 overflow-hidden"
+      style={bgSunlight ? { backgroundImage: `url(${bgSunlight})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+    >
       {/* 1. 상단 공통 헤더 (상점 탭일 때만 껍데기 재화 추가 노출) */}
       <HomeHeader
         progress={progress}

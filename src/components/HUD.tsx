@@ -1,6 +1,7 @@
 import React from 'react';
 import { GameStats } from '../types/game';
 import { Pause, Flame } from 'lucide-react';
+import { getUIAsset } from '../assets/assetRegistry';
 
 interface HUDProps {
   stats: GameStats;
@@ -13,6 +14,8 @@ interface HUDProps {
 export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
   const hpRatio = Math.max(0, Math.min(1, stats.hp / stats.maxHp));
 
+  const pauseImg = getUIAsset('btn_wood_square');
+
   return (
     <div className="absolute top-0 left-0 right-0 p-3 pt-safe flex flex-col gap-1.5 pointer-events-none z-20 select-none">
       {/* 1. 상단 메인 HUD (play.png 100% 매칭): [일시정지 ⏸] + [1,248 m 거리 목판] + [🪶 38 깃털 목판] */}
@@ -21,10 +24,16 @@ export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
         <button
           type="button"
           onClick={onPause}
-          className="pointer-events-auto bg-[#5c371e] text-amber-100 border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] w-10 h-10 rounded-2xl flex items-center justify-center cursor-pointer active:translate-y-0.5 active:shadow-[0_1px_0_#2b160a] transition-all"
+          className="pointer-events-auto w-11 h-11 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
           title="일시 정지"
         >
-          <Pause size={18} className="text-amber-200 fill-amber-200 stroke-none" />
+          {pauseImg ? (
+            <img src={pauseImg} alt="일시정지" className="w-full h-full object-contain drop-shadow-md" />
+          ) : (
+            <div className="w-full h-full bg-[#5c371e] text-amber-100 border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] rounded-2xl flex items-center justify-center">
+              <Pause size={18} className="text-amber-200 fill-amber-200 stroke-none" />
+            </div>
+          )}
         </button>
 
         {/* 중앙: 밧줄로 매달린 대형 거리 전광판 목판 */}
