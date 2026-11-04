@@ -2,7 +2,15 @@ export type SlopeDirection = 'LEFT_DOWN' | 'RIGHT_DOWN';
 
 export type SegmentType = 'STRAIGHT' | 'GAP' | 'TURN';
 
-export type ItemType = 'BANDAGE' | 'GOLDEN_EGG';
+export type ItemType = 'BANDAGE' | 'GOLDEN_EGG' | 'FEATHER';
+
+export interface SlopeObstacle {
+  type: 'HAYSTACK';
+  x: number;
+  y: number;
+  hit?: boolean;
+  cleared?: boolean;
+}
 
 export interface SlopeSegment {
   id: number;
@@ -25,6 +33,7 @@ export interface SlopeSegment {
     y: number;
     collected: boolean;
   };
+  obstacle?: SlopeObstacle;
   isPassed: boolean;
 }
 
@@ -98,7 +107,7 @@ export interface Particle {
   maxLife: number;
   rotation?: number;
   vRot?: number;
-  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK' | 'BOLT' | 'POISON_SMOKE' | 'HOLY_GLOW' | 'DARK_SMOKE';
+  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK' | 'BOLT' | 'POISON_SMOKE' | 'HOLY_GLOW' | 'DARK_SMOKE' | 'STRAW' | 'LEAF' | 'FEATHER_BURST';
   text?: string;
 }
 
