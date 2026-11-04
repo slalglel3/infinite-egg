@@ -265,6 +265,15 @@ export const EggIllustration: React.FC<EggIllustrationProps> = ({
         </g>
       )}
 
+      {/* 기본 달걀 머리 위 앙증맞은 연두빛 새싹 (🌱) - 콘셉트 이미지 1:1 반영 */}
+      {!effectiveCostumes?.hat && skin.id === 'default' && (
+        <g id="concept-sprout" transform="translate(50, 9)">
+          <path d="M 0 0 Q -0.5 -5 0 -7" stroke="#3e6b18" strokeWidth="2.2" strokeLinecap="round" fill="none" />
+          <path d="M 0 -6 C -6 -8, -8 -13, -2 -14 C 2 -13, 1 -7, 0 -6 Z" fill="#78b634" stroke="#2c4d10" strokeWidth="1.2" />
+          <path d="M 0 -6 C 6 -8, 8 -13, 2 -14 C -2 -13, -1 -7, 0 -6 Z" fill="#92d942" stroke="#2c4d10" strokeWidth="1.2" />
+        </g>
+      )}
+
       {/* [레이어 5] 표정 (Expression) */}
       {expression === 'HURT' ? (
         <g>
@@ -333,17 +342,25 @@ export const EggIllustration: React.FC<EggIllustrationProps> = ({
         </g>
       ) : (
         <g>
-          {/* 기본/일반 달걀: 귀여운 눈망울 & 하이라이트 & 핑크 볼터치 & 방긋 미소 */}
-          <circle cx="38" cy="62" r="4.2" fill={colors.eyeColor} />
-          <circle cx="64" cy="62" r="4.2" fill={colors.eyeColor} />
-          <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
-          <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
-          <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
-          <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+          {/* 기본/일반 달걀: 콘셉트 이미지 1:1 반영 초롱초롱한 눈망울 & 부리 입 & 복숭아 볼터치 */}
+          <circle cx="38" cy="62" r="4.4" fill={colors.eyeColor} />
+          <circle cx="64" cy="62" r="4.4" fill={colors.eyeColor} />
+          {/* 메인 상단 하이라이트 */}
+          <circle cx="36.3" cy="60.2" r="1.6" fill="#ffffff" />
+          <circle cx="62.3" cy="60.2" r="1.6" fill="#ffffff" />
+          {/* 서브 하단 하이라이트 (초롱초롱 생동감) */}
+          <circle cx="39.6" cy="63.5" r="0.9" fill="#ffffff" />
+          <circle cx="65.6" cy="63.5" r="0.9" fill="#ffffff" />
+
+          {/* 따뜻한 복숭아빛 볼터치 */}
+          <ellipse cx="28" cy="70" rx="5.2" ry="3" fill={colors.cheekColor} opacity="0.85" />
+          <ellipse cx="74" cy="70" rx="5.2" ry="3" fill={colors.cheekColor} opacity="0.85" />
+
+          {/* 콘셉트 이미지 1:1 작은 오렌지 부리/미소 */}
           <path
-            d="M 44 70 Q 51 76 58 70"
-            stroke={colors.eyeColor}
-            strokeWidth="2.8"
+            d="M 47.5 70 Q 51 73.5 54.5 70"
+            stroke="#ea580c"
+            strokeWidth="2.4"
             fill="none"
             strokeLinecap="round"
           />

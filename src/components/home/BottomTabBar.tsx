@@ -1,6 +1,5 @@
 import React from 'react';
 import { HomeTabType } from '../../types/game';
-import { Egg, Flame, Home, Award, ShoppingBag } from 'lucide-react';
 import { sound } from '../../audio/sound';
 
 interface BottomTabBarProps {
@@ -12,15 +11,17 @@ interface BottomTabBarProps {
 interface TabItem {
   id: HomeTabType;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  subLabel: string;
+  icon: string;
 }
 
+// 콘셉트 이미지 1:1 순서 및 네이밍 매핑 (상점 / 보관함 / 홈 / 미션 / 랭킹)
 const TABS: TabItem[] = [
-  { id: 'EGGS', label: '계란', icon: Egg },
-  { id: 'EVENTS', label: '이벤트', icon: Flame },
-  { id: 'MAIN', label: '메인', icon: Home },
-  { id: 'ACHIEVEMENTS', label: '도전과제', icon: Award },
-  { id: 'SHOP', label: '상점', icon: ShoppingBag },
+  { id: 'SHOP', label: '상점', subLabel: 'SHOP', icon: '🏪' },
+  { id: 'EGGS', label: '보관함', subLabel: 'SKINS', icon: '🥚' },
+  { id: 'MAIN', label: '홈', subLabel: 'HOME', icon: '🏠' },
+  { id: 'ACHIEVEMENTS', label: '미션', subLabel: 'QUEST', icon: '📜' },
+  { id: 'EVENTS', label: '랭킹', subLabel: 'RANK', icon: '🏆' },
 ];
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({
@@ -34,9 +35,8 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   };
 
   return (
-    <nav className="w-full bg-[#1e1b18] border-t-3 border-[#3f3a34] shadow-[0_-8px_25px_rgba(0,0,0,0.4)] px-2 pt-1 pb-safe z-30 flex items-center justify-around select-none">
+    <nav className="w-full nav-wood-dock px-1.5 pt-1.5 pb-safe z-30 flex items-end justify-around select-none">
       {TABS.map((tab) => {
-        const Icon = tab.icon;
         const isActive = activeTab === tab.id;
         const isMain = tab.id === 'MAIN';
 
@@ -45,37 +45,44 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             key={tab.id}
             type="button"
             onClick={() => handleTabClick(tab.id)}
-            className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all select-none cursor-pointer ${
-              isActive ? 'scale-105' : 'opacity-65 hover:opacity-90'
+            className={`relative flex flex-col items-center justify-end flex-1 pb-1 transition-all select-none cursor-pointer ${
+              isActive ? 'scale-105' : 'opacity-80 hover:opacity-100'
             }`}
           >
-            {/* 3D 탭 버튼 캡슐 */}
+            {/* 1. 상단 아이콘 영역 */}
+            {isMain ? (
+              /* 중앙 홈 탭: 볏짚 둥지 화환 (Straw Wreath) 원형 돌출 버튼 */
+              <div className="relative -mt-6 mb-0.5">
+                <div className="nav-straw-wreath w-13 h-13 rounded-full flex items-center justify-center text-2xl shadow-xl transition-transform active:scale-95">
+                  <span className="drop-shadow-md">🏠</span>
+                </div>
+              </div>
+            ) : (
+              /* 일반 탭 아이콘 */
+              <div className="w-9 h-9 flex items-center justify-center text-2xl mb-0.5 transition-transform active:scale-95">
+                <span className="drop-shadow-sm">{tab.icon}</span>
+              </div>
+            )}
+
+            {/* 2. 하단 조각 나무 라벨 명판 (상점/SHOP, 보관함/SKINS 등) */}
             <div
-              className={`flex items-center justify-center transition-all ${
-                isMain
-                  ? isActive
-                    ? 'btn-3d-amber w-12 h-12 -mt-4 rounded-2xl flex items-center justify-center'
-                    : 'w-11 h-11 -mt-3 rounded-2xl bg-[#2b2724] text-amber-400 border-2 border-[#3f3a34]'
-                  : isActive
-                  ? 'w-10 h-10 rounded-2xl bg-amber-400 text-[#1e1b18] border-2 border-[#1e1b18] shadow-[0_3px_0_#92400e]'
-                  : 'w-10 h-10 text-gray-400'
+              className={`w-14 py-0.5 rounded-lg border-2 flex flex-col items-center justify-center leading-none shadow-sm transition-all ${
+                isActive
+                  ? 'bg-gradient-to-b from-[#e5a93b] to-[#b47118] border-[#381a06] text-[#2b1204]'
+                  : 'bg-gradient-to-b from-[#7a441e] to-[#54290d] border-[#291205] text-[#d4a87a]'
               }`}
             >
-              <Icon size={isMain ? 24 : 20} className={isActive ? 'stroke-[2.5]' : 'stroke-2'} />
+              <span className={`text-[11px] font-black tracking-tight ${isActive ? 'text-[#1e0d02]' : 'text-amber-100'}`}>
+                {tab.label}
+              </span>
+              <span className={`text-[8px] font-extrabold tracking-tighter scale-90 ${isActive ? 'text-[#381a06]' : 'text-amber-200/60'}`}>
+                {tab.subLabel}
+              </span>
             </div>
 
-            {/* 탭 라벨 */}
-            <span
-              className={`text-[11px] font-black mt-1 tracking-tight ${
-                isActive ? 'text-amber-400' : 'text-gray-400'
-              }`}
-            >
-              {tab.label}
-            </span>
-
-            {/* 도전 과제 보상 획득 가능 붉은 배지 */}
+            {/* 미션 알림 레드닷 뱃지 */}
             {tab.id === 'ACHIEVEMENTS' && achievementBadgeCount > 0 && (
-              <span className="absolute top-0 right-3 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm animate-pulse border border-[#4c0519]">
+              <span className="absolute top-0 right-2 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-md animate-bounce border border-[#4c0519]">
                 {achievementBadgeCount}
               </span>
             )}

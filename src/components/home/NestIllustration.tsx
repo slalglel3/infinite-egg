@@ -325,6 +325,51 @@ export const NestIllustration: React.FC<NestIllustrationProps> = ({ skin, equipp
               strokeWidth="5"
               strokeLinejoin="round"
             />
+
+            {/* 콘셉트 이미지 1:1 반영: 둥지에 포근하게 꽂힌 가을 단풍잎 & 초록 나뭇잎들 */}
+            {/* 좌측 주황 단풍잎 */}
+            <g transform="translate(90, 108) rotate(-22)">
+              <path
+                d="M 0 0 C -6 -10, -2 -18, 8 -20 C 16 -18, 18 -8, 0 0 Z"
+                fill="#d97736"
+                stroke="#432818"
+                strokeWidth="2.5"
+              />
+              <path d="M 0 0 L 8 -18" stroke="#8c3e12" strokeWidth="1.5" />
+            </g>
+
+            {/* 좌측 연두색 나뭇잎 */}
+            <g transform="translate(118, 116) rotate(18)">
+              <path
+                d="M 0 0 C -8 -6, -12 -14, -4 -20 C 6 -18, 10 -10, 0 0 Z"
+                fill="#84a946"
+                stroke="#432818"
+                strokeWidth="2.5"
+              />
+              <path d="M 0 0 L -4 -18" stroke="#4a661e" strokeWidth="1.5" />
+            </g>
+
+            {/* 우측 연두색 나뭇잎 */}
+            <g transform="translate(182, 116) rotate(-15)">
+              <path
+                d="M 0 0 C 8 -6, 12 -14, 4 -20 C -6 -18, -10 -10, 0 0 Z"
+                fill="#84a946"
+                stroke="#432818"
+                strokeWidth="2.5"
+              />
+              <path d="M 0 0 L 4 -18" stroke="#4a661e" strokeWidth="1.5" />
+            </g>
+
+            {/* 우측 따뜻한 갈색 낙엽 */}
+            <g transform="translate(208, 110) rotate(28)">
+              <path
+                d="M 0 0 C 6 -10, 2 -18, -8 -20 C -16 -18, -18 -8, 0 0 Z"
+                fill="#c8692a"
+                stroke="#432818"
+                strokeWidth="2.5"
+              />
+              <path d="M 0 0 L -8 -18" stroke="#753009" strokeWidth="1.5" />
+            </g>
           </svg>
         </div>
       </div>

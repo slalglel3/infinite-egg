@@ -188,6 +188,86 @@ button {
   border-radius: 1.5rem;
 }
 
+/* ==========================================================================
+   Chunky Toy-Box & Cozy Farm Workshop Theme ('꼬마 에그' 콘셉트 스타일)
+   ========================================================================== */
+
+/* 따뜻한 햇살 비추는 시골 농장 / 헛간 배경 */
+.bg-barn-workshop {
+  background-color: #c9935d;
+  background-image: 
+    linear-gradient(125deg, rgba(255, 255, 230, 0.35) 0%, rgba(255, 235, 170, 0.15) 30%, transparent 60%),
+    repeating-linear-gradient(90deg, #996335 0px, #885226 68px, #704018 70px, #915a2c 140px),
+    radial-gradient(ellipse at 50% 25%, #fbe8ba 0%, #c48b52 55%, #663814 100%);
+  background-blend-mode: overlay, multiply, normal;
+}
+
+/* 정교하게 조각된 따뜻한 나무 패널 (Wooden Plank Board) */
+.panel-wood {
+  background: linear-gradient(180deg, #9e6435 0%, #7e4620 50%, #5e3112 100%) !important;
+  border: 3.5px solid #2b1306 !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 5px 0 #1a0a03, inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 8px 16px rgba(0, 0, 0, 0.35) !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 2px #1a0a03 !important;
+}
+
+/* 상단 자원 및 레벨용 조각 나무 뱃지 (Wood Badge) */
+.wood-badge {
+  background: linear-gradient(180deg, #8c5327 0%, #693715 100%);
+  border: 2.5px solid #2b1306;
+  border-radius: 0.95rem;
+  box-shadow: 0 3px 0 #1a0a02, inset 0 1.5px 0 rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 1.5px 1px #1a0a02;
+  padding: 0.25rem 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+/* 밧줄로 묶인 메인 나무 간판 거치대 (Rope-bound Signboard) */
+.signboard-wood-frame {
+  background: linear-gradient(180deg, #8c5226 0%, #6c3a16 55%, #4f250b 100%);
+  border: 4px solid #291205;
+  border-radius: 1.75rem;
+  box-shadow: 0 6px 0 #170902, inset 0 2px 0 rgba(255, 255, 255, 0.3), 0 12px 24px rgba(0, 0, 0, 0.45);
+  position: relative;
+}
+
+/* 콘셉트 이미지의 초대형 쫀득한 골든 앰버 [출발하기! (PLAY)] 버튼 */
+.btn-play-sunshine {
+  background: linear-gradient(180deg, #fff368 0%, #ffbe1a 38%, #fa8600 78%, #e65800 100%) !important;
+  border: 4px solid #2b1306 !important;
+  border-radius: 1.75rem !important;
+  box-shadow: 0 7px 0 #8f3400, 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 3px 2px rgba(255, 255, 255, 0.75) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: -2px -2px 0 #2b1306, 2px -2px 0 #2b1306, -2px 2px 0 #2b1306, 2px 2px 0 #2b1306, 0 4px 0 #170902 !important;
+  transition: all 0.08s ease-in-out !important;
+  user-select: none;
+}
+.btn-play-sunshine:active {
+  transform: translateY(4.5px) !important;
+  box-shadow: 0 2.5px 0 #8f3400, 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 통나무 깎아 만든 묵직한 하단 네비게이션 독 (Wooden Nav Dock) */
+.nav-wood-dock {
+  background: linear-gradient(180deg, #8a5026 0%, #683614 55%, #462007 100%);
+  border-top: 4px solid #261004;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.22);
+}
+
+/* 볏짚/지푸라기 둥지 화환 모양의 홈 버튼 테두리 (Straw Wreath) */
+.nav-straw-wreath {
+  background: radial-gradient(circle, #fef08a 0%, #f59e0b 55%, #b45309 100%);
+  border: 3.5px solid #2b1306;
+  box-shadow: 0 4px 0 #1a0a02, 0 6px 14px rgba(0, 0, 0, 0.4);
+}
+
 /* 9. 텍스트 스트로크 & 아케이드 전광판 폰트 */
 .text-stroke-black {
   -webkit-text-stroke: 1.5px #18181b;
