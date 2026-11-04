@@ -333,25 +333,17 @@ export const EggIllustration: React.FC<EggIllustrationProps> = ({
         </g>
       ) : (
         <g>
-          {/* 기본/일반 달걀: 콘셉트 이미지 1:1 반영 초롱초롱한 눈망울 & 부리 입 & 복숭아 볼터치 */}
-          <circle cx="38" cy="62" r="4.4" fill={colors.eyeColor} />
-          <circle cx="64" cy="62" r="4.4" fill={colors.eyeColor} />
-          {/* 메인 상단 하이라이트 */}
-          <circle cx="36.3" cy="60.2" r="1.6" fill="#ffffff" />
-          <circle cx="62.3" cy="60.2" r="1.6" fill="#ffffff" />
-          {/* 서브 하단 하이라이트 (초롱초롱 생동감) */}
-          <circle cx="39.6" cy="63.5" r="0.9" fill="#ffffff" />
-          <circle cx="65.6" cy="63.5" r="0.9" fill="#ffffff" />
-
-          {/* 따뜻한 복숭아빛 볼터치 */}
-          <ellipse cx="28" cy="70" rx="5.2" ry="3" fill={colors.cheekColor} opacity="0.85" />
-          <ellipse cx="74" cy="70" rx="5.2" ry="3" fill={colors.cheekColor} opacity="0.85" />
-
-          {/* 콘셉트 이미지 1:1 작은 오렌지 부리/미소 */}
+          {/* 기본/일반 달걀: 귀여운 눈망울 & 하이라이트 & 핑크 볼터치 & 방긋 미소 */}
+          <circle cx="38" cy="62" r="4.2" fill={colors.eyeColor} />
+          <circle cx="64" cy="62" r="4.2" fill={colors.eyeColor} />
+          <circle cx="36.5" cy="60.5" r="1.6" fill="#ffffff" />
+          <circle cx="62.5" cy="60.5" r="1.6" fill="#ffffff" />
+          <ellipse cx="29" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
+          <ellipse cx="73" cy="70" rx="4.8" ry="3" fill={colors.cheekColor} opacity="0.85" />
           <path
-            d="M 47.5 70 Q 51 73.5 54.5 70"
-            stroke="#ea580c"
-            strokeWidth="2.4"
+            d="M 44 70 Q 51 76 58 70"
+            stroke={colors.eyeColor}
+            strokeWidth="2.8"
             fill="none"
             strokeLinecap="round"
           />
