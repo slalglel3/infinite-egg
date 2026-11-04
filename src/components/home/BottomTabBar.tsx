@@ -64,46 +64,48 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
               isActive ? 'scale-105' : 'opacity-85 hover:opacity-100'
             }`}
           >
-            {/* 1. 상단 아이콘 영역 */}
-            {isMain ? (
-              /* 중앙 홈 탭: 볏짚 둥지 화환 (Straw Wreath) 원형 돌출 버튼 */
-              <div className="relative -mt-7 mb-0.5">
-                {assetImg ? (
-                  <div className="w-14 h-14 flex items-center justify-center transition-transform active:scale-95 drop-shadow-xl">
-                    <img src={assetImg} alt="홈" className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="nav-straw-wreath w-13 h-13 rounded-full flex items-center justify-center text-2xl shadow-xl transition-transform active:scale-95">
-                    <span className="drop-shadow-md">🏠</span>
-                  </div>
-                )}
+            {/* 1. 탭 아이콘 & 라벨 렌더링 */}
+            {assetImg ? (
+              /* 신규 슬라이싱 고화질 탭 PNG (아이콘+명판 일체형) */
+              <div className={`relative flex items-center justify-center transition-transform active:scale-95 ${
+                isMain ? '-mt-6 w-16 h-18 drop-shadow-xl' : 'w-14 h-16 drop-shadow-md'
+              }`}>
+                <img
+                  src={assetImg}
+                  alt={tab.label}
+                  className="w-full h-full object-contain select-none pointer-events-none"
+                />
               </div>
             ) : (
-              /* 일반 탭 아이콘 */
-              <div className="w-10 h-10 flex items-center justify-center mb-0.5 transition-transform active:scale-95">
-                {assetImg ? (
-                  <img src={assetImg} alt={tab.label} className="w-full h-full object-contain drop-shadow-sm" />
+              /* 구버전 CSS 폴백 (에셋 없을 때만 렌더링) */
+              <>
+                {isMain ? (
+                  <div className="relative -mt-7 mb-0.5">
+                    <div className="nav-straw-wreath w-13 h-13 rounded-full flex items-center justify-center text-2xl shadow-xl transition-transform active:scale-95">
+                      <span className="drop-shadow-md">🏠</span>
+                    </div>
+                  </div>
                 ) : (
-                  <span className="text-2xl drop-shadow-sm">{tab.icon}</span>
+                  <div className="w-10 h-10 flex items-center justify-center mb-0.5 transition-transform active:scale-95">
+                    <span className="text-2xl drop-shadow-sm">{tab.icon}</span>
+                  </div>
                 )}
-              </div>
+                <div
+                  className={`w-14 py-0.5 rounded-lg border-2 flex flex-col items-center justify-center leading-none shadow-sm transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-b from-[#e5a93b] to-[#b47118] border-[#381a06] text-[#2b1204]'
+                      : 'bg-gradient-to-b from-[#7a441e] to-[#54290d] border-[#291205] text-[#d4a87a]'
+                  }`}
+                >
+                  <span className={`text-[11px] font-black tracking-tight ${isActive ? 'text-[#1e0d02]' : 'text-amber-100'}`}>
+                    {tab.label}
+                  </span>
+                  <span className={`text-[8px] font-extrabold tracking-tighter scale-90 ${isActive ? 'text-[#381a06]' : 'text-amber-200/60'}`}>
+                    {tab.subLabel}
+                  </span>
+                </div>
+              </>
             )}
-
-            {/* 2. 하단 조각 나무 라벨 명판 (상점/SHOP, 보관함/SKINS 등) */}
-            <div
-              className={`w-14 py-0.5 rounded-lg border-2 flex flex-col items-center justify-center leading-none shadow-sm transition-all ${
-                isActive
-                  ? 'bg-gradient-to-b from-[#e5a93b] to-[#b47118] border-[#381a06] text-[#2b1204]'
-                  : 'bg-gradient-to-b from-[#7a441e] to-[#54290d] border-[#291205] text-[#d4a87a]'
-              }`}
-            >
-              <span className={`text-[11px] font-black tracking-tight ${isActive ? 'text-[#1e0d02]' : 'text-amber-100'}`}>
-                {tab.label}
-              </span>
-              <span className={`text-[8px] font-extrabold tracking-tighter scale-90 ${isActive ? 'text-[#381a06]' : 'text-amber-200/60'}`}>
-                {tab.subLabel}
-              </span>
-            </div>
 
             {/* 미션 알림 레드닷 뱃지 */}
             {tab.id === 'MISSIONS' && achievementBadgeCount > 0 && (

@@ -15,6 +15,7 @@ export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
   const hpRatio = Math.max(0, Math.min(1, stats.hp / stats.maxHp));
 
   const pauseImg = getUIAsset('btn_wood_square');
+  const featherBoard = getUIAsset('header_feather_board');
 
   return (
     <div className="absolute top-0 left-0 right-0 p-3 pt-safe flex flex-col gap-1.5 pointer-events-none z-20 select-none">
@@ -24,7 +25,7 @@ export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
         <button
           type="button"
           onClick={onPause}
-          className="pointer-events-auto w-11 h-11 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+          className="pointer-events-auto w-10 h-10 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
           title="일시 정지"
         >
           {pauseImg ? (
@@ -37,10 +38,11 @@ export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
         </button>
 
         {/* 중앙: 밧줄로 매달린 대형 거리 전광판 목판 */}
-        <div className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-5 py-1.5 rounded-2xl flex items-baseline gap-1.5">
+        <div className="bg-[#42220d] text-[#f7e6c4] border-3 border-[#241005] shadow-[0_4px_0_#241005] px-5 py-1 rounded-2xl flex items-baseline gap-1.5 drop-shadow-md">
           <span
             style={{
               fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
+              textShadow: '0 2px 2px #170902',
             }}
             className="text-2xl sm:text-3xl font-black text-amber-100 tracking-wider"
           >
@@ -50,12 +52,26 @@ export const HUD: React.FC<HUDProps> = ({ stats, onPause }) => {
         </div>
 
         {/* 우측: 획득 황금 깃털 목판 */}
-        <div className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3.5 py-1.5 rounded-2xl flex items-center gap-1.5">
-          <span className="text-base text-yellow-400">🪶</span>
-          <span className="text-sm font-black text-amber-100">
-            {stats.itemsCollected || 0}
-          </span>
-        </div>
+        {featherBoard ? (
+          <div className="relative h-10 drop-shadow-md flex items-center">
+            <img src={featherBoard} alt="깃털" className="h-full object-contain pointer-events-none select-none" />
+            <div className="absolute inset-0 flex items-center justify-end pr-2.5">
+              <span
+                style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
+                className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
+              >
+                {stats.itemsCollected || 0}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-[#5c371e] text-[#f7e6c4] border-3 border-[#2b160a] shadow-[0_4px_0_#2b160a] px-3.5 py-1.5 rounded-2xl flex items-center gap-1.5">
+            <span className="text-base text-yellow-400">🪶</span>
+            <span className="text-sm font-black text-amber-100">
+              {stats.itemsCollected || 0}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 2. 하단 서브 인디케이터 (내구도 게이지 & 퍼펙트 콤보) */}
