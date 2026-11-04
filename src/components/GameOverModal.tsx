@@ -49,42 +49,51 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
   return (
     <div className="absolute inset-0 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-4 z-50 animate-fade-in select-none">
-      {/* 아케이드 머신 스타일 대형 프레임 패널 */}
-      <div className="panel-arcade w-full max-w-[350px] p-5 flex flex-col items-center gap-2.5 text-center shadow-2xl border-4 border-[#1e1b18] animate-scale-up">
-        {/* 상단: 무한의 계단 스타일 3D GAME OVER 텍스트 */}
+      {/* 아늑한 헛간 치료실 & 원목 전광판 패널 */}
+      <div className="panel-wood w-full max-w-[350px] p-5 flex flex-col items-center gap-2.5 text-center shadow-2xl border-4 border-[#2b1306] animate-scale-up relative">
+        {/* 상단 밧줄 매듭 장식 */}
+        <div className="absolute -top-3.5 left-6 text-sm opacity-80 pointer-events-none">🪢</div>
+        <div className="absolute -top-3.5 right-6 text-sm opacity-80 pointer-events-none">🪢</div>
+
+        {/* 상단: 묵직한 3D GAME OVER 텍스트 */}
         <h2
           style={{
             fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-            textShadow: '-2.5px -2.5px 0 #18181b, 2.5px -2.5px 0 #18181b, -2.5px 2.5px 0 #18181b, 2.5px 2.5px 0 #18181b, 0 5px 0 #4c0519',
+            textShadow: '-2px -2px 0 #2b1306, 2px -2px 0 #2b1306, -2px 2px 0 #2b1306, 2px 2px 0 #2b1306, 0 4px 0 #1a0a03',
           }}
-          className="text-4xl font-black text-rose-500 tracking-wider -mt-1"
+          className="text-4xl font-black text-rose-400 tracking-wider -mt-1"
         >
           GAME OVER
         </h2>
 
-        {/* 신기록 뱃지 */}
+        {/* 신기록 엠블럼 */}
         {isNewRecord && stats.distanceMeters > 0 && (
-          <div className="bg-gradient-to-r from-amber-400 to-yellow-400 text-[#1e1b18] font-black px-3.5 py-1 rounded-full text-xs shadow-md border-2 border-[#1e1b18] flex items-center gap-1.5 animate-bounce">
-            <Trophy size={14} className="fill-[#1e1b18]" />
+          <div className="wood-badge py-1 px-3.5 bg-gradient-to-r from-amber-400 to-amber-500 text-[#2b1306] font-black text-xs shadow-md border-2 border-[#2b1306] flex items-center gap-1.5 animate-bounce">
+            <Trophy size={14} className="fill-[#2b1306] text-[#2b1306]" />
             <span>최고 신기록 경신!</span>
           </div>
         )}
 
-        {/* 상단 캐릭터: 반창고 붙인 아픈 달걀 */}
-        <div className="relative w-20 h-24 my-1 flex items-center justify-center">
+        {/* 상단 캐릭터: 포근한 볏짚 둥지에서 쉬고 있는 아픈 달걀 */}
+        <div className="relative w-24 h-24 my-1 flex items-center justify-center">
+          {/* 바닥 볏짚 둥지 */}
+          <div className="absolute -bottom-2 w-24 h-6 bg-amber-800/60 rounded-full border border-amber-600/40 blur-[1px] flex items-center justify-center">
+            <span className="text-[10px] opacity-40 text-amber-200">🌾🌾🌾</span>
+          </div>
+
           <EggIllustration
             skin={currentSkin}
             equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
             expression="HURT"
             idPrefix="gameover-hero-"
-            className="w-18 h-22 drop-shadow-md overflow-visible animate-pulse"
+            className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
           />
         </div>
 
-        {/* 아케이드 거리 전광판 스코어보드 */}
-        <div className="w-full bg-[#1e1b18] rounded-2xl p-3 border-2 border-[#f59e0b] shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)] flex flex-col items-center gap-1.5 text-white">
+        {/* 헛간 원목 거리 전광판 스코어보드 */}
+        <div className="w-full bg-[#1a0a03] rounded-2xl p-3 border-2 border-amber-600/60 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] flex flex-col items-center gap-1.5 text-white">
           <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase">
-            DISTANCE
+            RUN DISTANCE
           </span>
 
           <div className="flex items-baseline gap-1">
@@ -100,8 +109,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             <span className="text-sm font-bold text-amber-400">m</span>
           </div>
 
-          {/* 획득 보상 아케이드 뱃지 바 */}
-          <div className="w-full pt-1.5 mt-0.5 border-t border-white/20 flex items-center justify-around text-xs font-black">
+          {/* 획득 보상 원목 뱃지 바 */}
+          <div className="w-full pt-1.5 mt-0.5 border-t border-white/15 flex items-center justify-around text-xs font-black">
             <div className="flex items-center gap-1 text-emerald-400">
               <Sparkles size={12} />
               <span>+{stats.distanceMeters} EXP</span>
@@ -115,21 +124,21 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             )}
 
             {leveledUp && (
-              <span className="bg-emerald-500 text-white px-2 py-0.2 rounded-full text-[10px] font-black border border-white/40 animate-pulse">
+              <span className="bg-emerald-600 text-white px-2 py-0.2 rounded-full text-[10px] font-black border border-white/40 animate-pulse">
                 Lv.{progress.level} UP!
               </span>
             )}
           </div>
         </div>
 
-        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 하기 ] & [ 🏠 홈으로 ] (모바일 터치 최적화 대형 버튼) */}
+        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 굴러가기 ] & [ 🏠 헛간 홈으로 ] */}
         <div className="w-full grid grid-cols-2 gap-3 mt-2">
           <button
             type="button"
             onClick={onRestart}
             className="btn-3d-emerald h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-white active:scale-95 transition-transform"
           >
-            <RotateCcw size={20} className="stroke-[3] text-white" />
+            <RotateCcw size={18} className="stroke-[3] text-white" />
             <span
               style={{
                 textShadow: '-1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 3px 0 #064e3b',
@@ -137,7 +146,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
               }}
               className="text-white tracking-wide"
             >
-              다시 하기
+              다시 굴러가기
             </span>
           </button>
 
@@ -146,14 +155,14 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             onClick={onGoHome}
             className="btn-3d-amber h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-[#1e1b18] active:scale-95 transition-transform"
           >
-            <Home size={20} className="stroke-[3] text-[#1e1b18]" />
+            <Home size={18} className="stroke-[3] text-[#1e1b18]" />
             <span
               style={{
                 textShadow: '0 1px 0 rgba(255, 255, 255, 0.4)',
               }}
               className="text-[#1e1b18] tracking-wide"
             >
-              홈으로
+              헛간 홈으로
             </span>
           </button>
         </div>

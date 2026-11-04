@@ -265,15 +265,6 @@ export const EggIllustration: React.FC<EggIllustrationProps> = ({
         </g>
       )}
 
-      {/* 기본 달걀 머리 위 앙증맞은 연두빛 새싹 (🌱) - 콘셉트 이미지 1:1 반영 */}
-      {!effectiveCostumes?.hat && skin.id === 'default' && (
-        <g id="concept-sprout" transform="translate(50, 9)">
-          <path d="M 0 0 Q -0.5 -5 0 -7" stroke="#3e6b18" strokeWidth="2.2" strokeLinecap="round" fill="none" />
-          <path d="M 0 -6 C -6 -8, -8 -13, -2 -14 C 2 -13, 1 -7, 0 -6 Z" fill="#78b634" stroke="#2c4d10" strokeWidth="1.2" />
-          <path d="M 0 -6 C 6 -8, 8 -13, 2 -14 C -2 -13, -1 -7, 0 -6 Z" fill="#92d942" stroke="#2c4d10" strokeWidth="1.2" />
-        </g>
-      )}
-
       {/* [레이어 5] 표정 (Expression) */}
       {expression === 'HURT' ? (
         <g>

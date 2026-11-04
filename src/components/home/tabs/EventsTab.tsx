@@ -37,19 +37,19 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
     <div className="flex-1 flex flex-col px-3 py-1.5 safe-container overflow-hidden select-none">
       {/* 상단 타이틀 */}
       <div className="flex items-center justify-between pb-1.5 px-0.5">
-        <h2 className="text-base font-black text-[#1e1b18] flex items-center gap-1.5">
-          <Flame size={18} className="text-rose-500 fill-rose-500 animate-pulse" />
-          <span>이벤트 챌린지</span>
+        <h2 className="text-base font-black text-white flex items-center gap-1.5 drop-shadow-[0_2px_2px_#1a0a03]">
+          <Flame size={18} className="text-amber-400 fill-amber-500 animate-pulse" />
+          <span>원정 챌린지</span>
         </h2>
-        <span className="text-xs font-black text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-full border border-rose-300 shadow-xs">
-          시즌 1 LIVE
-        </span>
+        <div className="wood-badge py-1 px-3 bg-rose-950/80 border-rose-800 text-rose-300">
+          <span className="text-xs font-black">시즌 1 LIVE</span>
+        </div>
       </div>
 
-      {/* 1. 상단: 운빨존많겜식 웅장한 이벤트 맵 쇼케이스 배너 (카드 전체 클릭 시 즉시 게임 진입!) */}
+      {/* 1. 상단: 운빨존많겜식 웅장한 이벤트 맵 쇼케이스 배너 (원목 보드 & 터치 시 즉시 시작) */}
       <div
         onClick={handlePlayCurrentEvent}
-        className={`panel-arcade p-5 flex flex-col justify-between relative shadow-xl overflow-hidden shrink-0 min-h-[230px] bg-gradient-to-br ${currentMap.bgGradient} text-white border-4 border-[#1e1b18] cursor-pointer active:scale-[0.99] transition-transform`}
+        className={`panel-wood p-5 flex flex-col justify-between relative shadow-2xl overflow-hidden shrink-0 min-h-[230px] bg-gradient-to-br ${currentMap.bgGradient} text-white border-4 border-[#2b1306] cursor-pointer active:scale-[0.99] transition-transform`}
       >
         {/* 장식용 은은한 블러 원 */}
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/20 rounded-full blur-2xl pointer-events-none" />
@@ -61,8 +61,8 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
           </span>
 
           {!currentMap.isOpen ? (
-            <span className="flex items-center gap-1.5 text-xs font-black text-white bg-black/70 px-3 py-1 rounded-full backdrop-blur-md border border-white/20">
-              <Clock size={13} />
+            <span className="wood-badge py-1 px-3 bg-[#1a0a03]/80 border-white/20 text-white">
+              <Clock size={13} className="text-amber-300" />
               <span>{currentMap.dDayText}</span>
             </span>
           ) : (
@@ -72,19 +72,19 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
           )}
         </div>
 
-        {/* 중앙: 대형 이모지 & 타이틀 (모서리에 잘리지 않는 안전 영역 배치) */}
+        {/* 중앙: 대형 이모지 & 타이틀 */}
         <div className="flex items-center justify-between my-auto z-10 py-2">
           <div className="flex-1 pr-2">
             <h3
               style={{
                 fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-                textShadow: '-1.5px -1.5px 0 #18181b, 1.5px -1.5px 0 #18181b, -1.5px 1.5px 0 #18181b, 1.5px 1.5px 0 #18181b, 0 3px 0 #09090b',
+                textShadow: '-1.5px -1.5px 0 #2b1306, 1.5px -1.5px 0 #2b1306, -1.5px 1.5px 0 #2b1306, 1.5px 1.5px 0 #2b1306, 0 3px 0 #1a0a03',
               }}
               className="text-2xl sm:text-3xl font-black text-yellow-300 tracking-tight leading-snug"
             >
               {currentMap.title}
             </h3>
-            <p className="text-xs sm:text-sm font-black text-white mt-1 drop-shadow-md leading-relaxed">
+            <p className="text-xs sm:text-sm font-black text-white mt-1 drop-shadow leading-relaxed">
               {currentMap.desc}
             </p>
           </div>
@@ -110,7 +110,7 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
               e.stopPropagation();
               handlePlayCurrentEvent();
             }}
-            className={`py-2.5 px-6 rounded-2xl font-black text-sm cursor-pointer shadow-xl flex items-center gap-2 shrink-0 ${
+            className={`py-2 px-5 rounded-2xl font-black text-sm cursor-pointer shadow-xl flex items-center gap-2 shrink-0 ${
               currentMap.isOpen ? 'btn-3d-amber text-[#1e1b18]' : 'bg-gray-400 text-gray-200 cursor-not-allowed opacity-80'
             }`}
           >
@@ -120,10 +120,10 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
         </div>
       </div>
 
-      {/* 2. 하단 45%: 가로 모드 카드 슬롯 선택기 */}
+      {/* 2. 하단 45%: 가로 모드 카드 슬롯 선택기 (양피지 공방 카드) */}
       <div className="flex-1 flex flex-col min-h-0 mt-2">
-        <div className="text-xs font-black text-[#1e1b18] pb-1 px-1 flex items-center gap-1">
-          <Trophy size={13} className="text-amber-500" />
+        <div className="text-xs font-black text-white pb-1 px-1 flex items-center gap-1 drop-shadow-[0_1.5px_1.5px_#1a0a03]">
+          <Trophy size={13} className="text-amber-400" />
           <span>챌린지 모드 선택</span>
         </div>
 
@@ -135,10 +135,10 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
               <div
                 key={map.id}
                 onClick={() => handleSelectMap(map)}
-                className={`p-2.5 rounded-2xl border-2 flex flex-col justify-between transition-all cursor-pointer select-none ${
+                className={`p-2.5 rounded-2xl border-2.5 flex flex-col justify-between transition-all cursor-pointer select-none ${
                   isSelected
-                    ? 'border-[#f59e0b] bg-amber-50 ring-2 ring-[#f59e0b] shadow-md scale-101'
-                    : 'border-[#1e1b18] bg-white shadow-xs hover:border-amber-400'
+                    ? 'panel-parchment ring-2 ring-amber-400 scale-101 border-[#2b1306]'
+                    : 'panel-parchment opacity-85 hover:opacity-100 border-[#2b1306]'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -153,15 +153,15 @@ export const EventsTab: React.FC<EventsTabProps> = ({ onStartEventGame }) => {
                   </span>
                 </div>
 
-                <h4 className="text-xs font-black text-[#1e1b18] mt-1.5 truncate">
+                <h4 className="text-xs font-black text-[#2b1306] mt-1.5 truncate">
                   {map.title}
                 </h4>
 
-                <div className="mt-1 pt-1 border-t border-gray-100 flex items-center justify-between text-[10px] font-extrabold text-gray-500">
-                  <span className={isSelected ? 'text-amber-600 font-black' : ''}>
-                    {isSelected ? '▶ 터치하여 시작' : '선택'}
+                <div className="mt-1 pt-1 border-t border-[#2b1306]/15 flex items-center justify-between text-[10px] font-extrabold text-[#2b1306]">
+                  <span className={isSelected ? 'text-amber-700 font-black' : 'text-gray-600'}>
+                    {isSelected ? '▶ 시작' : '선택'}
                   </span>
-                  <span className="text-emerald-600">속도 x{map.speedMultiplier}</span>
+                  <span className="text-emerald-700 font-black">속도 x{map.speedMultiplier}</span>
                 </div>
               </div>
             );

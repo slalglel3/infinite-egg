@@ -34,37 +34,57 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <header className="w-full flex items-center justify-between p-3 pt-safe z-30 select-none">
-      {/* 1. 좌측: 콘셉트 이미지 1:1 반영 조각 나무 프로필 명판 (LV.3 계란이) */}
+      {/* 1. 좌측: 원목 농장 레벨 엠블럼 & 경험치 바 */}
       <div className="wood-badge py-1 px-2.5 rounded-2xl flex items-center gap-2 shadow-lg">
-        {/* 귀여운 아기 닭/계란 아바타 원형 인장 */}
-        <div className="w-8 h-8 rounded-full bg-[#fef3c7] border-2 border-[#2b1306] flex items-center justify-center text-base shadow-inner shrink-0">
-          🐔
+        {/* 달걀 장인 아바타 원형 인장 */}
+        <div className="w-8 h-8 rounded-full bg-gradient-to-b from-amber-200 to-amber-300 border-2 border-[#2b1306] flex items-center justify-center text-base shadow-inner shrink-0">
+          🐣
         </div>
         <div className="flex flex-col text-left leading-tight pr-1">
-          <span className="text-[10px] text-amber-300 font-black tracking-tight">LV.{progress.level}</span>
-          <span className="text-xs font-black text-white drop-shadow">계란이</span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-amber-300 font-black tracking-tight">LV.{progress.level}</span>
+            <span className="text-xs font-black text-white drop-shadow">달걀 장인</span>
+          </div>
+          {/* 미니 경험치 게이지 바 */}
+          <div className="w-16 h-1.5 bg-[#1a0a03] rounded-full overflow-hidden mt-0.5 border border-white/20">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full transition-all duration-300"
+              style={{ width: `${expPercent}%` }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* 2. 우측: 조각 나무 자원 명판 (곡식/골드, 깃털/껍데기, 설정 버튼) */}
+      {/* 2. 우측: 원목 자원 명판 (실제 골드, 계란 껍데기, 최고 기록, 설정 버튼) */}
       <div className="flex items-center gap-1.5 flex-wrap justify-end">
-        {/* 골드 명판 (🌾 1,245) */}
-        <div className="wood-badge py-1.5 px-2.5">
-          <span className="text-sm">🌾</span>
-          <span className="text-xs font-black tracking-tight text-amber-200">
+        {/* 실제 보유 골드 명판 (Coins) */}
+        <div className="wood-badge py-1.5 px-2.5" title="보유 골드">
+          <Coins size={14} className="text-amber-300 fill-amber-300 shrink-0" />
+          <span className="text-xs font-black tracking-tight text-amber-100">
             {progress.gold.toLocaleString()}
           </span>
+          <div className="w-3.5 h-3.5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[9px] font-black shadow-xs ml-0.5 border border-emerald-400">
+            <Plus size={9} className="stroke-[3]" />
+          </div>
         </div>
 
-        {/* 계란 껍데기 명판 (🪶 85) */}
-        <div className="wood-badge py-1.5 px-2.5">
-          <span className="text-sm">🪶</span>
+        {/* 실제 계란 껍데기 명판 */}
+        <div className="wood-badge py-1.5 px-2.5" title="계란 껍데기 (상점에서 골드로 환전 가능)">
+          <span className="text-xs shrink-0">🥚</span>
           <span className="text-xs font-black tracking-tight text-amber-100">
             {progress.eggShells || 0}
           </span>
         </div>
 
-        {/* 음소거 / 설정 조각 나무 사각 버튼 (⚙️) */}
+        {/* 최고 기록 명판 */}
+        <div className="wood-badge py-1.5 px-2" title="최고 하강 기록">
+          <Trophy size={13} className="text-amber-300 shrink-0" />
+          <span className="text-xs font-black tracking-tight text-amber-200">
+            {progress.bestDistanceMeters.toLocaleString()}m
+          </span>
+        </div>
+
+        {/* 사운드 토글 조각 나무 버튼 */}
         <button
           type="button"
           onClick={onToggleMute}

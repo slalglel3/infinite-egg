@@ -402,16 +402,16 @@ export const HatchingModal: React.FC<HatchingModalProps> = ({
               <button
                 type="button"
                 onClick={handleEquipHatched}
-                className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="btn-3d-emerald flex-1 py-3 text-white font-black text-sm rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Check size={16} />
+                <Check size={16} className="stroke-[3]" />
                 <span>장착하고 닫기</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-amber-950 font-black text-sm rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer"
+                className="btn-3d-amber flex-1 py-3 text-[#1e1b18] font-black text-sm rounded-2xl shadow-xl active:scale-95 transition-all cursor-pointer"
               >
                 확인
               </button>

@@ -212,6 +212,32 @@ button {
   text-shadow: 0 2px 2px #1a0a03 !important;
 }
 
+/* 농장 양피지 / 나무 알림판 패널 (Parchment Board) */
+.panel-parchment {
+  background: linear-gradient(180deg, #fdfbf7 0%, #fef8ee 50%, #faedd8 100%) !important;
+  border: 3.5px solid #2b1306 !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 5px 0 #1a0a03, inset 0 2px 0 rgba(255, 255, 255, 0.9), 0 8px 16px rgba(0, 0, 0, 0.25) !important;
+  color: #1e1b18 !important;
+}
+
+/* 통나무 깎아 만든 3D 액션 버튼 (Wooden Action Button) */
+.btn-wood {
+  background: linear-gradient(180deg, #9e6435 0%, #7e4620 50%, #5e3112 100%) !important;
+  border: 3px solid #2b1306 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 4px 0 #1a0a03, 0 6px 10px rgba(0, 0, 0, 0.3), inset 0 1.5px 0 rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1.5px 1px #1a0a03 !important;
+  transition: all 0.08s ease-in-out !important;
+  user-select: none;
+}
+.btn-wood:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 #1a0a03, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
 /* 상단 자원 및 레벨용 조각 나무 뱃지 (Wood Badge) */
 .wood-badge {
   background: linear-gradient(180deg, #8c5327 0%, #693715 100%);

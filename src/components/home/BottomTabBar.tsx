@@ -15,13 +15,13 @@ interface TabItem {
   icon: string;
 }
 
-// 콘셉트 이미지 1:1 순서 및 네이밍 매핑 (상점 / 보관함 / 홈 / 미션 / 랭킹)
+// 달걀 공방 & 시골 헛간 아케이드 5대 핵심 탭
 const TABS: TabItem[] = [
-  { id: 'SHOP', label: '상점', subLabel: 'SHOP', icon: '🏪' },
-  { id: 'EGGS', label: '보관함', subLabel: 'SKINS', icon: '🥚' },
+  { id: 'EGGS', label: '도감', subLabel: 'EGGS', icon: '🥚' },
+  { id: 'EVENTS', label: '이벤트', subLabel: 'EVENTS', icon: '🔥' },
   { id: 'MAIN', label: '홈', subLabel: 'HOME', icon: '🏠' },
-  { id: 'ACHIEVEMENTS', label: '미션', subLabel: 'QUEST', icon: '📜' },
-  { id: 'EVENTS', label: '랭킹', subLabel: 'RANK', icon: '🏆' },
+  { id: 'ACHIEVEMENTS', label: '도전과제', subLabel: 'QUEST', icon: '📜' },
+  { id: 'SHOP', label: '상점', subLabel: 'SHOP', icon: '🏪' },
 ];
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({

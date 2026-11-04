@@ -33,23 +33,23 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
   ).length;
 
   return (
-    <div className="flex-1 flex flex-col px-4 py-2 safe-container overflow-hidden">
-      {/* 상단 진행률 서머리 */}
-      <div className="flex items-center justify-between pb-2 px-1">
-        <h2 className="text-lg font-black text-gray-800 flex items-center gap-1.5">
-          <Award size={20} className="text-amber-500 fill-amber-500" />
-          도전 과제
+    <div className="flex-1 flex flex-col px-3 py-1.5 safe-container overflow-hidden select-none">
+      {/* 상단 농장 일과표 헤더 & 달성 현황 */}
+      <div className="flex items-center justify-between pb-1.5 px-0.5">
+        <h2 className="text-base font-black text-white flex items-center gap-1.5 drop-shadow-[0_2px_2px_#1a0a03]">
+          <Award size={18} className="text-amber-400 fill-amber-500" />
+          <span>농장 일과표</span>
         </h2>
-        <div className="flex items-center gap-1.5 bg-amber-100 text-amber-900 px-3.5 py-1 rounded-full text-xs font-black border border-amber-300 shadow-sm">
-          <span>달성 현황:</span>
-          <span className="text-amber-600 font-extrabold">{completedCount}</span>
-          <span className="text-gray-400">/</span>
-          <span>{ACHIEVEMENTS.length}</span>
+        <div className="wood-badge py-1 px-3">
+          <span className="text-[11px] text-amber-200/90 font-bold">일과 완료</span>
+          <span className="text-amber-300 font-black">{completedCount}</span>
+          <span className="text-white/40 font-bold">/</span>
+          <span className="text-white font-black">{ACHIEVEMENTS.length}</span>
         </div>
       </div>
 
-      {/* [피드백 8] 큼직하고 시원한 도전과제 카드 목록 */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 pb-4 pr-1">
+      {/* 농장 양피지 일과표 목록 */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2.5 pb-4 pr-0.5">
         {ACHIEVEMENTS.map((ach) => {
           const currentVal = getAchievementProgress(ach.id, progress);
           const isDone = currentVal >= ach.target;
@@ -62,28 +62,28 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
               onClick={() => {
                 if (isDone && !isClaimed) handleClaim(ach.id);
               }}
-              className={`rounded-3xl p-4.5 bg-white border-3 flex flex-col gap-3 shadow-md transition-all select-none ${
+              className={`rounded-2xl p-3.5 border-3 flex flex-col gap-2.5 transition-all select-none shadow-md ${
                 isClaimed
-                  ? 'border-gray-200 opacity-60 bg-gray-50'
+                  ? 'bg-[#2b1306]/20 border-[#2b1306]/40 opacity-70'
                   : isDone
-                  ? 'border-amber-400 bg-amber-50/70 shadow-xl ring-2 ring-amber-300 cursor-pointer active:scale-[0.98]'
-                  : 'border-amber-100/90'
+                  ? 'panel-parchment ring-2 ring-amber-400 shadow-xl cursor-pointer active:scale-[0.98]'
+                  : 'panel-parchment'
               }`}
             >
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-2.5">
                 {/* 타이틀 및 핵심 목표 */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base font-black text-gray-900 truncate">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-black text-[#2b1306] truncate">
                       {ach.title}
                     </h3>
                     {isClaimed && (
-                      <span className="text-[10px] font-black text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
-                        달성 완료
+                      <span className="text-[9px] font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.2 rounded-full">
+                        ✓ 완료
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-600 font-bold mt-0.5">
+                  <p className="text-[11px] text-amber-950 font-bold mt-0.5">
                     {ach.desc}
                   </p>
                 </div>
@@ -91,11 +91,11 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
                 {/* 보상 정보 & 액션 버튼 */}
                 <div className="shrink-0 flex items-center gap-2">
                   <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1 text-xs font-black text-amber-600">
-                      <Coins size={14} className="text-amber-500" />
+                    <div className="flex items-center gap-1 text-xs font-black text-amber-800">
+                      <Coins size={13} className="text-amber-500 fill-amber-400" />
                       <span>+{ach.rewardGold}G</span>
                     </div>
-                    <span className="text-[10px] text-emerald-600 font-extrabold">
+                    <span className="text-[10px] text-emerald-700 font-extrabold">
                       +{ach.rewardExp} EXP
                     </span>
                   </div>
@@ -107,28 +107,28 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
                         e.stopPropagation();
                         handleClaim(ach.id);
                       }}
-                      className="btn-3d-amber text-xs px-3.5 py-1.5 rounded-2xl flex items-center gap-1 animate-bounce cursor-pointer text-[#1e1b18]"
+                      className="btn-3d-amber text-xs px-3 py-1.5 rounded-xl flex items-center gap-1 animate-bounce cursor-pointer text-[#1e1b18] shrink-0"
                     >
-                      <Gift size={14} className="text-[#1e1b18]" />
-                      <span className="text-[#1e1b18] font-black">보상 받기</span>
+                      <Gift size={13} className="text-[#1e1b18]" />
+                      <span className="text-[#1e1b18] font-black">수령</span>
                     </button>
                   ) : null}
                 </div>
               </div>
 
-              {/* 큼직한 진행도 프로그레스 바 */}
-              <div className="flex items-center gap-2.5">
-                <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden p-0.5 shadow-inner">
+              {/* 원목 홈 프로그레스 바 */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-3 bg-[#1a0a03] rounded-full overflow-hidden p-0.5 border border-[#2b1306] shadow-inner">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${
                       isDone
-                        ? 'bg-gradient-to-r from-amber-400 to-emerald-500'
+                        ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
                         : 'bg-gradient-to-r from-amber-400 to-amber-500'
                     }`}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="text-xs font-black text-gray-700 shrink-0">
+                <span className="text-[11px] font-black text-[#2b1306] shrink-0">
                   {Math.min(currentVal, ach.target).toLocaleString()} / {ach.target.toLocaleString()}
                 </span>
               </div>
