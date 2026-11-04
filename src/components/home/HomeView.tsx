@@ -56,7 +56,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         className="relative w-full h-full max-w-[480px] aspect-[1536/2752] max-h-screen flex flex-col justify-between overflow-hidden shadow-2xl bg-cover bg-center"
         style={currentScreen ? { backgroundImage: `url(${currentScreen})` } : undefined}
       >
-        {/* 1. 상단 공통 헤더 (라이브 데이터 텍스트 오버레이) */}
+        {/* 1. 상단 공통 헤더 (라이브 데이터 텍스트 오버레이, Z: 30) */}
         <HomeHeader
           progress={progress}
           isMuted={isMuted}
@@ -65,8 +65,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           isShellShopOpen={activeTab === 'SHOP'}
         />
 
-        {/* 2. 중앙 탭 컨텐츠 렌더링 영역 */}
-        <main className="flex-1 w-full relative overflow-hidden">
+        {/* 플렉스 공간 확보 */}
+        <div className="flex-1 pointer-events-none" />
+
+        {/* 2. 중앙 탭 컨텐츠 렌더링 영역 (전체 1536x2752 화면 절대 좌표 오버레이, Z: 20) */}
+        <div className="absolute inset-0 pointer-events-none z-20">
           {activeTab === 'MAIN' && (
             <MainTab
               progress={progress}
@@ -94,6 +97,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <AchievementsTab
               progress={progress}
               onUpdateProgress={onUpdateProgress}
+              onStartGame={() => onStartGame()}
             />
           )}
 
@@ -103,9 +107,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               onUpdateProgress={onUpdateProgress}
             />
           )}
-        </main>
+        </div>
 
-        {/* 3. 하단 5대 탭 터치 바텀 네비게이션 */}
+        {/* 3. 하단 5대 탭 터치 바텀 네비게이션 (Z: 30) */}
         <BottomTabBar
           activeTab={activeTab}
           onTabChange={setActiveTab}
