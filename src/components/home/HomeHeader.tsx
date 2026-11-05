@@ -36,18 +36,18 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <header className="w-full h-[9%] relative z-30 select-none">
-      {/* 1. 좌측: 프로필 텍스트 오버레이 [LV.3 계란이] (X: 3% ~ 32%) */}
-      <div className="absolute top-[26%] left-[13.5%] flex flex-col text-left leading-tight pointer-events-none">
+      {/* 1. 좌측: 프로필 텍스트 오버레이 [LV.3 계란이] (X: 12.0% ~ 25.5%) */}
+      <div className="absolute top-[28%] left-[12.0%] w-[13.5%] h-[40%] flex flex-col justify-center text-left leading-tight pointer-events-none">
         <span className="text-[10px] sm:text-[11px] text-[#fde047] font-black drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)]">
           LV.{progress.level || 3}
         </span>
-        <span className="text-[11px] sm:text-[12px] font-black text-white drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)]">
+        <span className="text-[11px] sm:text-[12px] font-black text-white drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)] truncate">
           계란이
         </span>
       </div>
 
-      {/* 2. 중앙-좌측: 활동력 곡식 라이브 수량 오버레이 (X: 33% ~ 60%) */}
-      <div className="absolute top-[34%] left-[42%] w-[15%] text-right pr-1 pointer-events-none">
+      {/* 2. 중앙-좌측: 활동력 곡식 오목한 슬롯 1:1 라이브 수량 오버레이 (X: 50.5% ~ 63.0%) */}
+      <div className="absolute top-[32%] left-[50.5%] w-[12.5%] h-[36%] flex items-center justify-center text-center pointer-events-none">
         <span
           style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
           className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
@@ -56,8 +56,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         </span>
       </div>
 
-      {/* 3. 중앙-우측: 황금 깃털 라이브 수량 오버레이 (X: 61% ~ 88%) */}
-      <div className="absolute top-[34%] left-[70%] w-[16%] text-right pr-1 pointer-events-none">
+      {/* 3. 중앙-우측: 황금 깃털 오목한 슬롯 1:1 라이브 수량 오버레이 (X: 73.5% ~ 86.0%) */}
+      <div className="absolute top-[32%] left-[73.5%] w-[12.5%] h-[36%] flex items-center justify-center text-center pointer-events-none">
         <span
           style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
           className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
@@ -66,22 +66,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         </span>
       </div>
 
-      {/* 4. 계란 껍데기 상점 진입 시 계란 껍데기 재화 목판 조건부 표시 */}
-      {isShellShopOpen && shellBoard && (
-        <div className="absolute top-[105%] right-3 h-9 drop-shadow-lg flex items-center z-40 animate-bounce cursor-help" title="계란 껍데기 재화">
-          <img src={shellBoard} alt="계란 껍데기" className="h-full object-contain pointer-events-none select-none" />
-          <div className="absolute inset-0 flex items-center justify-end pr-2.5">
-            <span
-              style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-              className="text-xs font-black text-amber-100 drop-shadow-[0_1.5px_1px_#1e0c03]"
-            >
-              {progress.eggShells || 0}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* 5. 우상단: 설정 톱니바퀴 터치 영역 (X: 88% ~ 98%) */}
+      {/* 4. 우상단: 설정 톱니바퀴 터치 영역 (X: 88% ~ 98%) */}
       <button
         type="button"
         onClick={() => {

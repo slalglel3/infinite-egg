@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { UserProgress } from '../../../types/game';
-import { EGG_SKINS, getEggSkinById } from '../../../data/eggSkins';
 import { selectEggSkin } from '../../../utils/storage';
 import { sound } from '../../../audio/sound';
 import confetti from 'canvas-confetti';
-import { EggIllustration } from '../../common/EggIllustration';
+import { EGG_ART_LIST } from '../../../assets/assetRegistry';
 import { Check, Lock } from 'lucide-react';
 
 interface EggsTabProps {
@@ -13,26 +12,33 @@ interface EggsTabProps {
   onStartGame?: () => void;
 }
 
-// 8대 대표 달걀 스킨 매핑 (원화 2x4 슬롯 그리드 1:1 대응)
-const GRID_SKIN_IDS = [
-  'classic',
-  'soft_boiled',
-  'quail',
-  'golden',
-  'police_egg',
-  'princess_egg',
-  'angel_egg',
-  'galaxy',
+// 사용자 제공 원화(skin.png)의 8대 대표 달걀 스킨 정의
+export interface ArtSkinItem {
+  id: string;
+  name: string;
+  tagline: string;
+  artIndex: number;
+}
+
+export const FEATURED_ART_SKINS: ArtSkinItem[] = [
+  { id: 'classic', name: '황금 달걀', tagline: '자연산 유기농 황금빛 달걀', artIndex: 0 },
+  { id: 'soft_boiled', name: '촉촉 반숙란', tagline: '탱글탱글 노른자가 살아있는 반숙', artIndex: 1 },
+  { id: 'quail', name: '점박이 메추리알', tagline: '앙증맞은 천연 야생 메추리알', artIndex: 2 },
+  { id: 'dino', name: '아기 공룡알', tagline: '선사 시대의 신비로운 원시 에그', artIndex: 3 },
+  { id: 'cyber', name: '사이버 에그 2099', tagline: '미래형 홀로그램 네온 달걀', artIndex: 4 },
+  { id: 'galaxy', name: '은하수 오로라란', tagline: '우주의 별빛이 쏟아지는 신비란', artIndex: 5 },
+  { id: 'police_egg', name: '정의의 경찰란', tagline: '내리막길의 질서를 지키는 수호자', artIndex: 6 },
+  { id: 'golden', name: '눈부신 황금알', tagline: '찬란한 광채를 내뿜는 전설의 알', artIndex: 7 },
 ];
 
 export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) => {
   const [selectedSkinId, setSelectedSkinId] = useState<string>(progress.selectedEggId || 'classic');
 
-  const selectedSkin = getEggSkinById(selectedSkinId) || EGG_SKINS[0];
+  const selectedSkin = FEATURED_ART_SKINS.find((s) => s.id === selectedSkinId) || FEATURED_ART_SKINS[0];
   const isEquipped = progress.selectedEggId === selectedSkin.id;
   const isUnlocked = progress.unlockedEggIds.includes(selectedSkin.id);
 
-  // 스킨 선택
+  // 스킨 슬롯 선택
   const handleSelectSlot = (skinId: string) => {
     sound.playTurn();
     setSelectedSkinId(skinId);
@@ -59,25 +65,28 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
 
   return (
     <div className="w-full h-full relative select-none">
-      {/* 1. 상단: 쇼케이스 대표 달걀 라이브 프리뷰 (Y: 17% ~ 37%) */}
-      <div className="pointer-events-none absolute top-[17%] left-[20%] right-[20%] h-[20%] flex flex-col items-center justify-center">
-        {/* 달걀 일러스트 부유 애니메이션 */}
-        <div className="w-[45%] max-w-[130px] aspect-square flex items-center justify-center animate-bounce-gentle drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
-          <EggIllustration skin={selectedSkin} />
+      {/* 1. 상단 쇼케이스: 대표 달걀 라이브 프리뷰 (선택된 스킨이 1번 기본형이 아닐 때만 3D 원화 에셋 오버레이) */}
+      {selectedSkin.artIndex !== 0 && (
+        <div className="pointer-events-none absolute top-[18%] left-[35%] w-[30%] aspect-square flex items-center justify-center animate-bounce-gentle">
+          <img
+            src={EGG_ART_LIST[selectedSkin.artIndex]}
+            alt={selectedSkin.name}
+            className="w-full h-full object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.6)]"
+          />
         </div>
+      )}
 
-        {/* 달걀 이름 및 짧은 능력치 태그 */}
-        <div className="mt-1 flex flex-col items-center leading-tight">
-          <span className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_2px_2px_#1e0c03]">
-            {selectedSkin.name}
-          </span>
-          <span className="text-[10px] text-amber-200/90 font-bold drop-shadow-[0_1px_1px_#1e0c03]">
-            {selectedSkin.tagline || selectedSkin.desc.slice(0, 24)}
-          </span>
-        </div>
+      {/* 2. 상단 쇼케이스: 계란 이름 및 설명 (계란과 분리되어 받침대 위에 고정된 독립 텍스트) */}
+      <div className="pointer-events-none absolute top-[32.5%] left-[20%] right-[20%] flex flex-col items-center leading-tight">
+        <span className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_2px_2px_#1e0c03]">
+          {selectedSkin.name}
+        </span>
+        <span className="text-[10px] text-amber-200/90 font-bold drop-shadow-[0_1px_1px_#1e0c03]">
+          {selectedSkin.tagline}
+        </span>
       </div>
 
-      {/* 2. 중앙: [장착하기] 3D 버튼 인터랙티브 터치 영역 (Y: 39.4%, X: 28.5%, W: 43.0%, H: 7.6%) */}
+      {/* 3. 중앙: [장착하기] 3D 버튼 인터랙티브 터치 영역 (Y: 39.4%, X: 28.5%, W: 43.0%, H: 7.6%) */}
       <button
         type="button"
         onClick={handleEquipButton}
@@ -85,7 +94,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
         title={isEquipped ? '현재 장착 중' : isUnlocked ? '장착하기' : '잠금 상태'}
       >
         <div className="w-full h-full rounded-2xl group-active:bg-amber-400/25 transition-colors flex items-center justify-center">
-          {/* 이미 장착 중인 경우 버튼 위에 선명한 '장착 중' 상태 오버레이 */}
+          {/* 장착 상태 피드백 */}
           {isEquipped ? (
             <span className="text-xs sm:text-sm font-black text-emerald-100 flex items-center gap-1 drop-shadow-[0_1.5px_2px_#064e3b]">
               <Check size={16} strokeWidth={3} className="text-emerald-300" />
@@ -100,11 +109,9 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
         </div>
       </button>
 
-      {/* 3. 하단: 8대 달걀 슬롯 터치 그리드 (2행 x 4열) */}
+      {/* 4. 하단: 원화 8대 달걀 슬롯 터치 그리드 (2행 x 4열) */}
       {/* 1행 (Y: 60.5%, H: 12.2%) */}
-      {GRID_SKIN_IDS.slice(0, 4).map((skinId, idx) => {
-        const skin = getEggSkinById(skinId);
-        if (!skin) return null;
+      {FEATURED_ART_SKINS.slice(0, 4).map((skin, idx) => {
         const isSlotEquipped = progress.selectedEggId === skin.id;
         const isSlotSelected = selectedSkinId === skin.id;
         const isSlotUnlocked = progress.unlockedEggIds.includes(skin.id);
@@ -144,9 +151,7 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
       })}
 
       {/* 2행 (Y: 73.5%, H: 12.2%) */}
-      {GRID_SKIN_IDS.slice(4, 8).map((skinId, idx) => {
-        const skin = getEggSkinById(skinId);
-        if (!skin) return null;
+      {FEATURED_ART_SKINS.slice(4, 8).map((skin, idx) => {
         const isSlotEquipped = progress.selectedEggId === skin.id;
         const isSlotSelected = selectedSkinId === skin.id;
         const isSlotUnlocked = progress.unlockedEggIds.includes(skin.id);

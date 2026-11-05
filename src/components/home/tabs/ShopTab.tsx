@@ -143,30 +143,20 @@ export const ShopTab: React.FC<ShopTabProps> = ({ progress, onUpdateProgress }) 
       <button
         type="button"
         onClick={handleClaimFreeDaily}
-        className="pointer-events-auto absolute top-[68.0%] left-[10.0%] w-[39.0%] h-[12.0%] cursor-pointer active:scale-95 transition-transform group rounded-3xl flex flex-col justify-end p-2"
+        className="pointer-events-auto absolute top-[68.0%] left-[10.0%] w-[39.0%] h-[12.0%] cursor-pointer active:scale-95 transition-transform group rounded-3xl"
         title={!isFreeClaimedToday ? "오늘의 무료 깃털 받기 (+50 🪶)" : "무료 깃털 이미 수령 완료"}
       >
         <div className="w-full h-full rounded-3xl group-active:bg-amber-400/20 transition-colors" />
-        {!isFreeClaimedToday && (
-          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 text-[#2b1306] text-[10px] font-black border border-amber-600 shadow-md animate-bounce">
-            무료!
-          </span>
-        )}
       </button>
 
       {/* 6. 하단 상품 4: [황금 보물 상자 / 껍데기 50개 환전] (Y: 68.0%, X: 51.0%) */}
       <button
         type="button"
         onClick={handleExchangeShells}
-        className="pointer-events-auto absolute top-[68.0%] left-[51.0%] w-[39.0%] h-[12.0%] cursor-pointer active:scale-95 transition-transform group rounded-3xl flex flex-col justify-end p-2"
+        className="pointer-events-auto absolute top-[68.0%] left-[51.0%] w-[39.0%] h-[12.0%] cursor-pointer active:scale-95 transition-transform group rounded-3xl"
         title={`계란 껍데기 환전 (보유: ${progress.eggShells || 0}개)`}
       >
         <div className="w-full h-full rounded-3xl group-active:bg-amber-400/20 transition-colors" />
-        {(progress.eggShells || 0) >= 50 && (
-          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-400 to-teal-300 text-emerald-950 text-[10px] font-black border border-emerald-600 shadow-md animate-pulse">
-            환전 가능!
-          </span>
-        )}
       </button>
 
       {/* 7. 달걀 부화 연출 모달 (1회 / 10회) */}

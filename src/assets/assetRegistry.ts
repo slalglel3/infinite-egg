@@ -44,6 +44,25 @@ import iconTurnArrow from './icons/icon_turn_arrow.png';
 import iconJumpArrow from './icons/icon_jump_arrow.png';
 
 import eggBabySprout from './eggs/egg_baby_sprout.png';
+import eggArt1 from './eggs/art/egg_art_1.png';
+import eggArt2 from './eggs/art/egg_art_2.png';
+import eggArt3 from './eggs/art/egg_art_3.png';
+import eggArt4 from './eggs/art/egg_art_4.png';
+import eggArt5 from './eggs/art/egg_art_5.png';
+import eggArt6 from './eggs/art/egg_art_6.png';
+import eggArt7 from './eggs/art/egg_art_7.png';
+import eggArt8 from './eggs/art/egg_art_8.png';
+
+export const EGG_ART_LIST: string[] = [
+  eggArt1,
+  eggArt2,
+  eggArt3,
+  eggArt4,
+  eggArt5,
+  eggArt6,
+  eggArt7,
+  eggArt8,
+];
 
 // 2. 공통 UI 에셋 키 정의
 export type UIAssetKey =
