@@ -35,6 +35,7 @@ import btnWoodSquare from './ui/btn_wood_square.png';
 import tagWheatCost from './ui/tag_wheat_cost.png';
 
 import nestStrawHero from './ui/nest_straw_hero.png';
+import signboardWoodName from './ui/signboard_wood_name.png';
 import panelRopeWoodLarge from './ui/panel_rope_wood_large.png';
 import panelWoodCardSlot from './ui/panel_wood_card_slot.png';
 
@@ -97,6 +98,7 @@ export type UIAssetKey =
   | 'panel_wood_card_slot'     // 오목한 나무 슬롯 카드 (그리드/아이템/미션)
   | 'tag_wheat_cost'           // '활동력 🌾 5' 목판 태그
   | 'nest_straw_hero'          // 대형 짚풀 둥지 (계란이 앉아 있는 둥지)
+  | 'signboard_wood_name'      // 홈 둥지 뒤쪽 무지 원목 이름 팻말 (Empty Slot)
   // 인게임 트랙 & 조작계
   | 'track_wooden_bridge'      // 밧줄 통나무 목재 다리 발판
   | 'track_nest_checkpoint'    // 코너 짚풀 둥지 체크포인트
@@ -140,6 +142,7 @@ const UI_ASSETS: Partial<Record<UIAssetKey, string>> = {
   btn_wood_square: btnWoodSquare,
   tag_wheat_cost: tagWheatCost,
   nest_straw_hero: nestStrawHero,
+  signboard_wood_name: signboardWoodName,
   panel_rope_wood_large: panelRopeWoodLarge,
   panel_wood_card_slot: panelWoodCardSlot,
   track_wooden_bridge: trackWoodenBridge,
