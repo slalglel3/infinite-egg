@@ -433,6 +433,7 @@ SCREEN_CATALOG = [
     { 'id': 'screen_skin', 'name': '스킨 (Skin)', 'path': f'{WORKSPACE}/src/assets/screens/screen_skin.png' },
     { 'id': 'screen_mission', 'name': '미션 (Mission)', 'path': f'{WORKSPACE}/src/assets/screens/screen_mission.png' },
     { 'id': 'screen_challenge', 'name': '도전 (Challenge)', 'path': f'{WORKSPACE}/src/assets/screens/screen_challenge.png' },
+    { 'id': 'screen_play', 'name': '주행 플레이 (Play)', 'path': f'{WORKSPACE}/src/assets/screens/screen_play.png' },
 ]
 
 def load_base64_data_uri(path):

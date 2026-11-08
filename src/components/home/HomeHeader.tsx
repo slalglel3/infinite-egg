@@ -101,17 +101,35 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             </div>
 
             {/* UI 비주얼 배치 툴 열기 */}
-            <div className="flex items-center justify-between bg-[#2d1506] p-3 rounded-2xl border-2 border-[#1c0c03]">
-              <span className="text-xs font-black text-amber-300">🎨 UI 비주얼 편집기</span>
-              <button
-                type="button"
-                onClick={() => {
-                  window.open('./ui-editor.html', '_blank');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs border border-amber-300 shadow cursor-pointer"
-              >
-                편집기 열기
-              </button>
+            <div className="flex flex-col gap-1.5 bg-[#2d1506] p-3 rounded-2xl border-2 border-[#1c0c03] text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-amber-300">🎨 UI 비주얼 편집기</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      window.open('./ui-editor.html', '_blank');
+                    } catch (e) {
+                      alert('ui-editor.html을 열 수 없습니다.\ninfinite-egg.html과 동일한 폴더에 ui-editor.html 파일이 있는지 확인해주세요.\n\nGitHub Releases에서 ui-editor.html을 다운로드할 수 있습니다.');
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs border border-amber-300 shadow cursor-pointer"
+                >
+                  편집기 열기
+                </button>
+              </div>
+              <p className="text-[10px] text-amber-200/60 leading-tight">
+                ※ infinite-egg.html과 같은 폴더에 ui-editor.html이 있어야 열립니다. (
+                <a
+                  href="https://github.com/slalglel3/infinite-egg/releases/latest"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-amber-400 underline font-bold"
+                >
+                  GitHub에서 받기
+                </a>
+                )
+              </p>
             </div>
 
             {/* 데이터 리셋 */}
