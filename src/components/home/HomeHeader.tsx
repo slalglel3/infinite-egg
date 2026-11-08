@@ -100,6 +100,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
             </div>
 
+            {/* UI 비주얼 배치 툴 열기 */}
+            <div className="flex items-center justify-between bg-[#2d1506] p-3 rounded-2xl border-2 border-[#1c0c03]">
+              <span className="text-xs font-black text-amber-300">🎨 UI 비주얼 편집기</span>
+              <button
+                type="button"
+                onClick={() => {
+                  window.open('./ui-editor.html', '_blank');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-black text-xs border border-amber-300 shadow cursor-pointer"
+              >
+                편집기 열기
+              </button>
+            </div>
+
             {/* 데이터 리셋 */}
             <div className="flex items-center justify-between bg-[#2d1506] p-3 rounded-2xl border-2 border-[#1c0c03]">
               <span className="text-xs font-black text-rose-300">데이터 초기화</span>

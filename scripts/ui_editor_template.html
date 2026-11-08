@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>무한의 계란 - UI 비주얼 배치 스튜디오 & 레이아웃 편집기</title>
+  <style>
+    :root {
+      --bg-dark: #0f1219;
+      --bg-panel: #181d28;
+      --bg-card: #222938;
+      --bg-hover: #2d364a;
+      --accent-gold: #f59e0b;
+      --accent-gold-light: #fbbf24;
+      --accent-blue: #38bdf8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --border-color: #334155;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Top Header Toolbar */
+    header {
+      height: 56px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent-gold-light);
+    }
+    .brand span.badge {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold-light);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button.btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button.btn:hover {
+      background: var(--bg-hover);
+      border-color: #475569;
+    }
+    button.btn:active {
+      transform: scale(0.97);
+    }
+    button.btn-primary {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      border-color: #b45309;
+      color: #1a0a03;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    button.btn-primary:hover {
+      background: linear-gradient(135deg, #b45309, #d97706);
+      color: #fff;
+    }
+    button.btn-success {
+      background: #059669;
+      border-color: #047857;
+      color: #fff;
+    }
+    button.btn-danger {
+      background: #dc2626;
+      border-color: #b91c1c;
+      color: #fff;
+    }
+    select.select-input, input.text-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+    }
+    select.select-input:focus, input.text-input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    /* Main Workspace Layout (Left Canvas + Right Sidebar) */
+    .workspace {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Left: Canvas Area */
+    .canvas-viewport {
+      flex: 1;
+      background: #080a0f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: auto;
+      background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+    .phone-container {
+      position: relative;
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 8px #1e293b;
+      border-radius: 36px;
+      overflow: hidden;
+      background: #000;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* The active placement stage inside the phone */
+    .stage-canvas {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-size: cover;
+      background-position: center;
+    }
+    .stage-grid-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      display: none;
+      z-index: 9998;
+    }
+    /* Element On Stage */
+    .stage-item {
+      position: absolute;
+      cursor: move;
+      transform-origin: center center;
+      touch-action: none;
+    }
+    .stage-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      display: block;
+    }
+    .stage-item.selected {
+      outline: 2px solid var(--accent-gold);
+      outline-offset: 1px;
+    }
+    /* Transform Handles */
+    .handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--accent-gold);
+      border: 1px solid #fff;
+      border-radius: 2px;
+      z-index: 10;
+    }
+    .handle-tl { top: -5px; left: -5px; cursor: nwse-resize; }
+    .handle-tr { top: -5px; right: -5px; cursor: nesw-resize; }
+    .handle-bl { bottom: -5px; left: -5px; cursor: nesw-resize; }
+    .handle-br { bottom: -5px; right: -5px; cursor: nwse-resize; }
+    .handle-t  { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .handle-b  { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .handle-l  { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
+    .handle-r  { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
+    /* Rotate Handle */
+    .handle-rot {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      background: #38bdf8;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      cursor: crosshair;
+    }
+    .handle-rot-line {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 16px;
+      background: #38bdf8;
+    }
+
+    /* Floating Viewport Controls on bottom left */
+    .canvas-hud {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(24, 29, 40, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-sub);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    /* Right Sidebar */
+    .sidebar {
+      width: 440px;
+      background: var(--bg-panel);
+      border-left: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+    }
+    /* Tab Buttons */
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      background: #141720;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 6px;
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+      border-bottom: 2px solid transparent;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .tab-btn.active {
+      color: var(--accent-gold-light);
+      border-bottom-color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.08);
+    }
+    .tab-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: none;
+    }
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Search and Filter Chips in Asset Library */
+    .filter-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .chip {
+      padding: 4px 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text-sub);
+      transition: all 0.15s ease;
+    }
+    .chip:hover, .chip.active {
+      background: var(--accent-gold);
+      border-color: var(--accent-gold);
+      color: #1a0a03;
+      font-weight: 800;
+    }
+    .search-box {
+      width: 100%;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    /* Asset Grid in Tab 1 */
+    .asset-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .asset-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .asset-card:hover {
+      border-color: #64748b;
+      transform: translateY(-1px);
+    }
+    .asset-thumb-box {
+      width: 80px;
+      height: 80px;
+      background: #0f172a;
+      background-image: 
+        linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+        linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: zoom-in;
+    }
+    .asset-thumb-box img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+    .asset-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .asset-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .asset-usage {
+      font-size: 11px;
+      color: var(--accent-gold-light);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .asset-desc {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+    .asset-meta {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .asset-add-btn {
+      padding: 6px 12px;
+      background: #3b82f6;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .asset-add-btn:hover {
+      background: #2563eb;
+    }
+
+    /* Property Inspector (Tab 2) */
+    .prop-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .prop-group-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--accent-gold-light);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .prop-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    .prop-row label {
+      color: var(--text-sub);
+      width: 70px;
+    }
+    .prop-row .inputs {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .prop-row input[type="number"], .prop-row input[type="text"] {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      padding: 4px 8px;
+      font-size: 12px;
+      text-align: right;
+    }
+    .prop-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent-gold);
+    }
+    .layer-action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    /* Layer Manager (Tab 3) */
+    .layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .layer-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .layer-item:hover {
+      background: var(--bg-hover);
+    }
+    .layer-item.active {
+      border-color: var(--accent-gold);
+      background: rgba(245, 158, 11, 0.12);
+    }
+    .layer-item img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: #000;
+    }
+    .layer-title {
+      flex: 1;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .layer-icons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 12px;
+    }
+    .icon-btn:hover {
+      color: #fff;
+    }
+
+    /* Export Code Panel (Tab 4) */
+    .code-preview {
+      width: 100%;
+      height: 200px;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #a5f3fc;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 10px;
+      overflow: auto;
+      white-space: pre;
+      user-select: text;
+    }
+
+    /* Image Preview Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: var(--bg-panel);
+      border: 2px solid var(--accent-gold);
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+    }
+    .modal-img-container {
+      max-height: 400px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      padding: 20px;
+    }
+    .modal-img-container img {
+      max-width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Header Toolbar -->
+  <header>
+    <div class="brand">
+      <span>🥚 무한의 계란</span>
+      <span class="badge">UI 비주얼 스튜디오 & 레이아웃 편집기</span>
+    </div>
+
+    <!-- Center Screen Presets -->
+    <div class="toolbar-actions">
+      <span style="font-size: 12px; color: var(--text-sub); font-weight: 600;">배경 원화 가이드:</span>
+      <select id="bgSelect" class="select-input" onchange="changeBackground(this.value)">
+        <option value="screen_home">🏠 홈 / 로비 (screen_home.png)</option>
+        <option value="screen_shop">🏪 상점 / 부화 (screen_shop.png)</option>
+        <option value="screen_skin">🥚 스킨 / 보관함 (screen_skin.png)</option>
+        <option value="screen_mission">📜 미션 / 일과표 (screen_mission.png)</option>
+        <option value="screen_challenge">⚔️ 원정 챌린지 (screen_challenge.png)</option>
+        <option value="none">⬜ 빈 캔버스 (투명/블랙)</option>
+      </select>
+
+      <span style="font-size: 12px; color: var(--text-sub); font-weight: 600; margin-left: 8px;">원화 투명도:</span>
+      <input type="range" id="bgOpacity" min="0" max="100" value="100" style="width: 70px;" oninput="updateBgOpacity(this.value)">
+      <span id="bgOpacityVal" style="font-size: 11px; width: 30px;">100%</span>
+
+      <label style="font-size: 12px; display: flex; align-items: center; gap: 4px; cursor: pointer; margin-left: 8px;">
+        <input type="checkbox" id="gridToggle" onchange="toggleGrid(this.checked)"> 그리드
+      </label>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="toolbar-actions">
+      <button class="btn btn-danger" onclick="resetCanvas()">🗑️ 전체 초기화</button>
+      <button class="btn btn-success" onclick="saveToLocalStorage()">💾 로컬 저장</button>
+      <button class="btn" onclick="switchSidebarTab('tab-export')">📤 코드/JSON 생성</button>
+    </div>
+  </header>
+
+  <!-- 2. Main Workspace -->
+  <div class="workspace">
+    <!-- Left Canvas Viewport -->
+    <div class="canvas-viewport" id="viewportArea">
+      <div class="phone-container" id="phoneContainer">
+        <!-- Stage Canvas -->
+        <div class="stage-canvas" id="stageCanvas">
+          <div class="stage-grid-overlay" id="gridOverlay"></div>
+          <!-- Elements dynamically added here -->
+        </div>
+      </div>
+
+      <!-- Canvas Bottom Floating HUD -->
+      <div class="canvas-hud">
+        <span>스케일:</span>
+        <button class="icon-btn" onclick="adjustZoom(-0.1)">➖</button>
+        <span id="zoomLevelText" style="font-weight: 700; color: #fff;">100%</span>
+        <button class="icon-btn" onclick="adjustZoom(0.1)">➕</button>
+        <button class="icon-btn" onclick="resetZoom()" title="기본 크기">1:1</button>
+        <span style="margin: 0 4px; color: #475569;">|</span>
+        <span id="hudCoords">선택된 요소 없음</span>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" onclick="switchSidebarTab('tab-library')">📦 에셋 보관함</button>
+        <button class="tab-btn" onclick="switchSidebarTab('tab-inspector')">⚙️ 속성 편집기</button>
+        <button class="tab-btn" onclick="switchSidebarTab('tab-layers')">📑 레이어</button>
+        <button class="tab-btn" onclick="switchSidebarTab('tab-export')">💾 내보내기</button>
+      </div>
+
+      <!-- Tab 1: Asset Library -->
+      <div class="tab-panel active" id="tab-library">
+        <!-- Search & Filter -->
+        <div class="search-box">
+          <input type="text" id="assetSearchInput" placeholder="🔍 에셋 이름 또는 사용처 검색..." oninput="filterAssets()">
+        </div>
+        <div class="filter-chips" id="filterChips">
+          <div class="chip active" onclick="setAssetCategory('ALL', this)">전체 (<span id="count-ALL">0</span>)</div>
+          <div class="chip" onclick="setAssetCategory('HOME', this)">홈/로비</div>
+          <div class="chip" onclick="setAssetCategory('SHOP', this)">상점</div>
+          <div class="chip" onclick="setAssetCategory('SKIN', this)">스킨</div>
+          <div class="chip" onclick="setAssetCategory('EGG', this)">3D 달걀</div>
+          <div class="chip" onclick="setAssetCategory('MISSION', this)">미션</div>
+          <div class="chip" onclick="setAssetCategory('CHALLENGE', this)">도전</div>
+          <div class="chip" onclick="setAssetCategory('COMMON', this)">공통 헤더/독</div>
+          <div class="chip" onclick="setAssetCategory('UI', this)">버튼/패널</div>
+          <div class="chip" onclick="setAssetCategory('INGAME', this)">인게임 주행</div>
+        </div>
+
+        <!-- Asset Grid -->
+        <div class="asset-grid" id="assetListContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Tab 2: Property Inspector -->
+      <div class="tab-panel" id="tab-inspector">
+        <div id="inspectorEmptyMsg" style="text-align: center; color: var(--text-sub); margin-top: 40px; font-size: 13px;">
+          캔버스에서 요소를 클릭하여 선택하면<br>위치, 크기, 회전, 레이어를 정밀 조절할 수 있습니다.
+        </div>
+
+        <div id="inspectorContent" style="display: none;">
+          <div class="prop-group">
+            <div class="prop-group-title">
+              <span id="inspectItemName">선택된 요소</span>
+              <span id="inspectItemId" style="font-size: 10px; color: #64748b;">ID</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 6px;">
+              <div class="asset-thumb-box" style="width: 60px; height: 60px;">
+                <img id="inspectItemThumb" src="" alt="">
+              </div>
+              <div style="font-size: 11px; color: var(--text-sub);">
+                <div id="inspectItemUsage" style="color: var(--accent-gold-light); font-weight: 700;"></div>
+                <div id="inspectItemDesc" style="margin-top: 2px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Position & Size -->
+          <div class="prop-group">
+            <div class="prop-group-title">📐 위치 & 크기 (Position & Size)</div>
+            <div class="prop-row">
+              <label>X 위치</label>
+              <div class="inputs">
+                <input type="number" id="propX" oninput="updateCurrentItemProp('x', this.value)">
+                <span style="font-size: 11px; color: #64748b;">px</span>
+                <span id="propXPct" style="font-size: 11px; color: var(--accent-gold); width: 45px; text-align: right;">0%</span>
+              </div>
+            </div>
+            <div class="prop-row">
+              <label>Y 위치</label>
+              <div class="inputs">
+                <input type="number" id="propY" oninput="updateCurrentItemProp('y', this.value)">
+                <span style="font-size: 11px; color: #64748b;">px</span>
+                <span id="propYPct" style="font-size: 11px; color: var(--accent-gold); width: 45px; text-align: right;">0%</span>
+              </div>
+            </div>
+            <div class="prop-row">
+              <label>너비 (W)</label>
+              <div class="inputs">
+                <input type="number" id="propW" oninput="updateCurrentItemProp('width', this.value)">
+                <span style="font-size: 11px; color: #64748b;">px</span>
+                <span id="propWPct" style="font-size: 11px; color: var(--accent-gold); width: 45px; text-align: right;">0%</span>
+              </div>
+            </div>
+            <div class="prop-row">
+              <label>높이 (H)</label>
+              <div class="inputs">
+                <input type="number" id="propH" oninput="updateCurrentItemProp('height', this.value)">
+                <span style="font-size: 11px; color: #64748b;">px</span>
+                <span id="propHPct" style="font-size: 11px; color: var(--accent-gold); width: 45px; text-align: right;">0%</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-top: 8px;">
+              <button class="btn" style="flex: 1;" onclick="centerElementHorizontally()">↔️ 가로 중앙</button>
+              <button class="btn" style="flex: 1;" onclick="centerElementVertically()">↕️ 세로 중앙</button>
+              <button class="btn" style="flex: 1;" onclick="resetElementSize()">🔄 원본 크기</button>
+            </div>
+          </div>
+
+          <!-- Transform & Style -->
+          <div class="prop-group">
+            <div class="prop-group-title">🔄 회전 & 투명도 (Transform & Style)</div>
+            <div class="prop-row">
+              <label>회전 각도</label>
+              <div class="inputs">
+                <input type="range" id="propRotSlider" min="-180" max="180" value="0" oninput="updateCurrentItemProp('rotate', this.value)">
+                <input type="number" id="propRot" style="width: 55px;" min="-180" max="180" value="0" oninput="updateCurrentItemProp('rotate', this.value)">
+                <span style="font-size: 11px; color: #64748b;">deg</span>
+              </div>
+            </div>
+            <div class="prop-row">
+              <label>투명도</label>
+              <div class="inputs">
+                <input type="range" id="propOpacitySlider" min="0" max="100" value="100" oninput="updateCurrentItemProp('opacity', this.value / 100)">
+                <span id="propOpacityText" style="font-size: 11px; width: 40px; text-align: right;">100%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer Order -->
+          <div class="prop-group">
+            <div class="prop-group-title">📑 레이어 순서 (Z-Index)</div>
+            <div class="layer-action-grid">
+              <button class="btn" onclick="moveLayer('top')">⏫ 맨 위로 (Front)</button>
+              <button class="btn" onclick="moveLayer('up')">🔼 한 단계 위로</button>
+              <button class="btn" onclick="moveLayer('down')">🔽 한 단계 아래로</button>
+              <button class="btn" onclick="moveLayer('bottom')">⏬ 맨 아래로 (Back)</button>
+            </div>
+          </div>
+
+          <!-- Delete / Duplicate -->
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button class="btn btn-primary" style="flex: 1;" onclick="duplicateCurrentElement()">📑 요소 복제</button>
+            <button class="btn btn-danger" style="flex: 1;" onclick="deleteCurrentElement()">🗑️ 요소 삭제</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Layer Tree -->
+      <div class="tab-panel" id="tab-layers">
+        <div style="font-size: 12px; color: var(--text-sub); margin-bottom: 10px; display: flex; justify-content: space-between;">
+          <span>총 레이어: <b id="layerCountText" style="color: #fff;">0</b>개</span>
+          <span>(위쪽이 화면 앞면)</span>
+        </div>
+        <div class="layer-list" id="layerListContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Tab 4: Export & Output -->
+      <div class="tab-panel" id="tab-export">
+        <div class="prop-group">
+          <div class="prop-group-title">
+            <span>💻 React / Tailwind JSX 코드</span>
+            <button class="btn btn-primary" style="padding: 2px 8px; font-size: 11px;" onclick="copyReactCode()">📋 복사</button>
+          </div>
+          <textarea class="code-preview" id="reactCodePreview" readonly></textarea>
+        </div>
+
+        <div class="prop-group">
+          <div class="prop-group-title">
+            <span>📄 JSON 레이아웃 데이터</span>
+            <button class="btn btn-primary" style="padding: 2px 8px; font-size: 11px;" onclick="copyJsonData()">📋 복사</button>
+          </div>
+          <textarea class="code-preview" id="jsonPreview" readonly></textarea>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button class="btn btn-success" style="flex: 1;" onclick="downloadJsonFile()">💾 JSON 파일 다운로드</button>
+          <button class="btn" style="flex: 1;" onclick="document.getElementById('jsonFileInput').click()">📂 JSON 파일 불러오기</button>
+          <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="importJsonFile(event)">
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Zoom & Detail Modal -->
+  <div class="modal-overlay" id="zoomModal" onclick="closeZoomModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3 id="modalTitle" style="color: var(--accent-gold-light);">에셋 정밀 검사</h3>
+      <div class="modal-img-container">
+        <img id="modalImg" src="" alt="">
+      </div>
+      <p id="modalDesc" style="font-size: 12px; color: var(--text-sub); text-align: center;"></p>
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button class="btn btn-primary" style="flex: 1;" id="modalAddBtn">캔버스에 배치하기</button>
+        <button class="btn" style="width: 90px;" onclick="closeZoomModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Embedded Assets and Application Logic -->
+  <script>
+    // 1. Injected Data
+    const ASSETS = __ASSETS_JSON__;
+    const SCREENS = __SCREENS_JSON__;
+
+    // 2. Editor State
+    const STATE = {
+      stageWidth: 430,       // Standard mobile viewport width
+      stageHeight: 764,      // 9:16 mobile viewport height
+      zoom: 1.0,
+      activeBackground: 'screen_home',
+      bgOpacity: 1.0,
+      currentCategory: 'ALL',
+      selectedItemId: null,
+      items: [],             // Array of placed elements on stage
+    };
+
+    // DOM Elements
+    const phoneContainer = document.getElementById('phoneContainer');
+    const stageCanvas = document.getElementById('stageCanvas');
+    const assetListContainer = document.getElementById('assetListContainer');
+    const layerListContainer = document.getElementById('layerListContainer');
+    const gridOverlay = document.getElementById('gridOverlay');
+
+    // Initialize Editor
+    function initEditor() {
+      updateStageDimensions();
+      renderAssetLibrary();
+      changeBackground('screen_home');
+      loadFromLocalStorage();
+      updateExportCode();
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    function updateStageDimensions() {
+      phoneContainer.style.width = STATE.stageWidth + 'px';
+      phoneContainer.style.height = STATE.stageHeight + 'px';
+      phoneContainer.style.transform = 'scale(' + STATE.zoom + ')';
+    }
+
+    function adjustZoom(delta) {
+      STATE.zoom = Math.max(0.4, Math.min(2.0, Math.round((STATE.zoom + delta) * 10) / 10));
+      phoneContainer.style.transform = 'scale(' + STATE.zoom + ')';
+      document.getElementById('zoomLevelText').textContent = Math.round(STATE.zoom * 100) + '%';
+    }
+
+    function resetZoom() {
+      STATE.zoom = 1.0;
+      phoneContainer.style.transform = 'scale(1)';
+      document.getElementById('zoomLevelText').textContent = '100%';
+    }
+
+    function toggleGrid(show) {
+      gridOverlay.style.display = show ? 'block' : 'none';
+    }
+
+    function changeBackground(screenId) {
+      STATE.activeBackground = screenId;
+      if (screenId === 'none') {
+        stageCanvas.style.backgroundImage = 'none';
+        stageCanvas.style.backgroundColor = '#1a0a03';
+      } else {
+        const scr = SCREENS.find(s => s.id === screenId);
+        if (scr) {
+          stageCanvas.style.backgroundImage = 'url("' + scr.dataUri + '")';
+        }
+      }
+    }
+
+    function updateBgOpacity(val) {
+      STATE.bgOpacity = val / 100;
+      document.getElementById('bgOpacityVal').textContent = val + '%';
+      stageCanvas.style.filter = 'brightness(' + STATE.bgOpacity + ')';
+    }
+
+    // Render Asset Library
+    function renderAssetLibrary() {
+      assetListContainer.innerHTML = '';
+      const filter = STATE.currentCategory;
+      const query = (document.getElementById('assetSearchInput')?.value || '').toLowerCase().trim();
+
+      let visibleCount = 0;
+
+      ASSETS.forEach(asset => {
+        if (filter !== 'ALL' && asset.category !== filter) return;
+        if (query && !asset.name.toLowerCase().includes(query) && !asset.usage.toLowerCase().includes(query)) return;
+
+        visibleCount++;
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        card.innerHTML = `
+          <div class="asset-thumb-box" onclick="openZoomModal('${asset.id}')">
+            <img src="${asset.dataUri}" alt="${asset.name}">
+          </div>
+          <div class="asset-info">
+            <div class="asset-title">
+              <span>${asset.name}</span>
+            </div>
+            <div class="asset-usage">📍 ${asset.usage}</div>
+            <div class="asset-desc">${asset.desc}</div>
+            <div class="asset-meta">규격: ${asset.width} x ${asset.height} px</div>
+          </div>
+          <button class="asset-add-btn" onclick="addElementToCanvas('${asset.id}')">+ 추가</button>
+        `;
+        assetListContainer.appendChild(card);
+      });
+
+      document.getElementById('count-ALL').textContent = ASSETS.length;
+    }
+
+    function setAssetCategory(cat, element) {
+      STATE.currentCategory = cat;
+      document.querySelectorAll('.filter-chips .chip').forEach(c => c.classList.remove('active'));
+      element.classList.add('active');
+      renderAssetLibrary();
+    }
+
+    function filterAssets() {
+      renderAssetLibrary();
+    }
+
+    // Add Element To Stage
+    function addElementToCanvas(assetId, defaultProps = null) {
+      const asset = ASSETS.find(a => a.id === assetId);
+      if (!asset) return;
+
+      const itemUid = 'el_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      
+      let initW = asset.width;
+      let initH = asset.height;
+      if (initW > STATE.stageWidth * 0.8) {
+        const ratio = (STATE.stageWidth * 0.8) / initW;
+        initW = Math.round(initW * ratio);
+        initH = Math.round(initH * ratio);
+      }
+
+      const item = {
+        uid: itemUid,
+        assetId: asset.id,
+        name: asset.name,
+        x: defaultProps?.x ?? Math.round((STATE.stageWidth - initW) / 2),
+        y: defaultProps?.y ?? Math.round((STATE.stageHeight - initH) / 2),
+        width: defaultProps?.width ?? initW,
+        height: defaultProps?.height ?? initH,
+        rotate: defaultProps?.rotate ?? 0,
+        opacity: defaultProps?.opacity ?? 1,
+        zIndex: STATE.items.length + 1,
+        locked: false,
+        visible: true,
+      };
+
+      STATE.items.push(item);
+      renderItemDOM(item);
+      selectItem(item.uid);
+      renderLayersList();
+      updateExportCode();
+    }
+
+    // Render DOM for an Item
+    function renderItemDOM(item) {
+      const asset = ASSETS.find(a => a.id === item.assetId);
+      if (!asset) return;
+
+      const el = document.createElement('div');
+      el.id = item.uid;
+      el.className = 'stage-item';
+      el.style.left = item.x + 'px';
+      el.style.top = item.y + 'px';
+      el.style.width = item.width + 'px';
+      el.style.height = item.height + 'px';
+      el.style.zIndex = item.zIndex;
+      el.style.transform = 'rotate(' + item.rotate + 'deg)';
+      el.style.opacity = item.opacity;
+      el.style.display = item.visible ? 'block' : 'none';
+
+      el.innerHTML = `<img src="${asset.dataUri}" alt="${item.name}">`;
+
+      el.addEventListener('mousedown', (e) => onElementMouseDown(e, item.uid));
+      stageCanvas.appendChild(el);
+    }
+
+    function selectItem(uid) {
+      if (STATE.selectedItemId === uid) return;
+
+      if (STATE.selectedItemId) {
+        const oldEl = document.getElementById(STATE.selectedItemId);
+        if (oldEl) {
+          oldEl.classList.remove('selected');
+          removeHandles(oldEl);
+        }}
+
+      STATE.selectedItemId = uid;
+      const item = STATE.items.find(i => i.uid === uid);
+
+      if (!item) {
+        document.getElementById('inspectorEmptyMsg').style.display = 'block';
+        document.getElementById('inspectorContent').style.display = 'none';
+        document.getElementById('hudCoords').textContent = '선택된 요소 없음';
+        renderLayersList();
+        return;
+      }
+
+      const el = document.getElementById(uid);
+      if (el) {
+        el.classList.add('selected');
+        attachHandles(el, item);
+      }
+
+      document.getElementById('inspectorEmptyMsg').style.display = 'none';
+      document.getElementById('inspectorContent').style.display = 'block';
+
+      const asset = ASSETS.find(a => a.id === item.assetId);
+      document.getElementById('inspectItemName').textContent = item.name;
+      document.getElementById('inspectItemId').textContent = item.assetId;
+      document.getElementById('inspectItemUsage').textContent = asset?.usage || '';
+      document.getElementById('inspectItemDesc').textContent = asset?.desc || '';
+      document.getElementById('inspectItemThumb').src = asset?.dataUri || '';
+
+      updateInspectorInputs(item);
+      renderLayersList();
+    }
+
+    function updateInspectorInputs(item) {
+      document.getElementById('propX').value = Math.round(item.x);
+      document.getElementById('propY').value = Math.round(item.y);
+      document.getElementById('propW').value = Math.round(item.width);
+      document.getElementById('propH').value = Math.round(item.height);
+      document.getElementById('propRotSlider').value = item.rotate;
+      document.getElementById('propRot').value = item.rotate;
+      document.getElementById('propOpacitySlider').value = Math.round(item.opacity * 100);
+      document.getElementById('propOpacityText').textContent = Math.round(item.opacity * 100) + '%';
+
+      const xPct = ((item.x / STATE.stageWidth) * 100).toFixed(1);
+      const yPct = ((item.y / STATE.stageHeight) * 100).toFixed(1);
+      const wPct = ((item.width / STATE.stageWidth) * 100).toFixed(1);
+      const hPct = ((item.height / STATE.stageHeight) * 100).toFixed(1);
+
+      document.getElementById('propXPct').textContent = xPct + '%';
+      document.getElementById('propYPct').textContent = yPct + '%';
+      document.getElementById('propWPct').textContent = wPct + '%';
+      document.getElementById('propHPct').textContent = hPct + '%';
+
+      document.getElementById('hudCoords').textContent = 'X: ' + Math.round(item.x) + 'px (' + xPct + '%), Y: ' + Math.round(item.y) + 'px (' + yPct + '%) | W: ' + Math.round(item.width) + 'px (' + wPct + '%), H: ' + Math.round(item.height) + 'px (' + hPct + '%)';
+    }
+
+    function attachHandles(el, item) {
+      removeHandles(el);
+      const handlesHtml = `
+        <div class="handle handle-tl" onmousedown="onHandleMouseDown(event, 'tl', '${item.uid}')"></div>
+        <div class="handle handle-tr" onmousedown="onHandleMouseDown(event, 'tr', '${item.uid}')"></div>
+        <div class="handle handle-bl" onmousedown="onHandleMouseDown(event, 'bl', '${item.uid}')"></div>
+        <div class="handle handle-br" onmousedown="onHandleMouseDown(event, 'br', '${item.uid}')"></div>
+        <div class="handle handle-t"  onmousedown="onHandleMouseDown(event, 't', '${item.uid}')"></div>
+        <div class="handle handle-b"  onmousedown="onHandleMouseDown(event, 'b', '${item.uid}')"></div>
+        <div class="handle handle-l"  onmousedown="onHandleMouseDown(event, 'l', '${item.uid}')"></div>
+        <div class="handle handle-r"  onmousedown="onHandleMouseDown(event, 'r', '${item.uid}')"></div>
+        <div class="handle-rot-line"></div>
+        <div class="handle-rot" onmousedown="onRotateMouseDown(event, '${item.uid}')"></div>
+      `;
+      el.insertAdjacentHTML('beforeend', handlesHtml);
+    }
+
+    function removeHandles(el) {
+      el.querySelectorAll('.handle, .handle-rot, .handle-rot-line').forEach(h => h.remove());
+    }
+
+    // Drag Movement Handler
+    function onElementMouseDown(e, uid) {
+      if (e.target.classList.contains('handle') || e.target.classList.contains('handle-rot')) return;
+      e.stopPropagation();
+      selectItem(uid);
+
+      const item = STATE.items.find(i => i.uid === uid);
+      if (!item || item.locked) return;
+
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startX = item.x;
+      const startY = item.y;
+
+      function onMouseMove(moveEv) {
+        const dx = (moveEv.clientX - startMouseX) / STATE.zoom;
+        const dy = (moveEv.clientY - startMouseY) / STATE.zoom;
+
+        item.x = Math.round(startX + dx);
+        item.y = Math.round(startY + dy);
+
+        const el = document.getElementById(uid);
+        if (el) {
+          el.style.left = item.x + 'px';
+          el.style.top = item.y + 'px';
+        }
+        updateInspectorInputs(item);
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        updateExportCode();
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // Resize Handle Handler
+    function onHandleMouseDown(e, handleType, uid) {
+      e.stopPropagation();
+      const item = STATE.items.find(i => i.uid === uid);
+      if (!item) return;
+
+      const startMouseX = e.clientX;
+      const startMouseY = e.clientY;
+      const startX = item.x;
+      const startY = item.y;
+      const startW = item.width;
+      const startH = item.height;
+
+      function onMouseMove(moveEv) {
+        const dx = (moveEv.clientX - startMouseX) / STATE.zoom;
+        const dy = (moveEv.clientY - startMouseY) / STATE.zoom;
+
+        if (handleType === 'br') {
+          item.width = Math.max(10, Math.round(startW + dx));
+          item.height = Math.max(10, Math.round(startH + dy));
+        } else if (handleType === 'bl') {
+          const newW = Math.max(10, Math.round(startW - dx));
+          item.x = Math.round(startX + (startW - newW));
+          item.width = newW;
+          item.height = Math.max(10, Math.round(startH + dy));
+        } else if (handleType === 'tr') {
+          item.width = Math.max(10, Math.round(startW + dx));
+          const newH = Math.max(10, Math.round(startH - dy));
+          item.y = Math.round(startY + (startH - newH));
+          item.height = newH;
+        } else if (handleType === 'tl') {
+          const newW = Math.max(10, Math.round(startW - dx));
+          const newH = Math.max(10, Math.round(startH - dy));
+          item.x = Math.round(startX + (startW - newW));
+          item.y = Math.round(startY + (startH - newH));
+          item.width = newW;
+          item.height = newH;
+        } else if (handleType === 'r') {
+          item.width = Math.max(10, Math.round(startW + dx));
+        } else if (handleType === 'l') {
+          const newW = Math.max(10, Math.round(startW - dx));
+          item.x = Math.round(startX + (startW - newW));
+          item.width = newW;
+        } else if (handleType === 'b') {
+          item.height = Math.max(10, Math.round(startH + dy));
+        } else if (handleType === 't') {
+          const newH = Math.max(10, Math.round(startH - dy));
+          item.y = Math.round(startY + (startH - newH));
+          item.height = newH;
+        }
+
+        const el = document.getElementById(uid);
+        if (el) {
+          el.style.left = item.x + 'px';
+          el.style.top = item.y + 'px';
+          el.style.width = item.width + 'px';
+          el.style.height = item.height + 'px';
+        }
+        updateInspectorInputs(item);
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        updateExportCode();
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    // Rotation Handle Handler
+    function onRotateMouseDown(e, uid) {
+      e.stopPropagation();
+      const item = STATE.items.find(i => i.uid === uid);
+      if (!item) return;
+
+      const el = document.getElementById(uid);
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      function onMouseMove(moveEv) {
+        const radians = Math.atan2(moveEv.clientY - centerY, moveEv.clientX - centerX);
+        let degrees = Math.round(radians * (180 / Math.PI)) + 90;
+        if (degrees > 180) degrees -= 360;
+        item.rotate = degrees;
+        el.style.transform = 'rotate(' + item.rotate + 'deg)';
+        updateInspectorInputs(item);
+      }
+
+      function onMouseUp() {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        updateExportCode();
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function updateCurrentItemProp(prop, value) {
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      if (!item) return;
+
+      item[prop] = parseFloat(value) || 0;
+      const el = document.getElementById(item.uid);
+      if (el) {
+        el.style.left = item.x + 'px';
+        el.style.top = item.y + 'px';
+        el.style.width = item.width + 'px';
+        el.style.height = item.height + 'px';
+        el.style.transform = 'rotate(' + item.rotate + 'deg)';
+        el.style.opacity = item.opacity;
+      }
+      updateInspectorInputs(item);
+      updateExportCode();
+    }
+
+    function moveLayer(dir) {
+      if (!STATE.selectedItemId) return;
+      const idx = STATE.items.findIndex(i => i.uid === STATE.selectedItemId);
+      if (idx === -1) return;
+
+      const item = STATE.items.splice(idx, 1)[0];
+      if (dir === 'top') {
+        STATE.items.push(item);
+      } else if (dir === 'bottom') {
+        STATE.items.unshift(item);
+      } else if (dir === 'up') {
+        STATE.items.splice(Math.min(STATE.items.length, idx + 1), 0, item);
+      } else if (dir === 'down') {
+        STATE.items.splice(Math.max(0, idx - 1), 0, item);
+      }
+
+      STATE.items.forEach((it, i) => {
+        it.zIndex = i + 1;
+        const el = document.getElementById(it.uid);
+        if (el) el.style.zIndex = it.zIndex;
+      });
+
+      renderLayersList();
+      updateExportCode();
+    }
+
+    function duplicateCurrentElement() {
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      if (!item) return;
+
+      addElementToCanvas(item.assetId, {
+        x: item.x + 20,
+        y: item.y + 20,
+        width: item.width,
+        height: item.height,
+        rotate: item.rotate,
+        opacity: item.opacity
+      });
+    }
+
+    function deleteCurrentElement() {
+      if (!STATE.selectedItemId) return;
+      const uid = STATE.selectedItemId;
+      const idx = STATE.items.findIndex(i => i.uid === uid);
+      if (idx !== -1) {
+        STATE.items.splice(idx, 1);
+        const el = document.getElementById(uid);
+        if (el) el.remove();
+        selectItem(null);
+        renderLayersList();
+        updateExportCode();
+      }
+    }
+
+    function centerElementHorizontally() {
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      if (item) {
+        item.x = Math.round((STATE.stageWidth - item.width) / 2);
+        const el = document.getElementById(item.uid);
+        if (el) el.style.left = item.x + 'px';
+        updateInspectorInputs(item);
+        updateExportCode();
+      }
+    }
+
+    function centerElementVertically() {
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      if (item) {
+        item.y = Math.round((STATE.stageHeight - item.height) / 2);
+        const el = document.getElementById(item.uid);
+        if (el) el.style.top = item.y + 'px';
+        updateInspectorInputs(item);
+        updateExportCode();
+      }
+    }
+
+    function resetElementSize() {
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      const asset = ASSETS.find(a => a.id === item.assetId);
+      if (item && asset) {
+        item.width = asset.width;
+        item.height = asset.height;
+        const el = document.getElementById(item.uid);
+        if (el) {
+          el.style.width = item.width + 'px';
+          el.style.height = item.height + 'px';
+        }
+        updateInspectorInputs(item);
+        updateExportCode();
+      }
+    }
+
+    function renderLayersList() {
+      layerListContainer.innerHTML = '';
+      document.getElementById('layerCountText').textContent = STATE.items.length;
+
+      const reversed = [...STATE.items].reverse();
+
+      reversed.forEach(item => {
+        const asset = ASSETS.find(a => a.id === item.assetId);
+        const div = document.createElement('div');
+        div.className = 'layer-item' + (item.uid === STATE.selectedItemId ? ' active' : '');
+        div.innerHTML = `
+          <img src="${asset?.dataUri || ''}" alt="">
+          <span class="layer-title">${item.name}</span>
+          <div class="layer-icons">
+            <button class="icon-btn" onclick="toggleLayerVisibility('${item.uid}', event)">${item.visible ? '👁️' : '🕶️'}</button>
+            <button class="icon-btn" onclick="deleteLayerItem('${item.uid}', event)">🗑️</button>
+          </div>
+        `;
+        div.onclick = () => selectItem(item.uid);
+        layerListContainer.appendChild(div);
+      });
+    }
+
+    function toggleLayerVisibility(uid, e) {
+      e.stopPropagation();
+      const item = STATE.items.find(i => i.uid === uid);
+      if (item) {
+        item.visible = !item.visible;
+        const el = document.getElementById(uid);
+        if (el) el.style.display = item.visible ? 'block' : 'none';
+        renderLayersList();
+        updateExportCode();
+      }
+    }
+
+    function deleteLayerItem(uid, e) {
+      e.stopPropagation();
+      selectItem(uid);
+      deleteCurrentElement();
+    }
+
+    function updateExportCode() {
+      const jsonArr = STATE.items.map(item => ({
+        assetId: item.assetId,
+        name: item.name,
+        x: Math.round(item.x),
+        y: Math.round(item.y),
+        xPct: ((item.x / STATE.stageWidth) * 100).toFixed(2) + '%',
+        yPct: ((item.y / STATE.stageHeight) * 100).toFixed(2) + '%',
+        width: Math.round(item.width),
+        height: Math.round(item.height),
+        widthPct: ((item.width / STATE.stageWidth) * 100).toFixed(2) + '%',
+        heightPct: ((item.height / STATE.stageHeight) * 100).toFixed(2) + '%',
+        rotate: item.rotate,
+        opacity: item.opacity,
+        zIndex: item.zIndex,
+      }));
+
+      const jsonStr = JSON.stringify(jsonArr, null, 2);
+      document.getElementById('jsonPreview').value = jsonStr;
+
+      let reactJsx = `// 무한의 계란 - UI 비주얼 레이아웃 스튜디오 자동 생성 코드\n`;
+      reactJsx += `<div className="relative w-full h-full select-none">\n`;
+      STATE.items.forEach(item => {
+        const leftPct = ((item.x / STATE.stageWidth) * 100).toFixed(2);
+        const topPct = ((item.y / STATE.stageHeight) * 100).toFixed(2);
+        const widthPct = ((item.width / STATE.stageWidth) * 100).toFixed(2);
+        const heightPct = ((item.height / STATE.stageHeight) * 100).toFixed(2);
+
+        let styleStr = `left: '${leftPct}%', top: '${topPct}%', width: '${widthPct}%', height: '${heightPct}%', zIndex: ${item.zIndex}`;
+        if (item.rotate !== 0) {
+          styleStr += `, transform: 'rotate(${item.rotate}deg)'`;
+        }
+        if (item.opacity !== 1) {
+          styleStr += `, opacity: ${item.opacity}`;
+        }
+
+        reactJsx += `  {/* ${item.name} */}\n`;
+        reactJsx += `  <div\n`;
+        reactJsx += `    style={{ ${styleStr} }}\n`;
+        reactJsx += `    className="absolute pointer-events-auto cursor-pointer active:scale-95 transition-transform"\n`;
+        reactJsx += `    title="${item.name}"\n`;
+        reactJsx += `  >\n`;
+        reactJsx += `    <img src={getUIAsset('${item.assetId}')} alt="${item.name}" className="w-full h-full object-fill pointer-events-none" />\n`;
+        reactJsx += `  </div>\n\n`;
+      });
+      reactJsx += `</div>\n`;
+
+      document.getElementById('reactCodePreview').value = reactJsx;
+    }
+
+    function copyReactCode() {
+      const code = document.getElementById('reactCodePreview').value;
+      navigator.clipboard.writeText(code).then(() => alert('React JSX 코드가 클립보드에 복사되었습니다!'));
+    }
+
+    function copyJsonData() {
+      const json = document.getElementById('jsonPreview').value;
+      navigator.clipboard.writeText(json).then(() => alert('JSON 데이터가 클립보드에 복사되었습니다!'));
+    }
+
+    function downloadJsonFile() {
+      const json = document.getElementById('jsonPreview').value;
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'infinite_egg_layout_' + STATE.activeBackground + '.json';
+      a.click();
+    }
+
+    function importJsonFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if (Array.isArray(data)) {
+            resetCanvas();
+            data.forEach(item => {
+              addElementToCanvas(item.assetId, {
+                x: item.x,
+                y: item.y,
+                width: item.width,
+                height: item.height,
+                rotate: item.rotate || 0,
+                opacity: item.opacity ?? 1,
+              });
+            });
+            alert('JSON 레이아웃을 성공적으로 불러왔습니다!');
+          }
+        } catch(err) {
+          alert('JSON 파싱 오류: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('inf_egg_editor_layout', document.getElementById('jsonPreview').value);
+      localStorage.setItem('inf_egg_editor_bg', STATE.activeBackground);
+      alert('현재 레이아웃이 브라우저 로컬스토리지에 저장되었습니다!');
+    }
+
+    function loadFromLocalStorage() {
+      const savedBg = localStorage.getItem('inf_egg_editor_bg');
+      if (savedBg) {
+        document.getElementById('bgSelect').value = savedBg;
+        changeBackground(savedBg);
+      }
+      const saved = localStorage.getItem('inf_egg_editor_layout');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (Array.isArray(data)) {
+            data.forEach(item => {
+              addElementToCanvas(item.assetId, {
+                x: item.x,
+                y: item.y,
+                width: item.width,
+                height: item.height,
+                rotate: item.rotate || 0,
+                opacity: item.opacity ?? 1,
+              });
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    function resetCanvas() {
+      if (confirm('캔버스의 모든 요소를 지우시겠습니까?')) {
+        STATE.items = [];
+        stageCanvas.querySelectorAll('.stage-item').forEach(el => el.remove());
+        selectItem(null);
+        renderLayersList();
+        updateExportCode();
+      }
+    }
+
+    function openZoomModal(assetId) {
+      const asset = ASSETS.find(a => a.id === assetId);
+      if (!asset) return;
+      document.getElementById('modalTitle').textContent = asset.name;
+      document.getElementById('modalImg').src = asset.dataUri;
+      document.getElementById('modalDesc').innerHTML = '<b>사용처:</b> ' + asset.usage + '<br>' + asset.desc + '<br><span style="color:#64748b;">규격: ' + asset.width + ' x ' + asset.height + ' px</span>';
+      document.getElementById('modalAddBtn').onclick = () => {
+        addElementToCanvas(asset.id);
+        closeZoomModal();
+      };
+      document.getElementById('zoomModal').style.display = 'flex';
+    }
+
+    function closeZoomModal() {
+      document.getElementById('zoomModal').style.display = 'none';
+    }
+
+    function switchSidebarTab(tabId) {
+      document.querySelectorAll('.sidebar-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      event?.target?.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function handleKeyDown(e) {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+
+      if (!STATE.selectedItemId) return;
+      const item = STATE.items.find(i => i.uid === STATE.selectedItemId);
+      if (!item) return;
+
+      const step = e.shiftKey ? 10 : 1;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        item.x -= step;
+        updateCurrentItemProp('x', item.x);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        item.x += step;
+        updateCurrentItemProp('x', item.x);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        item.y -= step;
+        updateCurrentItemProp('y', item.y);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        item.y += step;
+        updateCurrentItemProp('y', item.y);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteCurrentElement();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        duplicateCurrentElement();
+      }
+    }
+
+    stageCanvas.addEventListener('mousedown', (e) => {
+      if (e.target === stageCanvas || e.target === gridOverlay) {
+        selectItem(null);
+      }
+    });
+
+    window.onload = initEditor;
+  </script>
+</body>
+</html>
