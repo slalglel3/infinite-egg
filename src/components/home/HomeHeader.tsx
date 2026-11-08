@@ -3,7 +3,6 @@ import { UserProgress } from '../../types/game';
 import { Settings } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import { resetAllProgress } from '../../utils/storage';
-import { getUIAsset } from '../../assets/assetRegistry';
 
 interface HomeHeaderProps {
   progress: UserProgress;
@@ -31,8 +30,6 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     setShowSettings(false);
     alert('모든 게임 진행 상태가 성공적으로 초기화되었습니다!');
   };
-
-  const shellBoard = getUIAsset('header_shell_board');
 
   return (
     <header className="w-full h-[9%] relative z-30 select-none">

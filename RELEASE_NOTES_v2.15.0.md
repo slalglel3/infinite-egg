@@ -1,24 +1,35 @@
-# Infinite Egg v2.15.0 Release Notes
+# Release v2.15.0 - 불필요 에셋 일괄 제거 및 인터페이스 규약 경량화
 
-## 🎨 Master Contour Asset Slicing (전면 재슬라이싱 및 고해상도 투명 PNG 재구축)
+## 🌟 개요 (Overview)
+- **미사용 에셋 43종 일괄 삭제**: 게임 로직에 직접 사용되지 않는 불완전한 슬라이싱 부품(`src/assets/ui/sliced/`), 구형 플레이스홀더, 중복 목판 에셋을 전면 삭제.
+- **인터페이스 규약(`assetRegistry.ts`) 정비**: 실제 게임 로직(`HomeView`, `HUD`, `Controls`, `gameEngine`, `EggsTab`)에서 참조하는 필수 18종 에셋만 남기고 인터페이스 타입(`UIAssetKey`) 및 레지스트리 맵핑을 100% 동기화.
+- **번들 최적화**: 미사용 에셋 제거를 통해 코드베이스 및 빌드 번들의 군더더기를 완전히 해소.
 
-기존 단순 수학적 공식(`make_pill_alpha`, `make_circle_alpha`) 기반의 엉성한 크롭 에셋들을 전면 폐기하고, 마스터 원화 6종(`/mnt/d/사진/inf_egg/*.png`)의 실제 외곽선과 3D 볼륨 테두리를 정밀하게 추적하는 **OpenCV GrabCut & Contour Anti-Aliasing 파이프라인**을 통해 53종의 개별 에셋을 100% 새로 생성하였습니다.
+---
 
-### 🌟 주요 변경 사항 (Core Improvements)
+## 🧹 삭제된 에셋 목록 (43종)
+1. **슬라이싱 컴포넌트 전체 (`src/assets/ui/sliced/` 20종)**:
+   - `challenge_card_1..3.png`, `mission_card_1..3.png`, `mission_subtab_*.png`
+   - `home_btn_start.png`, `home_nest_hero.png`, `home_signpost_name.png`
+   - `shop_btn_hatch_1.png`, `shop_btn_hatch_10.png`, `shop_card_*.png`, `skin_btn_equip.png`
+2. **구형 UI 목판 및 탭 (`src/assets/ui/` 16종)**:
+   - `header_profile_board.png`, `header_shell_board.png`, `header_wheat_board.png`, `btn_settings_cog.png`
+   - `dock_wood_plank.png`, `tab_shop.png`, `tab_skin.png`, `tab_home_center.png`, `tab_mission.png`, `tab_challenge.png`
+   - `btn_orange_jelly_large.png`, `nest_straw_hero.png`, `panel_rope_wood_large.png`, `panel_wood_card_slot.png`, `signboard_wood_name.png`, `tag_wheat_cost.png`
+3. **미사용 배경/트랙/아이콘/구형 달걀 (7종)**:
+   - `bg_barn_loft.png`, `bg_barn_sunlight.png`, `track_wooden_bridge.png`
+   - `icon_jump_arrow.png`, `icon_turn_arrow.png`, `egg_baby_sprout.png`, `screen_play.png`
 
-1. **외곽 테두리 100% 추적 (Authentic Contour-Accurate Segmentation)**:
-   - 인위적인 타원/원형 마스크를 완전히 배제하고, 원목 판자의 나뭇결 옹이, 밧줄 매듭, 젤리 버튼의 3D 입체 광택 베벨, 짚풀 둥지의 볏짚 가닥, 계란 머리의 새싹까지 실제 원화 테두리를 따라 정밀 세그멘테이션.
-   - 1.2px 서브픽셀 가우시안 안티앨리어싱(Anti-Aliasing)을 적용하여 배경과의 계단 현상(Jaggies) 및 테두리 얼룩을 완벽 제거.
+---
 
-2. **완벽한 알파 투명 배경 (Full 32-bit RGBA)**:
-   - 256색 팔레트 압축(`mode=P`) 및 배경이 묻어나오는 사각 크롭(`mode=RGB`)을 전면 폐기하고 무손실 32-bit RGBA로 전면 교체.
-   - 모든 에셋의 4방 모서리 알파값 `(0, 0, 0, 0)` 투명화 보장 및 내부 100% 불투명 처리.
-
-3. **코드 세션 연동 규격 3종 반영 (Slot Inpainting)**:
-   - **상단 헤더 목판 4종**: 프로필(`header_profile_board`), 곡식(`header_wheat_board`), 깃털(`header_feather_board`), 껍데기(`header_shell_board`)의 텍스트/숫자 영역을 주변 원목 질감으로 인페인팅하여 동적 수치가 자연스럽게 표시되는 빈 오목 홈(Empty Recessed Slot) 확립.
-   - **홈 둥지 이름 팻말(`signboard_wood_name`)**: '꼬마계란' 글씨를 제거한 무지 원목 팻말로 재가공.
-   - **하단 2번 탭(`tab_skin`)**: 마스터 원화의 엠블럼을 정밀 분리하여 '보관함' 글씨 없는 순수 스킨 에셋으로 통일.
-
-4. **단독 배포 및 UI Studio 동기화**:
-   - `dist/index.html` 및 `infinite-egg.html` 싱글파일 번들 최신화.
-   - `ui-editor.html` (시각적 UI 배치 스튜디오) 내 50종 카탈로그 및 6종 원화 베이스 100% 최신 에셋 동기화.
+## 💎 유지된 필수 에셋 목록 (18종)
+1. **5대 화면 마스터 에셋 (`src/assets/screens/`)**:
+   - `screen_home.png`, `screen_shop.png`, `screen_skin.png`, `screen_mission.png`, `screen_challenge.png`
+2. **3D 달걀 원화 8종 (`src/assets/eggs/art/`)**:
+   - `egg_art_1.png` ~ `egg_art_8.png`
+3. **인게임 HUD 및 조작 에셋 (`src/assets/ui/`, `src/assets/icons/`)**:
+   - `btn_wood_square.png` (일시정지 ⏸)
+   - `header_feather_board.png` (깃털 HUD 목판)
+   - `btn_wood_medium.png` (방향전환 버튼)
+   - `btn_orange_jelly_medium.png` (점프 버튼)
+   - `prop_golden_feather.png` (트랙 위 캔버스 수집용 깃털)
