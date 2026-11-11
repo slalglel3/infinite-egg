@@ -857,6 +857,14 @@ export class GameEngine {
     this.cameraY += (targetY - this.cameraY) * dt * 8;
   }
 
+  // Y축 기준 원근감(Perspective Pseudo-3D) 스케일링 함수
+  // 화면 상단(먼 곳)은 좁고 작게, 화면 하단(가까운 곳)은 넓고 크게 보간
+  public getPerspectiveScale(screenY: number): number {
+    const normY = Math.max(-0.25, Math.min(1.25, screenY / this.screenHeight));
+    // 화면 최상단(0)에서 약 0.52배 -> 달걀 위치(~0.42)에서 1.0배 -> 화면 최하단(1.0)에서 약 1.55배
+    return 0.52 + 1.03 * normY;
+  }
+
   private ensureMapSegments(): void {
     while (this.segments.length - this.egg.currentSegmentIndex < 18) {
       this.mapGen.generateDynamicPattern(this.segments, this.stats.distanceMeters);
@@ -1104,29 +1112,31 @@ export class GameEngine {
     ctx.save();
     for (const trail of this.trails) {
       ctx.globalAlpha = Math.max(0, trail.alpha);
+      const trailScale = this.getPerspectiveScale(trail.y - this.cameraY);
+      const r = trail.radius * trailScale;
 
       switch (trail.type) {
         case 'SKID': {
           // [VOC-04 반영] 타이어 자국 대신 신선한 계란 흰자의 촉촉한 윤기 & 미세 껍질 광택 궤적
           ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
           ctx.beginPath();
-          ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.45, 0.4, 0, Math.PI * 2);
+          ctx.ellipse(trail.x, trail.y, r, r * 0.45, 0.4, 0, Math.PI * 2);
           ctx.fill();
           // 중심부 반짝이는 달걀 껍질 미세 광채 하이라이트
           ctx.fillStyle = '#fef3c7';
           ctx.beginPath();
-          ctx.arc(trail.x, trail.y, trail.radius * 0.35, 0, Math.PI * 2);
+          ctx.arc(trail.x, trail.y, r * 0.35, 0, Math.PI * 2);
           ctx.fill();
           break;
         }
         case 'SPARK': {
           ctx.fillStyle = trail.color;
           ctx.beginPath();
-          ctx.ellipse(trail.x, trail.y, trail.radius, trail.radius * 0.4, 0.4, 0, Math.PI * 2);
+          ctx.ellipse(trail.x, trail.y, r, r * 0.4, 0.4, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = '#fef08a';
           ctx.beginPath();
-          ctx.arc(trail.x, trail.y - 1, trail.radius * 0.4, 0, Math.PI * 2);
+          ctx.arc(trail.x, trail.y - 1, r * 0.4, 0, Math.PI * 2);
           ctx.fill();
           break;
         }
@@ -1194,11 +1204,23 @@ export class GameEngine {
     this.drawObstacles(ctx);
 
     for (const splat of this.splats) {
+      const splatScale = this.getPerspectiveScale(splat.y - this.cameraY);
+      ctx.save();
+      ctx.translate(splat.x, splat.y);
+      ctx.scale(splatScale, splatScale);
+      ctx.translate(-splat.x, -splat.y);
       this.eggRenderer.drawEggSplat(ctx, splat);
+      ctx.restore();
     }
 
     if (this.egg.state !== 'DEAD_CRACKED') {
+      const eggScale = this.getPerspectiveScale(this.egg.y - this.cameraY);
+      ctx.save();
+      ctx.translate(this.egg.x, this.egg.y);
+      ctx.scale(eggScale, eggScale);
+      ctx.translate(-this.egg.x, -this.egg.y);
       this.eggRenderer.drawEgg(ctx, this.egg);
+      ctx.restore();
     }
 
     this.drawParticles(ctx);
@@ -1604,249 +1626,251 @@ export class GameEngine {
     ctx.fill();
   }
 
-  // 2.5D 목조 구름다리(Wooden Plank Bridge) 트랙 렌더링 (play.png 컨셉 100% 매칭)
+  // 2.5D 목조 구름다리 원근감(Perspective Pseudo-3D) 트랙 렌더링 (위는 좁게, 아래는 넓게)
   private drawWoodenBridgeRoads(ctx: CanvasRenderingContext2D): void {
-    // 1. 세그먼트들을 연속된 다리 체인(Continuous Bridge Chains)으로 그룹화
-    interface RoadPoint {
-      x: number;
-      y: number;
-    }
-    type RoadChain = RoadPoint[];
+    const minY = this.cameraY - 120;
+    const maxY = this.cameraY + this.screenHeight + 120;
+    const minX = this.cameraX - 120;
+    const maxX = this.cameraX + this.screenWidth + 120;
 
-    const chains: RoadChain[] = [];
-    let currentChain: RoadChain | null = null;
+    const visibleSegs = this.segments.filter((seg) => {
+      const sMinX = Math.min(seg.startX, seg.endX);
+      const sMaxX = Math.max(seg.startX, seg.endX);
+      const sMinY = Math.min(seg.startY, seg.endY);
+      const sMaxY = Math.max(seg.startY, seg.endY);
+      return sMaxX >= minX && sMinX <= maxX && sMaxY >= minY && sMinY <= maxY;
+    });
 
-    for (let i = 0; i < this.segments.length; i++) {
-      const seg = this.segments[i];
+    if (visibleSegs.length === 0) return;
 
-      // TURN 세그먼트는 이전 세그먼트 끝점과 다음 세그먼트 시작점을 V자로 이어주는 피벗 꼭지점
-      if (seg.type === 'TURN') {
-        continue;
-      }
+    // 화가 알고리즘 (Painter's Algorithm): 화면 위쪽(먼 길, Y가 작은 세그먼트)부터 먼저 그려서
+    // 아래쪽(가까운 길, Y가 큰 세그먼트)이 위로 자연스럽게 덮이도록 정렬
+    visibleSegs.sort((a, b) => a.startY - b.startY);
 
-      if (seg.isCollapsed) {
-        const dx = seg.endX - seg.startX;
-        const dy = seg.endY - seg.startY;
-        const p1 = { x: seg.startX + dx * 0.25, y: seg.startY + dy * 0.25 };
-        const p2 = { x: seg.startX + dx * 0.75, y: seg.startY + dy * 0.75 };
+    const baseHalfW = GAME_CONSTANTS.ROAD_WIDTH * 0.5; // 19px
 
-        if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
-          if (currentChain && currentChain.length > 1) chains.push(currentChain);
-          currentChain = [{ x: seg.startX, y: seg.startY }];
-        }
-        currentChain.push(p1);
-        chains.push(currentChain);
-
-        // 붕괴 구간 건너편 착지면 새 체인 시작
-        currentChain = [p2, { x: seg.endX, y: seg.endY }];
-        continue;
-      }
-
-      if (seg.type === 'GAP') {
-        // 도약대까지 체인 연결 후 공중 낭떠러지이므로 체인 분리
-        if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
-          if (currentChain && currentChain.length > 1) chains.push(currentChain);
-          currentChain = [{ x: seg.startX, y: seg.startY }];
-        }
-        currentChain.push({ x: seg.endX, y: seg.endY });
-        chains.push(currentChain);
-        currentChain = null;
-        continue;
-      }
-
-      // 일반 STRAIGHT 세그먼트: 이전 점과 연속되면 이어서 연결, 끊기면 새 체인 시작
-      if (!currentChain || Math.hypot(currentChain[currentChain.length - 1].x - seg.startX, currentChain[currentChain.length - 1].y - seg.startY) > 2) {
-        if (currentChain && currentChain.length > 1) chains.push(currentChain);
-        currentChain = [{ x: seg.startX, y: seg.startY }];
-      }
-      currentChain.push({ x: seg.endX, y: seg.endY });
-    }
-
-    if (currentChain && currentChain.length > 1) {
-      chains.push(currentChain);
-    }
-
-    // 2. 단일 폴리라인 패스 그리기 헬퍼
-    const traceChain = (pts: RoadPoint[], offsetY: number = 0) => {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y + offsetY);
-      for (let j = 1; j < pts.length; j++) {
-        ctx.lineTo(pts[j].x, pts[j].y + offsetY);
-      }
-    };
-
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    // A. 하단 3D 앰비언트 그림자 (전체 체인 일괄)
-    ctx.strokeStyle = 'rgba(28, 14, 5, 0.45)';
-    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 8;
-    for (const chain of chains) {
-      traceChain(chain, 8);
-      ctx.stroke();
-    }
-
-    // B. 목조 다리 밑받침 대들보 두께 (Dark Timber Thickness)
-    ctx.strokeStyle = '#381a06';
-    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH + 2;
-    for (const chain of chains) {
-      traceChain(chain, 4);
-      ctx.stroke();
-    }
-
-    // C. 메인 목재 보행 데크 상판 (Warm Wooden Deck Planks)
-    ctx.strokeStyle = '#854d0e';
-    ctx.lineWidth = GAME_CONSTANTS.ROAD_WIDTH;
-    for (const chain of chains) {
-      traceChain(chain, 0);
-      ctx.stroke();
-    }
-
-    // D. 다리 양옆 꼬아놓은 새끼줄/로프 안전 난간 (Braided Rope Guardrails)
-    ctx.save();
-    ctx.setLineDash([8, 6]);
-    ctx.strokeStyle = '#451a03';
-    ctx.lineWidth = 3.5;
-    for (const chain of chains) {
-      traceChain(chain, 0);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // 4. 개별 직각 나무 판자 이음새 슬릿 & 못 디테일 & 부러진 단면
-    for (const seg of this.segments) {
-      const minX = Math.min(seg.startX, seg.endX) - 80;
-      const maxX = Math.max(seg.startX, seg.endX) + 80;
-      const minY = Math.min(seg.startY, seg.endY) - 80;
-      const maxY = Math.max(seg.startY, seg.endY) + 80;
-
-      if (
-        maxX < this.cameraX ||
-        minX > this.cameraX + this.screenWidth ||
-        maxY < this.cameraY ||
-        minY > this.cameraY + this.screenHeight
-      ) {
-        continue;
-      }
-
-      if (seg.type === 'TURN') continue;
-
+    for (const seg of visibleSegs) {
       const segDx = seg.endX - seg.startX;
       const segDy = seg.endY - seg.startY;
       const segLen = Math.hypot(segDx, segDy);
-      if (segLen < 2) continue;
+
+      // 코너 TURN 세그먼트: V자 꼭지점 피벗 원형 둥지 발판
+      if (seg.type === 'TURN' || segLen < 2) {
+        const sy = seg.startY - this.cameraY;
+        const scale = this.getPerspectiveScale(sy);
+        const radius = (baseHalfW + 3) * scale;
+
+        ctx.save();
+        // A. 그림자
+        ctx.fillStyle = 'rgba(28, 14, 5, 0.45)';
+        ctx.beginPath();
+        ctx.arc(seg.startX, seg.startY + 8 * scale, radius + 2 * scale, 0, Math.PI * 2);
+        ctx.fill();
+
+        // B. 목조 하부 대들보
+        ctx.fillStyle = '#381a06';
+        ctx.beginPath();
+        ctx.arc(seg.startX, seg.startY + 4 * scale, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // C. 상부 둥지 데크
+        ctx.fillStyle = '#854d0e';
+        ctx.beginPath();
+        ctx.arc(seg.startX, seg.startY, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 테두리 새끼줄 로프
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = 3.0 * scale;
+        ctx.beginPath();
+        ctx.arc(seg.startX, seg.startY, radius - 1.5 * scale, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+        continue;
+      }
 
       const udx = segDx / segLen;
       const udy = segDy / segLen;
       const nx = -udy; // 법선 수직 벡터
       const ny = udx;
-      const halfW = (GAME_CONSTANTS.ROAD_WIDTH - 6) * 0.5;
 
-      // 4-1. 도로를 따라 18px 간격으로 직각 나무 판자 분할 홈(Plank Divider Slits)
-      for (let dist = 10; dist < segLen - 6; dist += 18) {
-        if (seg.isCollapsed && dist >= segLen * 0.25 && dist <= segLen * 0.75) {
+      // 판자 간격: 약 16px (원근 스케일에 따라 상단은 촘촘하고 하단은 큼직하게 분할)
+      let d = 0;
+      while (d < segLen) {
+        // 붕괴 구간 건너뛰기
+        if (seg.isCollapsed && d >= segLen * 0.25 && d <= segLen * 0.75) {
+          d += 18;
           continue;
         }
 
-        const px = seg.startX + udx * dist;
-        const py = seg.startY + udy * dist;
+        const py1 = seg.startY + udy * d;
+        const sy1 = py1 - this.cameraY;
+        const scale1 = this.getPerspectiveScale(sy1);
+        const hw1 = baseHalfW * scale1;
 
-        // 어두운 판자 홈 선
+        // 다음 판자 경계 거리 d2
+        const plankLen = Math.max(10, 16 * scale1);
+        const d2 = Math.min(segLen, d + plankLen);
+
+        const py2 = seg.startY + udy * d2;
+        const sy2 = py2 - this.cameraY;
+        const scale2 = this.getPerspectiveScale(sy2);
+        const hw2 = baseHalfW * scale2;
+
+        const px1 = seg.startX + udx * d;
+        const px2 = seg.startX + udx * d2;
+
+        const avgScale = (scale1 + scale2) * 0.5;
+
+        // 4개 정점 (원근 사다리꼴)
+        const p1Lx = px1 - nx * hw1;
+        const p1Ly = py1 - ny * hw1;
+        const p1Rx = px1 + nx * hw1;
+        const p1Ry = py1 + ny * hw1;
+
+        const p2Rx = px2 + nx * hw2;
+        const p2Ry = py2 + ny * hw2;
+        const p2Lx = px2 - nx * hw2;
+        const p2Ly = py2 - ny * hw2;
+
+        // -------------------------------------------------------------
+        // Layer A: 3D 앰비언트 접지 그림자 (Shadow)
+        // -------------------------------------------------------------
+        const shadowOffsetY = 8 * avgScale;
+        const shadowExpand = 4 * avgScale;
+        ctx.fillStyle = 'rgba(28, 14, 5, 0.40)';
         ctx.beginPath();
-        ctx.moveTo(px - nx * halfW, py - ny * halfW);
-        ctx.lineTo(px + nx * halfW, py + ny * halfW);
+        ctx.moveTo(p1Lx - nx * shadowExpand, p1Ly - ny * shadowExpand + shadowOffsetY);
+        ctx.lineTo(p1Rx + nx * shadowExpand, p1Ry + ny * shadowExpand + shadowOffsetY);
+        ctx.lineTo(p2Rx + nx * shadowExpand, p2Ry + ny * shadowExpand + shadowOffsetY);
+        ctx.lineTo(p2Lx - nx * shadowExpand, p2Ly - ny * shadowExpand + shadowOffsetY);
+        ctx.closePath();
+        ctx.fill();
+
+        // -------------------------------------------------------------
+        // Layer B: 목조 다리 밑받침 대들보 두께 (Dark Timber Thickness)
+        // -------------------------------------------------------------
+        const timberOffsetY = 4 * avgScale;
+        ctx.fillStyle = '#381a06';
+        ctx.beginPath();
+        ctx.moveTo(p1Lx, p1Ly + timberOffsetY);
+        ctx.lineTo(p1Rx, p1Ry + timberOffsetY);
+        ctx.lineTo(p2Rx, p2Ry + timberOffsetY);
+        ctx.lineTo(p2Lx, p2Ly + timberOffsetY);
+        ctx.closePath();
+        ctx.fill();
+
+        // -------------------------------------------------------------
+        // Layer C: 메인 원목 보행 데크 상판 (Warm Wooden Deck Plank)
+        // -------------------------------------------------------------
+        ctx.fillStyle = '#854d0e';
+        ctx.beginPath();
+        ctx.moveTo(p1Lx, p1Ly);
+        ctx.lineTo(p1Rx, p1Ry);
+        ctx.lineTo(p2Rx, p2Ry);
+        ctx.lineTo(p2Lx, p2Ly);
+        ctx.closePath();
+        ctx.fill();
+
+        // -------------------------------------------------------------
+        // Layer D: 판자 이음새 슬릿 홈 & 하이라이트 (Plank Divider Slits)
+        // -------------------------------------------------------------
+        // 어두운 홈
+        ctx.beginPath();
+        ctx.moveTo(p2Lx, p2Ly);
+        ctx.lineTo(p2Rx, p2Ry);
         ctx.strokeStyle = '#3b1604';
-        ctx.lineWidth = 2.0;
+        ctx.lineWidth = Math.max(1.2, 2.0 * avgScale);
         ctx.stroke();
 
-        // 판자 모서리 미세 하이라이트선
+        // 홈 위쪽 미세 하이라이트
         ctx.beginPath();
-        ctx.moveTo(px - nx * halfW + udx * 1.5, py - ny * halfW + udy * 1.5);
-        ctx.lineTo(px + nx * halfW + udx * 1.5, py + ny * halfW + udy * 1.5);
+        ctx.moveTo(p2Lx + udx * 1.5, p2Ly + udy * 1.5);
+        ctx.lineTo(p2Rx + udx * 1.5, p2Ry + udy * 1.5);
         ctx.strokeStyle = 'rgba(254, 240, 138, 0.22)';
-        ctx.lineWidth = 1.0;
+        ctx.lineWidth = Math.max(0.8, 1.0 * avgScale);
         ctx.stroke();
 
         // 양옆 고정 쇠못 (Rustic Iron Nails)
-        const nailD = halfW - 3;
+        const nailOffset = 3.5 * avgScale;
+        const nailSize = Math.max(1.5, 2.4 * avgScale);
         ctx.fillStyle = '#1c0d02';
-        ctx.fillRect(px - nx * nailD - 1.2, py - ny * nailD - 1.2, 2.4, 2.4);
-        ctx.fillRect(px + nx * nailD - 1.2, py + ny * nailD - 1.2, 2.4, 2.4);
-      }
+        ctx.fillRect(p2Lx + nx * nailOffset - nailSize * 0.5, p2Ly + ny * nailOffset - nailSize * 0.5, nailSize, nailSize);
+        ctx.fillRect(p2Rx - nx * nailOffset - nailSize * 0.5, p2Ry - ny * nailOffset - nailSize * 0.5, nailSize, nailSize);
 
-      // 4-2. 점프 도약대 (GAP) 끝단: 부러진 목재 가시(Splintered Broken Wood Planks)
-      if (seg.type === 'GAP') {
-        ctx.fillStyle = '#5c2e0b';
-        const tipX = seg.endX;
-        const tipY = seg.endY;
-        for (let s = -2; s <= 2; s++) {
-          const spX = tipX + nx * (s * 8);
-          const spY = tipY + ny * (s * 8);
-          const spLen = 7 + (Math.abs(s * 7) % 8);
-          ctx.beginPath();
-          ctx.moveTo(spX - 2.5, spY);
-          ctx.lineTo(spX + udx * spLen, spY + udy * spLen);
-          ctx.lineTo(spX + 2.5, spY);
-          ctx.fill();
-        }
-      }
+        // -------------------------------------------------------------
+        // Layer E: 양옆 꼬아놓은 새끼줄/로프 안전 난간 (Braided Rope Guardrails)
+        // -------------------------------------------------------------
+        ctx.save();
+        ctx.strokeStyle = '#451a03';
+        ctx.lineWidth = Math.max(1.5, 3.2 * avgScale);
+        ctx.setLineDash([Math.max(4, 7 * avgScale), Math.max(3, 5 * avgScale)]);
 
-      // 4-3. 붕괴된 길(isCollapsed): 양쪽 끊어진 낭떠러지 목재 파편
-      if (seg.isCollapsed) {
-        const p1X = seg.startX + segDx * 0.25;
-        const p1Y = seg.startY + segDy * 0.25;
-        const p2X = seg.startX + segDx * 0.75;
-        const p2Y = seg.startY + segDy * 0.75;
-
-        ctx.fillStyle = '#381a06';
+        // 좌측 난간
         ctx.beginPath();
-        ctx.arc(p1X, p1Y, 14, 0, Math.PI * 2);
-        ctx.arc(p2X, p2Y, 14, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(p1Lx, p1Ly);
+        ctx.lineTo(p2Lx, p2Ly);
+        ctx.stroke();
 
-        // 떨어져나간 부러진 가시
+        // 우측 난간
+        ctx.beginPath();
+        ctx.moveTo(p1Rx, p1Ry);
+        ctx.lineTo(p2Rx, p2Ry);
+        ctx.stroke();
+        ctx.restore();
+
+        d = d2;
+      }
+
+      // 4-2. 점프 도약대 (GAP) 끝단: 부러진 목재 가시 (Splintered Spikes)
+      if (seg.type === 'GAP') {
+        const tipSy = seg.endY - this.cameraY;
+        const tipScale = this.getPerspectiveScale(tipSy);
+
+        ctx.fillStyle = '#5c2e0b';
         for (let s = -2; s <= 2; s++) {
-          const spX = p1X + nx * (s * 7);
-          const spY = p1Y + ny * (s * 7);
+          const spX = seg.endX + nx * (s * 8 * tipScale);
+          const spY = seg.endY + ny * (s * 8 * tipScale);
+          const spLen = (7 + (Math.abs(s * 7) % 8)) * tipScale;
+          const halfThick = 2.5 * tipScale;
           ctx.beginPath();
-          ctx.moveTo(spX - 2, spY);
-          ctx.lineTo(spX + udx * 8, spY + udy * 8);
-          ctx.lineTo(spX + 2, spY);
+          ctx.moveTo(spX - halfThick, spY);
+          ctx.lineTo(spX + udx * spLen, spY + udy * spLen);
+          ctx.lineTo(spX + halfThick, spY);
           ctx.fill();
         }
       }
 
-      // 4-4. 금 간 길(isCracked): 삐걱거리는 균열 & 튀어나온 못
+      // 4-3. 금 간 길(isCracked): 삐걱거리는 목재 균열
       if (seg.isCracked && !seg.isCollapsed) {
         ctx.save();
         const midX = (seg.startX + seg.endX) * 0.5;
         const midY = (seg.startY + seg.endY) * 0.5;
+        const midScale = this.getPerspectiveScale(midY - this.cameraY);
 
-        // 갈라진 목재 균열
         ctx.strokeStyle = '#1c0d02';
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 3.5 * midScale;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(midX - 20, midY - 12);
-        ctx.lineTo(midX - 6, midY + 4);
-        ctx.lineTo(midX + 8, midY - 5);
-        ctx.lineTo(midX + 20, midY + 11);
+        ctx.moveTo(midX - 20 * midScale, midY - 12 * midScale);
+        ctx.lineTo(midX - 6 * midScale, midY + 4 * midScale);
+        ctx.lineTo(midX + 8 * midScale, midY - 5 * midScale);
+        ctx.lineTo(midX + 20 * midScale, midY + 11 * midScale);
         ctx.stroke();
 
-        // 목재 섬유 갈라짐 하이라이트
         ctx.strokeStyle = '#fef08a';
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.4 * midScale;
         ctx.beginPath();
-        ctx.moveTo(midX - 20, midY - 10);
-        ctx.lineTo(midX - 6, midY + 6);
-        ctx.lineTo(midX + 8, midY - 3);
-        ctx.lineTo(midX + 20, midY + 13);
+        ctx.moveTo(midX - 20 * midScale, midY - 10 * midScale);
+        ctx.lineTo(midX - 6 * midScale, midY + 6 * midScale);
+        ctx.lineTo(midX + 8 * midScale, midY - 3 * midScale);
+        ctx.lineTo(midX + 20 * midScale, midY + 13 * midScale);
         ctx.stroke();
 
-        // 삐걱거림 위험 인디케이터
         ctx.fillStyle = '#facc15';
         ctx.beginPath();
-        ctx.arc(midX, midY, 4, 0, Math.PI * 2);
+        ctx.arc(midX, midY, 4 * midScale, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       }
@@ -1869,8 +1893,10 @@ export class GameEngine {
         continue;
       }
 
+      const obsScale = this.getPerspectiveScale(obs.y - this.cameraY);
       ctx.save();
       ctx.translate(obs.x, obs.y);
+      ctx.scale(obsScale, obsScale);
 
       if (obs.hit) {
         // 충돌 후 흩어진 건초 잔해
@@ -1982,12 +2008,18 @@ export class GameEngine {
           continue;
         }
 
+        const itemScale = this.getPerspectiveScale(item.y - this.cameraY);
+
         if (item.type === 'FEATHER') {
           // 황금 깃털 (Floating Golden Feather)
           const floatY = item.y + Math.sin(time + item.x * 0.05) * 5;
 
-          // 접지 그림자 (다리 바닥에 비치는 부드러운 그림자)
           ctx.save();
+          ctx.translate(item.x, item.y);
+          ctx.scale(itemScale, itemScale);
+          ctx.translate(-item.x, -item.y);
+
+          // 접지 그림자 (다리 바닥에 비치는 부드러운 그림자)
           ctx.fillStyle = 'rgba(30, 15, 5, 0.35)';
           ctx.beginPath();
           ctx.ellipse(item.x, item.y + 14, 10, 4, 0, 0, Math.PI * 2);
@@ -2054,6 +2086,10 @@ export class GameEngine {
           const floatY = item.y + Math.sin(time) * 4;
 
           ctx.save();
+          ctx.translate(item.x, item.y);
+          ctx.scale(itemScale, itemScale);
+          ctx.translate(-item.x, -item.y);
+
           // 접지 그림자
           ctx.fillStyle = 'rgba(30, 15, 5, 0.3)';
           ctx.beginPath();
