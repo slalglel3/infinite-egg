@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { GameStats, UserProgress } from '../types/game';
 import { RotateCcw, Trophy, Home, Coins, Sparkles } from 'lucide-react';
 import { getEggSkinById } from '../data/eggSkins';
+import { EGG_ART_LIST } from '../assets/assetRegistry';
 import { EggIllustration } from './common/EggIllustration';
 
 interface GameOverModalProps {
@@ -81,13 +82,37 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             <span className="text-[10px] opacity-40 text-amber-200">🌾🌾🌾</span>
           </div>
 
-          <EggIllustration
-            skin={currentSkin}
-            equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
-            expression="HURT"
-            idPrefix="gameover-hero-"
-            className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
-          />
+          {(() => {
+            const ART_MAP: Record<string, number> = {
+              classic: 0,
+              soft_boiled: 1,
+              quail: 2,
+              dino: 3,
+              cyber: 4,
+              galaxy: 5,
+              police_egg: 6,
+              golden: 7,
+            };
+            const idx = ART_MAP[currentSkin.id];
+            if (idx !== undefined && EGG_ART_LIST[idx]) {
+              return (
+                <img
+                  src={EGG_ART_LIST[idx]}
+                  alt={currentSkin.name}
+                  className="w-18 h-22 object-contain drop-shadow-xl animate-pulse relative z-10"
+                />
+              );
+            }
+            return (
+              <EggIllustration
+                skin={currentSkin}
+                equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
+                expression="HURT"
+                idPrefix="gameover-hero-"
+                className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
+              />
+            );
+          })()}
         </div>
 
         {/* 헛간 원목 거리 전광판 스코어보드 */}

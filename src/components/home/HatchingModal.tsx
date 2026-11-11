@@ -5,6 +5,7 @@ import { saveUserProgress, selectEggSkin } from '../../utils/storage';
 import { Sparkles, Check, Gift, PackageOpen } from 'lucide-react';
 import { sound } from '../../audio/sound';
 import confetti from 'canvas-confetti';
+import { EGG_ART_LIST } from '../../assets/assetRegistry';
 import { CostumeSvgLayers } from './CostumeSvgLayers';
 import { EggIllustration } from '../common/EggIllustration';
 
@@ -357,14 +358,38 @@ export const HatchingModal: React.FC<HatchingModalProps> = ({
             {hatchResult.isDuplicate ? '중복 계란 획득!' : '새로운 계란 부화 완료!'}
           </h2>
 
-          {/* 중앙 부화한 달걀 일러스트 쇼케이스 (고유 의상 포함) */}
+          {/* 중앙 부화한 달걀 일러스트 쇼케이스 (3D 원화 우선 렌더링) */}
           <div className="relative w-48 h-54 my-3 flex items-center justify-center p-3 bg-white/10 rounded-3xl border border-white/20 shadow-2xl backdrop-blur-md">
-            <EggIllustration
-              skin={hatchResult.skin}
-              idPrefix={`hatch-${hatchResult.skin.id}-`}
-              equippedCostumes={hatchResult.skin.bundledCostumes}
-              className="w-38 h-46 drop-shadow-2xl overflow-visible"
-            />
+            {(() => {
+              const ART_MAP: Record<string, number> = {
+                classic: 0,
+                soft_boiled: 1,
+                quail: 2,
+                dino: 3,
+                cyber: 4,
+                galaxy: 5,
+                police_egg: 6,
+                golden: 7,
+              };
+              const idx = ART_MAP[hatchResult.skin.id];
+              if (idx !== undefined && EGG_ART_LIST[idx]) {
+                return (
+                  <img
+                    src={EGG_ART_LIST[idx]}
+                    alt={hatchResult.skin.name}
+                    className="w-38 h-46 object-contain drop-shadow-2xl animate-gentle-bob"
+                  />
+                );
+              }
+              return (
+                <EggIllustration
+                  skin={hatchResult.skin}
+                  idPrefix={`hatch-${hatchResult.skin.id}-`}
+                  equippedCostumes={hatchResult.skin.bundledCostumes}
+                  className="w-38 h-46 drop-shadow-2xl overflow-visible"
+                />
+              );
+            })()}
           </div>
 
           <h3 className="text-xl font-black text-amber-300">

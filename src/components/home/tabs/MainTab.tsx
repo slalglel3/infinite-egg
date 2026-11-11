@@ -57,7 +57,7 @@ export const MainTab: React.FC<MainTabProps> = ({
       >
         {/* 기본 달걀 외 다른 3D 원화 달걀 장착 시 둥지 안쪽에 자연스럽게 안착 */}
         {isCustomEgg && (
-          <div className="absolute top-[30%] w-[28%] aspect-square flex items-center justify-center pointer-events-none">
+          <div className="absolute top-[30%] w-[28%] aspect-square flex items-center justify-center pointer-events-none animate-gentle-bob">
             <img
               src={customArtSrc}
               alt={currentSkin.name}

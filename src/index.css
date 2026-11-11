@@ -283,3 +283,30 @@ button {
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 0 #18181b);
 }
+
+/* 10. 생동감 있는 아늑한 애니메이션 */
+@keyframes gentleBob {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02);
+  }
+}
+
+.animate-gentle-bob {
+  animation: gentleBob 3.2s ease-in-out infinite;
+}
+
+@keyframes eggHatchShake {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-8deg) scale(1.05); }
+  40% { transform: rotate(8deg) scale(1.05); }
+  60% { transform: rotate(-5deg) scale(1.03); }
+  80% { transform: rotate(5deg) scale(1.03); }
+}
+
+.animate-egg-shake {
+  animation: eggHatchShake 0.4s ease-in-out infinite;
+}
+

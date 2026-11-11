@@ -10,6 +10,7 @@ import { EggsTab } from './tabs/EggsTab';
 import { EventsTab } from './tabs/EventsTab';
 import { AchievementsTab } from './tabs/AchievementsTab';
 import { ShopTab } from './tabs/ShopTab';
+import { AmbientAtmosphere } from '../common/AmbientAtmosphere';
 
 interface HomeViewProps {
   progress: UserProgress;
@@ -109,7 +110,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
 
-        {/* 3. 하단 5대 탭 터치 바텀 네비게이션 (Z: 30) */}
+        {/* 3. 포근한 사선 햇살(God-Rays), 흩날리는 깃털 & 나뭇잎 앰비언트 대기 효과 */}
+        <AmbientAtmosphere
+          intensity="COZY"
+          showGodRays={activeTab === 'MAIN' || activeTab === 'SKINS'}
+        />
+
+        {/* 4. 하단 5대 탭 터치 바텀 네비게이션 (Z: 30) */}
         <BottomTabBar
           activeTab={activeTab}
           onTabChange={setActiveTab}

@@ -65,9 +65,9 @@ export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) 
 
   return (
     <div className="w-full h-full relative select-none">
-      {/* 1. 상단 쇼케이스: 대표 달걀 라이브 프리뷰 (선택된 스킨이 1번 기본형이 아닐 때만 3D 원화 에셋 오버레이) */}
+      {/* 1. 상단 쇼케이스: 대표 달걀 라이브 프리뷰 (선택된 스킨이 1번 기본형이 아닐 때 3D 원화 에셋 오버레이 및 호흡 애니메이션) */}
       {selectedSkin.artIndex !== 0 && (
-        <div className="pointer-events-none absolute top-[18%] left-[35%] w-[30%] aspect-square flex items-center justify-center animate-bounce-gentle">
+        <div className="pointer-events-none absolute top-[18%] left-[35%] w-[30%] aspect-square flex items-center justify-center animate-gentle-bob">
           <img
             src={EGG_ART_LIST[selectedSkin.artIndex]}
             alt={selectedSkin.name}

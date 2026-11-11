@@ -1,6 +1,28 @@
 import { Egg, EggSplat, Particle, EggSkin } from '../types/game';
 import { GAME_CONSTANTS } from './constants';
 import { getEggSkinById } from '../data/eggSkins';
+import { EGG_ART_LIST } from '../assets/assetRegistry';
+
+// 8대 대표 3D 원화 달걀 이미지 프리로드 풀
+const ART_SKIN_MAP: Record<string, number> = {
+  classic: 0,
+  soft_boiled: 1,
+  quail: 2,
+  dino: 3,
+  cyber: 4,
+  galaxy: 5,
+  police_egg: 6,
+  golden: 7,
+};
+
+const EGG_ART_IMAGES: HTMLImageElement[] = [];
+if (typeof window !== 'undefined') {
+  EGG_ART_LIST.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    EGG_ART_IMAGES.push(img);
+  });
+}
 
 export class EggRenderer {
   private currentSkin: EggSkin = getEggSkinById('classic');
@@ -61,10 +83,35 @@ export class EggRenderer {
 
     // 회전 (우하향: 시계방향, 좌하향: 반시계방향)
     ctx.rotate(egg.rotation);
+    ctx.scale(egg.squishX, egg.squishY);
 
-    // [핵심 일원화] SVG (0..100, 0..116, 중심: 50, 58) 좌표계를 캔버스로 정확히 매핑!
+    // 3D 고화질 달걀 원화 렌더링 우선 적용
+    const artIndex = ART_SKIN_MAP[this.currentSkin.id] ?? 0;
+    const artImg = EGG_ART_IMAGES[artIndex];
+
+    if (artImg && artImg.complete && artImg.naturalWidth > 0) {
+      // 3D 고화질 달걀 원화 (중심 기준 -rx*1.15, -ry*1.15, rx*2.3, ry*2.3)
+      ctx.drawImage(artImg, -rx * 1.15, -ry * 1.15, rx * 2.3, ry * 2.3);
+
+      // 피격 대미지 플래시 붉은 광채
+      if (egg.flashDamage) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-atop';
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.55)';
+        ctx.fillRect(-rx * 1.2, -ry * 1.2, rx * 2.4, ry * 2.4);
+        ctx.restore();
+      }
+
+      // 실시간 표면 대미지 균열(Crack) 및 노른자 오버레이
+      this.drawCracksOnArt(ctx, rx, ry, egg.hp, egg.maxHp);
+
+      ctx.restore();
+      return;
+    }
+
+    // [폴백] SVG (0..100, 0..116, 중심: 50, 58) 좌표계를 캔버스로 정확히 매핑!
     // 중심점(50, 58)을 (0, 0) 회전 중심축으로 일치시킴
-    ctx.scale(egg.squishX * (rx / 42), egg.squishY * (ry / 48));
+    ctx.scale(rx / 42, ry / 48);
     ctx.translate(-50, -58);
 
     // 1. 실물 달걀 베지어 패스 (황금비율 실물 달걀)
@@ -722,6 +769,72 @@ export class EggRenderer {
     ctx.beginPath();
     ctx.arc(x, y, r * 0.5, Math.PI * 0.5, Math.PI * 2);
     ctx.stroke();
+  }
+
+  // 3D 원화 에셋 전용 실시간 균열(Crack) 및 노른자 오버레이
+  private drawCracksOnArt(ctx: CanvasRenderingContext2D, rx: number, ry: number, hp: number, maxHp: number): void {
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    if (ratio >= 0.8) return; // 80% 이상은 깨끗함
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // 1단계: 미세 실금 (80% 미만)
+    ctx.strokeStyle = '#2b1306';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-rx * 0.25, -ry * 0.45);
+    ctx.lineTo(-rx * 0.05, -ry * 0.15);
+    ctx.lineTo(-rx * 0.2, ry * 0.15);
+    ctx.stroke();
+
+    // 2단계: 거미줄 균열 (55% 미만)
+    if (ratio < 0.55) {
+      ctx.strokeStyle = '#1c0a02';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(rx * 0.15, -ry * 0.35);
+      ctx.lineTo(rx * 0.35, -ry * 0.05);
+      ctx.lineTo(rx * 0.15, ry * 0.3);
+      ctx.lineTo(rx * 0.4, ry * 0.45);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.4, -ry * 0.05);
+      ctx.lineTo(-rx * 0.15, 0);
+      ctx.stroke();
+    }
+
+    // 3단계: 깊은 균열 & 황금빛 노른자 누출 광채 (30% 미만)
+    if (ratio < 0.3) {
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.012);
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10 * pulse;
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3.2;
+      ctx.beginPath();
+      ctx.moveTo(-rx * 0.25, -ry * 0.15);
+      ctx.lineTo(rx * 0.2, ry * 0.25);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    // 4단계: 파괴 직전 적색 위기 경고 (15% 미만)
+    if (ratio < 0.15) {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, rx * 0.95, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    ctx.restore();
   }
 
   // 실시간 금 렌더링 (50, 58 중심점 기준)

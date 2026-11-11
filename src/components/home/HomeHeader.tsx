@@ -33,31 +33,31 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <header className="w-full h-[9%] relative z-30 select-none">
-      {/* 1. 좌측: 프로필 텍스트 오버레이 [LV.3 계란이] (X: 12.0% ~ 25.5%) */}
-      <div className="absolute top-[28%] left-[12.0%] w-[13.5%] h-[40%] flex flex-col justify-center text-left leading-tight pointer-events-none">
-        <span className="text-[10px] sm:text-[11px] text-[#fde047] font-black drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)]">
-          LV.{progress.level || 3}
+      {/* 1. 좌측: 프로필 텍스트 오버레이 [LV.X 계란이] */}
+      <div className="absolute top-[20%] left-[10.5%] w-[16.5%] h-[56%] flex flex-col justify-center items-center text-center bg-[#361a07] border-2 border-[#200d02] rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] pointer-events-none select-none z-10">
+        <span className="text-[9px] sm:text-[10px] text-[#fde047] font-black drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)] leading-none">
+          LV.{progress.level || 1}
         </span>
-        <span className="text-[11px] sm:text-[12px] font-black text-white drop-shadow-[0_1.5px_1px_rgba(0,0,0,0.9)] truncate">
+        <span className="text-[10px] sm:text-[11px] font-black text-amber-50 drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)] leading-tight truncate px-1">
           계란이
         </span>
       </div>
 
-      {/* 2. 중앙-좌측: 활동력 곡식 오목한 슬롯 1:1 라이브 수량 오버레이 (X: 50.5% ~ 63.0%) */}
-      <div className="absolute top-[32%] left-[50.5%] w-[12.5%] h-[36%] flex items-center justify-center text-center pointer-events-none">
+      {/* 2. 중앙-좌측: 활동력 곡식 라이브 수량 오버레이 */}
+      <div className="absolute top-[24%] left-[49.5%] w-[14.5%] h-[48%] flex items-center justify-center text-center bg-[#361a07] border-2 border-[#200d02] rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] pointer-events-none select-none z-10">
         <span
           style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-          className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
+          className="text-xs sm:text-sm font-black text-amber-100 drop-shadow-[0_1px_1px_#1e0c03]"
         >
           {progress.wheat ?? 24}/{progress.maxWheat ?? 50}
         </span>
       </div>
 
-      {/* 3. 중앙-우측: 황금 깃털 오목한 슬롯 1:1 라이브 수량 오버레이 (X: 73.5% ~ 86.0%) */}
-      <div className="absolute top-[32%] left-[73.5%] w-[12.5%] h-[36%] flex items-center justify-center text-center pointer-events-none">
+      {/* 3. 중앙-우측: 황금 깃털 라이브 수량 오버레이 */}
+      <div className="absolute top-[24%] left-[72.5%] w-[14.5%] h-[48%] flex items-center justify-center text-center bg-[#361a07] border-2 border-[#200d02] rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] pointer-events-none select-none z-10">
         <span
           style={{ fontFamily: "'Fredoka', 'Jua', sans-serif" }}
-          className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_#1e0c03]"
+          className="text-xs sm:text-sm font-black text-[#fde047] drop-shadow-[0_1px_1px_#1e0c03]"
         >
           {(progress.feathers ?? progress.gold).toLocaleString()}
         </span>
