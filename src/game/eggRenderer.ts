@@ -3,16 +3,23 @@ import { GAME_CONSTANTS } from './constants';
 import { getEggSkinById } from '../data/eggSkins';
 import { EGG_ART_LIST } from '../assets/assetRegistry';
 
-// 8대 대표 3D 원화 달걀 이미지 프리로드 풀
+// 6대 대표 3D 원화 달걀 이미지 프리로드 풀 (인덱스 0~5)
 const ART_SKIN_MAP: Record<string, number> = {
+  baby_egg: 0,
   classic: 0,
+  default: 0,
+  baked_egg: 1,
   soft_boiled: 1,
+  pirate_egg: 2,
   quail: 2,
+  winter_egg: 3,
   dino: 3,
+  astro_egg: 4,
   cyber: 4,
+  chicken_egg: 5,
   galaxy: 5,
-  police_egg: 6,
-  golden: 7,
+  police_egg: 5,
+  golden: 1,
 };
 
 const EGG_ART_IMAGES: HTMLImageElement[] = [];

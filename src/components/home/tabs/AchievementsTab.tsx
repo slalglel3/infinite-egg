@@ -12,43 +12,43 @@ interface AchievementsTabProps {
   onStartGame?: () => void;
 }
 
-type MissionSubTab = 'DAILY' | 'WEEKLY' | 'ACHIEVEMENTS' | 'SEASON';
+type MissionSubTab = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'CUMULATIVE';
 
 interface MissionDef {
   id: string;
   title: string;
   desc: string;
   target: number;
-  rewardGold: number;
+  rewardFeathers: number;
 }
 
 const SUBTABS: { id: MissionSubTab; label: string; left: string; width: string }[] = [
-  { id: 'DAILY', label: '일일', left: '11.3%', width: '18.1%' },
-  { id: 'WEEKLY', label: '주간', left: '31.0%', width: '18.2%' },
-  { id: 'ACHIEVEMENTS', label: '업적', left: '50.8%', width: '18.2%' },
-  { id: 'SEASON', label: '시즌', left: '70.7%', width: '18.2%' },
+  { id: 'DAILY', label: '일일', left: '11.0%', width: '18.5%' },
+  { id: 'WEEKLY', label: '주간', left: '30.8%', width: '18.5%' },
+  { id: 'MONTHLY', label: '월간', left: '50.6%', width: '18.5%' },
+  { id: 'CUMULATIVE', label: '누적', left: '70.4%', width: '18.5%' },
 ];
 
 const SUBTAB_MISSIONS: Record<MissionSubTab, MissionDef[]> = {
   DAILY: [
-    { id: 'first_roll', title: '첫 걸음', desc: '내리막길을 100m 이상 질주하기', target: 100, rewardGold: 10 },
-    { id: 'play_5', title: '초보 굴림이', desc: '총 5회 이상 게임 플레이하기', target: 5, rewardGold: 15 },
-    { id: 'perfect_20', title: '타이밍의 달인', desc: '퍼펙트 턴 20회 달성하기', target: 20, rewardGold: 20 },
+    { id: 'daily_play_3', title: '게임 3회 플레이하기', desc: '내리막길을 3회 질주하기', target: 3, rewardFeathers: 15 },
+    { id: 'daily_dist_300', title: '내리막길 300m 돌파', desc: '한 게임에서 300m 이상 질주', target: 300, rewardFeathers: 20 },
+    { id: 'daily_perfect_10', title: '퍼펙트 턴 10회 달성', desc: '완벽한 타이밍으로 10회 회전', target: 10, rewardFeathers: 25 },
   ],
   WEEKLY: [
-    { id: 'reach_800', title: '동굴 심층 탐험', desc: '초원을 지나 지하 동굴(800m)에 도달하기', target: 800, rewardGold: 100 },
-    { id: 'play_20', title: '데굴데굴 장인', desc: '총 20회 이상 모험 질주하기', target: 20, rewardGold: 150 },
-    { id: 'bandage_10', title: '생존 본능', desc: '반창고를 10회 획득하여 체력 회복', target: 10, rewardGold: 200 },
+    { id: 'weekly_play_15', title: '주간 질주 15회 달성', desc: '이번 주 총 15회 모험 플레이', target: 15, rewardFeathers: 80 },
+    { id: 'weekly_dist_2000', title: '누적 주행 2,000m 돌파', desc: '주간 누적 2,000m 완주하기', target: 2000, rewardFeathers: 120 },
+    { id: 'weekly_feathers_500', title: '황금 깃털 500개 획득', desc: '인게임 및 상점에서 깃털 수집', target: 500, rewardFeathers: 150 },
   ],
-  ACHIEVEMENTS: [
-    { id: 'reach_300', title: '고산 지대 돌파', desc: '설산을 지나 300m 이상 하강하기', target: 300, rewardGold: 200 },
-    { id: 'reach_1500', title: '지각 층 돌파', desc: '지하 지각 암반대(1,500m)에 도달하기', target: 1500, rewardGold: 700 },
-    { id: 'reach_2000', title: '지구 맨틀 정복', desc: '작열하는 지구 핵과 맨틀(2,000m)에 도달하기', target: 2000, rewardGold: 1200 },
+  MONTHLY: [
+    { id: 'monthly_dist_10000', title: '월간 대모험 10,000m', desc: '한 달간 총 10,000m 완주 돌파', target: 10000, rewardFeathers: 300 },
+    { id: 'monthly_score_5000', title: '최고 점수 5,000점 달성', desc: '전설의 고난도 코스 정복', target: 5000, rewardFeathers: 400 },
+    { id: 'monthly_hatch_10', title: '달걀 부화 10회 도전', desc: '상점 부화기에서 신규 에그 부화', target: 10, rewardFeathers: 500 },
   ],
-  SEASON: [
-    { id: 'season_dist', title: '시즌 1 마스터', desc: '시즌 누적 5,000m 주행 돌파', target: 5000, rewardGold: 500 },
-    { id: 'golden_egg_unlocked', title: '황금알 수집가', desc: '눈부신 황금알 스킨 획득하기', target: 1, rewardGold: 500 },
-    { id: 'season_speed', title: '초음속 굴림이', desc: '최대 속도 12m/s 이상 돌파하기', target: 12, rewardGold: 500 },
+  CUMULATIVE: [
+    { id: 'cumul_dist_50000', title: '전설의 굴림이', desc: '누적 주행 50,000m 돌파하기', target: 50000, rewardFeathers: 1000 },
+    { id: 'cumul_all_skins', title: '모든 에그 수집가', desc: '6대 핵심 달걀 스킨 모두 해금', target: 6, rewardFeathers: 1500 },
+    { id: 'cumul_perfect_500', title: '신의 컨트롤러', desc: '누적 퍼펙트 턴 500회 달성', target: 500, rewardFeathers: 2000 },
   ],
 };
 
@@ -77,28 +77,20 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
     }
   };
 
-  const handleAction = (achId: string, isDone: boolean, isClaimed: boolean) => {
-    if (isDone && !isClaimed) {
-      handleClaim(achId);
-    } else if (!isDone && onStartGame) {
-      sound.playJump();
-      onStartGame();
-    }
-  };
-
   const currentMissions = SUBTAB_MISSIONS[activeSubTab];
 
+  // 3개 미션 카드 위치
   const cardPositions = [
-    { cardTop: '28.5%', btnTop: '34.0%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
-    { cardTop: '46.5%', btnTop: '52.5%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
-    { cardTop: '64.5%', btnTop: '69.5%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
+    { cardTop: '28.0%', btnTop: '34.2%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
+    { cardTop: '46.0%', btnTop: '52.2%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
+    { cardTop: '64.0%', btnTop: '70.2%', btnLeft: '72.5%', btnW: '17.0%', btnH: '6.0%' },
   ];
 
   return (
     <div className="w-full h-full relative select-none">
-      {/* 1. 상단 4개 서브탭 터치 선택 바 (일일 / 주간 / 업적 / 시즌) (Y: 16.5%, H: 5.6%) */}
+      {/* 1. 상단 4개 서브탭 터치 선택 바 (일일 / 주간 / 월간 / 누적) (Y: 13.5% ~ 19.5%) */}
       {SUBTABS.map((tab) => {
-        const isSelected = activeSubTab === tab.id;
+        const isActive = activeSubTab === tab.id;
 
         return (
           <button
@@ -106,107 +98,79 @@ export const AchievementsTab: React.FC<AchievementsTabProps> = ({
             type="button"
             onClick={() => handleSelectSubTab(tab.id)}
             style={{
-              top: '16.5%',
+              top: '13.5%',
               left: tab.left,
               width: tab.width,
-              height: '5.6%',
+              height: '6.0%',
             }}
-            className={`pointer-events-auto absolute rounded-xl cursor-pointer active:scale-95 transition-all flex items-center justify-center ${
-              isSelected
-                ? 'ring-2 ring-amber-300 ring-offset-1 bg-amber-400/25 shadow-md'
-                : 'hover:bg-black/10'
+            className={`pointer-events-auto absolute cursor-pointer rounded-2xl active:scale-95 transition-all flex items-center justify-center ${
+              isActive
+                ? 'ring-3 ring-amber-400 bg-amber-400/20 shadow-[0_0_12px_rgba(251,191,36,0.8)]'
+                : 'hover:bg-amber-400/10'
             }`}
             title={`${tab.label} 미션`}
           >
-            <div className="w-full h-full rounded-xl" />
+            <div className="w-full h-full rounded-2xl" />
           </button>
         );
       })}
 
-      {/* 2. 중앙 3대 미션 카드 및 액션 버튼 오버레이 */}
-      {currentMissions.map((ach, idx) => {
-        const currentVal = getAchievementProgress(ach.id, progress);
-        const isDone = currentVal >= ach.target;
-        const isClaimed = progress.claimedAchievementIds.includes(ach.id);
+      {/* 2. 3개 미션 카드 라이브 인터랙션 및 수령 버튼 영역 */}
+      {currentMissions.map((mission, idx) => {
         const pos = cardPositions[idx];
+        const currentVal = getAchievementProgress(mission.id, progress);
+        const isDone = currentVal >= mission.target;
+        const isClaimed = progress.claimedAchievementIds.includes(mission.id);
 
         return (
-          <React.Fragment key={ach.id}>
-            {/* 비-일일 탭 선택 시 카드 본체 텍스트 오버레이 (주간/업적/시즌 내용 표시) */}
-            {activeSubTab !== 'DAILY' && (
-              <div
-                style={{
-                  top: pos.cardTop,
-                  left: '11.0%',
-                  width: '58.0%',
-                  height: '14.0%',
-                }}
-                className="pointer-events-none absolute flex flex-col justify-center px-3 text-left"
-              >
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs sm:text-sm font-black text-[#2b1306] drop-shadow-[0_1px_1px_rgba(255,255,255,0.7)] truncate">
-                    {ach.title}
-                  </h3>
-                  <span className="text-[10px] font-black text-amber-900 bg-amber-100/90 border border-amber-300 px-1.5 py-0.2 rounded-full">
-                    +{ach.rewardGold} 🪶
-                  </span>
-                </div>
-                <p className="text-[10px] text-[#451a03] font-bold mt-0.5 line-clamp-1">
-                  {ach.desc}
-                </p>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="flex-1 h-2 rounded-full bg-[#3d1e0a]/30 overflow-hidden border border-[#2b1306]/30">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full"
-                      style={{ width: `${Math.min(100, Math.floor((currentVal / ach.target) * 100))}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] font-black text-[#2b1306]">
-                    {currentVal}/{ach.target}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* 카드 우측 [받기! / 완료 / 도전] 3D 버튼 터치 영역 */}
+          <div key={mission.id}>
+            {/* 수령하기 / 바로가기 터치 버튼 */}
             <button
               type="button"
-              onClick={() => handleAction(ach.id, isDone, isClaimed)}
+              onClick={() => {
+                if (isDone && !isClaimed) {
+                  handleClaim(mission.id);
+                } else if (!isDone && onStartGame) {
+                  sound.playJump();
+                  onStartGame();
+                }
+              }}
               style={{
                 top: pos.btnTop,
                 left: pos.btnLeft,
                 width: pos.btnW,
                 height: pos.btnH,
               }}
-              className={`pointer-events-auto absolute rounded-2xl cursor-pointer active:scale-95 transition-transform flex items-center justify-center ${
-                isDone && !isClaimed
-                  ? 'ring-2 ring-amber-300 ring-offset-1 animate-pulse bg-amber-400/20'
-                  : ''
-              }`}
-              title={
-                isClaimed
-                  ? `${ach.title} (보상 수령 완료)`
-                  : isDone
-                  ? `${ach.title} (보상 받기: +${ach.rewardGold} 🪶)`
-                  : `${ach.title} (도전하기)`
-              }
+              className="pointer-events-auto absolute cursor-pointer active:scale-95 transition-transform rounded-2xl flex items-center justify-center group"
+              title={isClaimed ? '수령 완료' : isDone ? '보상 받기!' : '바로가기'}
             >
-              {/* 수령 완료 상태 오버레이 */}
-              {isClaimed && (
-                <span className="text-[11px] font-black text-emerald-100 flex items-center gap-0.5 drop-shadow-[0_1.5px_2px_#064e3b]">
-                  <Check size={14} strokeWidth={3} className="text-emerald-300" />
-                  <span>완료</span>
-                </span>
-              )}
-
-              {/* 수령 가능 상태 오버레이 */}
-              {isDone && !isClaimed && (
-                <span className="text-[11px] font-black text-amber-50 drop-shadow-[0_1.5px_2px_#78350f]">
-                  받기!
-                </span>
-              )}
+              <div className="w-full h-full rounded-2xl group-active:bg-amber-400/30 transition-colors flex items-center justify-center">
+                {isClaimed ? (
+                  <span 
+                    style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
+                    className="text-xs sm:text-sm font-black text-amber-200/60 flex items-center gap-1 drop-shadow-[0_1px_1px_rgba(40,15,5,0.9)]"
+                  >
+                    <Check size={14} strokeWidth={3} />
+                    <span>완료</span>
+                  </span>
+                ) : isDone ? (
+                  <span 
+                    style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
+                    className="text-xs sm:text-sm font-black text-[#fef08a] animate-pulse drop-shadow-[0_1.5px_2px_rgba(40,15,5,0.95)]"
+                  >
+                    받기!
+                  </span>
+                ) : (
+                  <span 
+                    style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
+                    className="text-xs sm:text-sm font-black text-amber-100 drop-shadow-[0_1.5px_2px_rgba(40,15,5,0.95)]"
+                  >
+                    이동
+                  </span>
+                )}
+              </div>
             </button>
-          </React.Fragment>
+          </div>
         );
       })}
     </div>

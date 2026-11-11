@@ -44,7 +44,9 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({
             onClick={() => handleTabClick(tab.id)}
             className="relative w-1/5 h-full flex flex-col items-center justify-center cursor-pointer active:scale-90 transition-transform group"
             title={tab.label}
+            aria-label={tab.label}
           >
+            <span className="sr-only">{tab.label}</span>
             {/* 터치 피드백 영역 */}
             <div className="w-12 h-12 rounded-2xl group-active:bg-amber-400/20 transition-colors" />
 

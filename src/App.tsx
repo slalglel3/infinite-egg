@@ -139,6 +139,20 @@ export function App() {
     setIsMuted(nextMuted);
   };
 
+  // 테스트 봇 & 자동 검증용 API 노출
+  useEffect(() => {
+    (window as any).__GAME_TEST_API__ = {
+      getGameState: () => gameState,
+      getStats: () => stats,
+      getProgress: () => userProgress,
+      getEngine: () => engine,
+      startGame: (map?: EventMapItem) => handleStartGame(map),
+      goHome: handleGoHome,
+      jump: handleJump,
+      turn: handleTurn,
+    };
+  }, [gameState, stats, userProgress, engine, handleJump, handleTurn]);
+
   return (
     <div className="relative w-full h-full overflow-hidden select-none touch-none bg-sky-100">
       {/* 1. 2D 캔버스 렌더러 (백그라운드 주행) */}

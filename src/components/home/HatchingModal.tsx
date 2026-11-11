@@ -362,14 +362,21 @@ export const HatchingModal: React.FC<HatchingModalProps> = ({
           <div className="relative w-48 h-54 my-3 flex items-center justify-center p-3 bg-white/10 rounded-3xl border border-white/20 shadow-2xl backdrop-blur-md">
             {(() => {
               const ART_MAP: Record<string, number> = {
+                baby_egg: 0,
                 classic: 0,
+                default: 0,
+                baked_egg: 1,
                 soft_boiled: 1,
+                pirate_egg: 2,
                 quail: 2,
+                winter_egg: 3,
                 dino: 3,
+                astro_egg: 4,
                 cyber: 4,
+                chicken_egg: 5,
                 galaxy: 5,
-                police_egg: 6,
-                golden: 7,
+                police_egg: 5,
+                golden: 1,
               };
               const idx = ART_MAP[hatchResult.skin.id];
               if (idx !== undefined && EGG_ART_LIST[idx]) {
