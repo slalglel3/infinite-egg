@@ -3,7 +3,6 @@ import confetti from 'canvas-confetti';
 import { GameStats, UserProgress } from '../types/game';
 import { RotateCcw, Trophy, Home, Coins, Sparkles } from 'lucide-react';
 import { getEggSkinById } from '../data/eggSkins';
-import { EGG_ART_LIST } from '../assets/assetRegistry';
 import { EggIllustration } from './common/EggIllustration';
 
 interface GameOverModalProps {
@@ -82,44 +81,13 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
             <span className="text-[10px] opacity-40 text-amber-200">🌾🌾🌾</span>
           </div>
 
-          {(() => {
-            const ART_MAP: Record<string, number> = {
-              baby_egg: 0,
-              classic: 0,
-              default: 0,
-              baked_egg: 1,
-              soft_boiled: 1,
-              pirate_egg: 2,
-              quail: 2,
-              winter_egg: 3,
-              dino: 3,
-              astro_egg: 4,
-              cyber: 4,
-              chicken_egg: 5,
-              galaxy: 5,
-              police_egg: 5,
-              golden: 1,
-            };
-            const idx = ART_MAP[currentSkin.id];
-            if (idx !== undefined && EGG_ART_LIST[idx]) {
-              return (
-                <img
-                  src={EGG_ART_LIST[idx]}
-                  alt={currentSkin.name}
-                  className="w-18 h-22 object-contain drop-shadow-xl animate-pulse relative z-10"
-                />
-              );
-            }
-            return (
-              <EggIllustration
-                skin={currentSkin}
-                equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
-                expression="HURT"
-                idPrefix="gameover-hero-"
-                className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
-              />
-            );
-          })()}
+          <EggIllustration
+            skin={currentSkin}
+            equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
+            expression="HURT"
+            idPrefix="gameover-hero-"
+            className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
+          />
         </div>
 
         {/* 헛간 원목 거리 전광판 스코어보드 */}
@@ -150,8 +118,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
             {earnedGold > 0 && (
               <div className="flex items-center gap-1 text-yellow-300">
-                <span className="text-sm">🪶</span>
-                <span>+{earnedGold} 깃털</span>
+                <Coins size={12} className="fill-yellow-300" />
+                <span>+{earnedGold} G</span>
               </div>
             )}
 
@@ -163,37 +131,38 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           </div>
         </div>
 
-        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 하기 ] & [ 🏠 홈으로 ] */}
+        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 굴러가기 ] & [ 🏠 헛간 홈으로 ] */}
         <div className="w-full grid grid-cols-2 gap-3 mt-2">
           <button
             type="button"
             onClick={onRestart}
-            className="h-14 rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#d97706] border-4 border-[#451a03] shadow-[0_4px_0_#451a03] flex items-center justify-center gap-2 text-base font-black cursor-pointer text-white active:translate-y-1 active:shadow-none transition-all"
+            className="btn-3d-emerald h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-white active:scale-95 transition-transform"
           >
             <RotateCcw size={18} className="stroke-[3] text-white" />
             <span
               style={{
-                textShadow: '-1.5px -1.5px 0 #451a03, 1.5px -1.5px 0 #451a03, -1.5px 1.5px 0 #451a03, 1.5px 1.5px 0 #451a03, 0 2.5px 0 #240e02',
+                textShadow: '-1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 3px 0 #064e3b',
+                WebkitTextStroke: '0.8px #064e3b',
               }}
               className="text-white tracking-wide"
             >
-              다시 하기
+              다시 굴러가기
             </span>
           </button>
 
           <button
             type="button"
             onClick={onGoHome}
-            className="h-14 rounded-2xl bg-[#5c371e] text-[#f7e6c4] border-4 border-[#2b160a] shadow-[0_4px_0_#2b160a] flex items-center justify-center gap-2 text-base font-black cursor-pointer active:translate-y-1 active:shadow-none transition-all"
+            className="btn-3d-amber h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-[#1e1b18] active:scale-95 transition-transform"
           >
-            <Home size={18} className="stroke-[3] text-amber-200" />
+            <Home size={18} className="stroke-[3] text-[#1e1b18]" />
             <span
               style={{
-                textShadow: '0 1.5px 0 #2b160a',
+                textShadow: '0 1px 0 rgba(255, 255, 255, 0.4)',
               }}
-              className="text-amber-100 tracking-wide"
+              className="text-[#1e1b18] tracking-wide"
             >
-              홈으로
+              헛간 홈으로
             </span>
           </button>
         </div>

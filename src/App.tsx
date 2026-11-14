@@ -7,7 +7,7 @@ import { Controls } from './components/Controls';
 import { HomeView } from './components/home/HomeView';
 import { GameOverModal } from './components/GameOverModal';
 import { GameStats, UserProgress, EventMapItem } from './types/game';
-import { loadUserProgress, addGameResult, consumeWheat } from './utils/storage';
+import { loadUserProgress, addGameResult } from './utils/storage';
 import { getEggSkinById } from './data/eggSkins';
 import { sound } from './audio/sound';
 
@@ -102,15 +102,6 @@ export function App() {
 
   // 게임 시작 (기본 모드 또는 이벤트 맵 모드)
   const handleStartGame = (eventMap?: EventMapItem) => {
-    // 출발 시 활동력 5 소모
-    const wheatRes = consumeWheat(5);
-    if (!wheatRes.success) {
-      sound.playImpact(5);
-      alert(wheatRes.message);
-      return;
-    }
-    setUserProgress(wheatRes.progress);
-
     setActiveEventMap(eventMap || null);
     if (eventMap) {
       setShowEventBanner(true);
@@ -121,8 +112,8 @@ export function App() {
       setShowEventBanner(false);
     }
 
-    const currentSkin = getEggSkinById(wheatRes.progress.selectedEggId);
-    engine.restart(wheatRes.progress.level, currentSkin, wheatRes.progress.equippedCostumes, eventMap || null);
+    const currentSkin = getEggSkinById(userProgress.selectedEggId);
+    engine.restart(userProgress.level, currentSkin, userProgress.equippedCostumes, eventMap || null);
     setStats({ ...engine.stats });
     setGameState('PLAYING');
   };
@@ -138,20 +129,6 @@ export function App() {
     const nextMuted = sound.toggleMute();
     setIsMuted(nextMuted);
   };
-
-  // 테스트 봇 & 자동 검증용 API 노출
-  useEffect(() => {
-    (window as any).__GAME_TEST_API__ = {
-      getGameState: () => gameState,
-      getStats: () => stats,
-      getProgress: () => userProgress,
-      getEngine: () => engine,
-      startGame: (map?: EventMapItem) => handleStartGame(map),
-      goHome: handleGoHome,
-      jump: handleJump,
-      turn: handleTurn,
-    };
-  }, [gameState, stats, userProgress, engine, handleJump, handleTurn]);
 
   return (
     <div className="relative w-full h-full overflow-hidden select-none touch-none bg-sky-100">

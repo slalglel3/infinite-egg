@@ -2,4 +2,3 @@ node_modules
 *.local
 .DS_Store
 .tmp
-test_artifacts/

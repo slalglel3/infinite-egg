@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { UserProgress } from '../../../types/game';
-import { selectEggSkin } from '../../../utils/storage';
+import { UserProgress, EggSkin, CostumeSlot, CostumeItem } from '../../../types/game';
+import { EGG_SKINS, getEggSkinById } from '../../../data/eggSkins';
+import { COSTUME_ITEMS, getCostumesBySlot } from '../../../data/eggCostumes';
+import { selectEggSkin, buyEggSkinWithGold, equipCostume, clearAllCostumes } from '../../../utils/storage';
+import { Check, Lock, Shield, Coins, Shirt, Egg, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { sound } from '../../../audio/sound';
-import confetti from 'canvas-confetti';
-import { EGG_ART_LIST } from '../../../assets/assetRegistry';
-import { Check, Lock } from 'lucide-react';
+import { EggIllustration } from '../../common/EggIllustration';
 
 interface EggsTabProps {
   progress: UserProgress;
@@ -12,222 +13,387 @@ interface EggsTabProps {
   onStartGame?: () => void;
 }
 
-export interface ArtSkinItem {
-  id: string;
-  name: string;
-  tagline: string;
-  stats: string;
-  artIndex: number;
-  isLockedDefault?: boolean;
-}
-
-// 사용자 제공 원화(skin.png)의 6대 핵심 달걀 스킨 + 2개 잠금 슬롯
-export const FEATURED_ART_SKINS: ArtSkinItem[] = [
-  {
-    id: 'baby_egg',
-    name: '꼬마 에그',
-    tagline: '바삭하게 깨진 껍질 모자를 쓴 아기 에그',
-    stats: '점프력 +1.0% | 속도 +1.0%',
-    artIndex: 0,
-  },
-  {
-    id: 'baked_egg',
-    name: '구운 달걀',
-    tagline: '노릇노릇 촉촉한 온천 구운란',
-    stats: '충격 흡수 +2.0% | 회복력 +1.0%',
-    artIndex: 1,
-  },
-  {
-    id: 'pirate_egg',
-    name: '해적 달걀',
-    tagline: '바다를 호령하는 당찬 해적 선장 에그',
-    stats: '깃털 획득 +5.0% | 속도 +1.5%',
-    artIndex: 2,
-  },
-  {
-    id: 'winter_egg',
-    name: '겨울 펭귄 달걀',
-    tagline: '따뜻한 파란 후드를 쓴 방한 에그',
-    stats: '미끄럼 방지 +3.0% | 점프력 +1.5%',
-    artIndex: 3,
-  },
-  {
-    id: 'astro_egg',
-    name: '우주비행사 달걀',
-    tagline: '무중력 우주를 유영하는 우주비행사',
-    stats: '중력 감소 +5.0% | 체공 시간 +2.0%',
-    artIndex: 4,
-  },
-  {
-    id: 'chicken_egg',
-    name: '닭 의상 달걀',
-    tagline: '닭볏 깃털과 초록 망토를 두른 닭 코스튬',
-    stats: '깃털 2배 확률 +3.0% | 점프력 +2.0%',
-    artIndex: 5,
-  },
-  {
-    id: 'locked_slot_1',
-    name: '미지의 전설란',
-    tagline: '달걀 부화기에서 해금 가능합니다',
-    stats: '잠김 (??? )',
-    artIndex: 6,
-    isLockedDefault: true,
-  },
-  {
-    id: 'locked_slot_2',
-    name: '신비의 우주란',
-    tagline: '달걀 부화기에서 해금 가능합니다',
-    stats: '잠김 (??? )',
-    artIndex: 7,
-    isLockedDefault: true,
-  },
-];
+type SubTab = 'SKINS' | 'COSTUMES';
 
 export const EggsTab: React.FC<EggsTabProps> = ({ progress, onUpdateProgress }) => {
-  // 기본 장착 스킨 매핑
-  const initialSkinId = FEATURED_ART_SKINS.some(s => s.id === progress.selectedEggId)
-    ? progress.selectedEggId
-    : 'baby_egg';
+  const [subTab, setSubTab] = useState<SubTab>('SKINS');
+  const [selectedPreviewId, setSelectedPreviewId] = useState<string>(progress.selectedEggId);
+  const [costumeSlot, setCostumeSlot] = useState<CostumeSlot>('hat');
 
-  const [selectedSkinId, setSelectedSkinId] = useState<string>(initialSkinId);
+  const currentIndex = EGG_SKINS.findIndex((s) => s.id === selectedPreviewId);
+  const previewSkin = EGG_SKINS[currentIndex !== -1 ? currentIndex : 0];
+  const isEquipped = progress.selectedEggId === previewSkin.id;
+  const isUnlocked = progress.unlockedEggIds.includes(previewSkin.id);
 
-  const selectedSkin = FEATURED_ART_SKINS.find((s) => s.id === selectedSkinId) || FEATURED_ART_SKINS[0];
-  const isEquipped = progress.selectedEggId === selectedSkin.id || (progress.selectedEggId === 'classic' && selectedSkin.id === 'baby_egg');
-  const isLocked = selectedSkin.isLockedDefault;
-
-  // 스킨 슬롯 선택
-  const handleSelectSlot = (skinId: string) => {
+  // [무한의 계단식 좌우 이전/다음 슬라이드 탐색]
+  const handlePrevSkin = () => {
     sound.playTurn();
-    setSelectedSkinId(skinId);
+    const prevIdx = (currentIndex - 1 + EGG_SKINS.length) % EGG_SKINS.length;
+    setSelectedPreviewId(EGG_SKINS[prevIdx].id);
   };
 
-  // 장착하기 버튼 클릭
-  const handleEquipButton = () => {
-    if (isLocked) {
-      sound.playImpact(5);
-      alert(`[${selectedSkin.name}]은(는) 아직 잠겨 있습니다!\n상점의 [달걀 부화기]에서 획득해 보세요 🥚✨`);
-      return;
-    }
+  const handleNextSkin = () => {
+    sound.playTurn();
+    const nextIdx = (currentIndex + 1) % EGG_SKINS.length;
+    setSelectedPreviewId(EGG_SKINS[nextIdx].id);
+  };
 
-    if (isEquipped) {
+  // 장착 또는 선택
+  const handleSelectOrEquip = (skin: EggSkin) => {
+    setSelectedPreviewId(skin.id);
+    if (progress.unlockedEggIds.includes(skin.id)) {
+      sound.playPerfect();
+      const updated = selectEggSkin(skin.id);
+      onUpdateProgress(updated);
+    } else {
       sound.playTurn();
-      return;
     }
-
-    sound.playPerfect();
-    confetti({ particleCount: 35, spread: 60, origin: { y: 0.4 } });
-    const updated = selectEggSkin(selectedSkin.id);
-    onUpdateProgress(updated);
   };
 
-  // 8대 슬롯 그리드 좌표 (2행 4열: screen_skin.png 원화 기준)
-  const slotGrid = [
-    // Row 1: x: 7.4% ~ 26.5%, 27.5% ~ 46.5%, 47.5% ~ 66.5%, 67.5% ~ 86.5% | y: 53.5% ~ 64.5%
-    { id: 'baby_egg', top: '53.5%', left: '7.4%', w: '19.1%', h: '11.0%' },
-    { id: 'baked_egg', top: '53.5%', left: '27.5%', w: '19.1%', h: '11.0%' },
-    { id: 'pirate_egg', top: '53.5%', left: '47.5%', w: '19.1%', h: '11.0%' },
-    { id: 'winter_egg', top: '53.5%', left: '67.5%', w: '19.1%', h: '11.0%' },
-    // Row 2: y: 65.5% ~ 76.5%
-    { id: 'astro_egg', top: '65.5%', left: '7.4%', w: '19.1%', h: '11.0%' },
-    { id: 'chicken_egg', top: '65.5%', left: '27.5%', w: '19.1%', h: '11.0%' },
-    { id: 'locked_slot_1', top: '65.5%', left: '47.5%', w: '19.1%', h: '11.0%' },
-    { id: 'locked_slot_2', top: '65.5%', left: '67.5%', w: '19.1%', h: '11.0%' },
-  ];
+  // 골드 구매
+  const handleBuySkin = () => {
+    if (!previewSkin.priceGold) return;
+    const res = buyEggSkinWithGold(previewSkin.id, previewSkin.priceGold);
+    if (res.success) {
+      sound.playHeal();
+      onUpdateProgress(res.progress);
+    } else {
+      alert(res.message || '골드가 부족합니다.');
+    }
+  };
+
+  // 코스튬 착용/해제
+  const handleToggleCostume = (item: CostumeItem) => {
+    const isOwned = progress.unlockedCostumeIds.includes(item.id);
+    if (!isOwned) return;
+
+    sound.playTurn();
+    const currentlyEquipped = progress.equippedCostumes[item.slot] === item.id;
+    const nextCostumeId = currentlyEquipped ? undefined : item.id;
+    const res = equipCostume(item.slot, nextCostumeId);
+    if (res.success) {
+      onUpdateProgress(res.progress);
+    }
+  };
+
+  // 모든 의상 일괄 해제
+  const handleClearAllCostumes = () => {
+    sound.playImpact(5);
+    const res = clearAllCostumes();
+    if (res.success) {
+      onUpdateProgress(res.progress);
+    }
+  };
+
+  const getRarityBadge = (rarity: string) => {
+    switch (rarity) {
+      case 'LEGENDARY':
+        return 'bg-gradient-to-r from-amber-500 to-rose-500 text-white';
+      case 'EPIC':
+        return 'bg-purple-600 text-white';
+      case 'RARE':
+        return 'bg-sky-600 text-white';
+      default:
+        return 'bg-gray-300 text-gray-800';
+    }
+  };
 
   return (
-    <div className="w-full h-full relative select-none">
-      {/* 1. 상단 쇼케이스: 대표 달걀 라이브 프리뷰 (둥지 위 3D 원화 에셋 호흡 애니메이션) */}
-      <div className="pointer-events-none absolute top-[20.2%] left-[33.5%] w-[33.0%] aspect-square flex items-center justify-center animate-gentle-bob">
-        <img
-          src={EGG_ART_LIST[selectedSkin.artIndex]}
-          alt={selectedSkin.name}
-          className="w-full h-full object-contain drop-shadow-[0_12px_18px_rgba(40,15,5,0.7)]"
-        />
-      </div>
-
-      {/* 2. 상단 쇼케이스: 목판 1 (달걀 이름) */}
-      <div className="pointer-events-none absolute top-[35.5%] left-[38.0%] w-[24.0%] h-[4.0%] flex items-center justify-center text-center">
-        <span 
-          style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
-          className="text-xs sm:text-sm font-black text-amber-50 drop-shadow-[0_1.5px_1px_rgba(40,15,5,0.95)]"
-        >
-          {selectedSkin.name}
-        </span>
-      </div>
-
-      {/* 3. 상단 쇼케이스: 목판 2 (스탯 및 효과) */}
-      <div className="pointer-events-none absolute top-[41.2%] left-[32.0%] w-[36.0%] h-[6.5%] flex flex-col items-center justify-center text-center">
-        <span 
-          style={{ fontFamily: "'NanumSquareRound', 'Fredoka', sans-serif" }}
-          className="text-[11px] sm:text-xs font-black text-[#fef08a] drop-shadow-[0_1.5px_1px_rgba(40,15,5,0.95)]"
-        >
-          {selectedSkin.stats}
-        </span>
-      </div>
-
-      {/* 4. 중앙: [장착하기] 3D 버튼 인터랙티브 터치 영역 (Y: 49.8% ~ 55.3%, X: 35.5% ~ 64.5%) */}
-      <button
-        type="button"
-        onClick={handleEquipButton}
-        className="pointer-events-auto absolute top-[49.8%] left-[35.5%] w-[29.0%] h-[5.5%] cursor-pointer active:scale-95 transition-transform group rounded-2xl flex items-center justify-center"
-        title={isEquipped ? '현재 장착 중' : isLocked ? '잠금 상태' : '장착하기'}
-      >
-        <div className="w-full h-full rounded-2xl group-active:bg-amber-400/25 transition-colors flex items-center justify-center">
-          {isEquipped ? (
-            <span 
-              style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
-              className="text-xs sm:text-sm font-black text-[#451a03] flex items-center gap-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
-            >
-              <Check size={16} strokeWidth={3} className="text-[#451a03]" />
-              <span>장착 중</span>
-            </span>
-          ) : isLocked ? (
-            <span 
-              style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
-              className="text-xs sm:text-sm font-black text-stone-300 flex items-center gap-1 drop-shadow-[0_1.5px_2px_rgba(40,15,5,0.95)]"
-            >
-              <Lock size={15} strokeWidth={3} className="text-stone-300" />
-              <span>잠김</span>
-            </span>
-          ) : (
-            <span 
-              style={{ fontFamily: "'NanumSquareRound', 'Jua', sans-serif" }}
-              className="text-xs sm:text-sm font-black text-[#451a03] flex items-center gap-1 drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
-            >
-              장착하기
-            </span>
-          )}
-        </div>
-      </button>
-
-      {/* 5. 하단: 8개 스킨 보관함 슬롯 터치 영역 (원화 슬롯 1:1 매핑) */}
-      {slotGrid.map((slot) => {
-        const isCurrentSelected = slot.id === selectedSkin.id;
-        const skinItem = FEATURED_ART_SKINS.find((s) => s.id === slot.id);
-
-        return (
+    <div className="flex-1 flex flex-col px-3 py-1.5 safe-container overflow-hidden select-none">
+      {/* 1. 상단 2단 탭 스위처: [🥚 달걀 도감] vs [👗 의상 코디실] */}
+      <div className="flex items-center justify-between pb-1.5 px-0.5">
+        <div className="flex items-center bg-[#2b1306]/90 p-1 rounded-2xl border-2 border-[#1a0a03] gap-1 shadow-md">
           <button
-            key={slot.id}
             type="button"
-            onClick={() => handleSelectSlot(slot.id)}
-            style={{
-              top: slot.top,
-              left: slot.left,
-              width: slot.w,
-              height: slot.h,
-            }}
-            className={`pointer-events-auto absolute rounded-2xl cursor-pointer active:scale-95 transition-all flex items-center justify-center ${
-              isCurrentSelected ? 'ring-4 ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.8)]' : ''
+            onClick={() => setSubTab('SKINS')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl font-black text-xs transition-all cursor-pointer ${
+              subTab === 'SKINS'
+                ? 'btn-3d-amber text-[#1e1b18]'
+                : 'text-amber-200/80 hover:text-white'
             }`}
-            title={skinItem?.name}
-            aria-label={skinItem?.name}
           >
-            <span className="sr-only">{skinItem?.name}</span>
-            {/* 터치 피드백 영역 */}
-            <div className="w-full h-full rounded-2xl group-active:bg-amber-400/20 transition-colors" />
+            <Egg size={13} className={subTab === 'SKINS' ? 'stroke-[2.5] text-[#1e1b18]' : ''} />
+            <span className={subTab === 'SKINS' ? 'text-[#1e1b18]' : ''}>달걀 도감</span>
           </button>
-        );
-      })}
+
+          <button
+            type="button"
+            onClick={() => setSubTab('COSTUMES')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-xl font-black text-xs transition-all cursor-pointer ${
+              subTab === 'COSTUMES'
+                ? 'btn-3d-amber text-[#1e1b18]'
+                : 'text-amber-200/80 hover:text-white'
+            }`}
+          >
+            <Shirt size={13} className={subTab === 'COSTUMES' ? 'stroke-[2.5] text-[#1e1b18]' : ''} />
+            <span className={subTab === 'COSTUMES' ? 'text-[#1e1b18]' : ''}>의상 코디실</span>
+          </button>
+        </div>
+
+        {/* 현재 수집 현황 원목 뱃지 */}
+        <div className="wood-badge py-1 px-3">
+          <span className="text-[11px] text-amber-200/90 font-bold">도감 수집</span>
+          <span className="text-amber-300 font-black">{progress.unlockedEggIds.length}</span>
+          <span className="text-white/40 font-bold">/</span>
+          <span className="text-white font-black">{EGG_SKINS.length}</span>
+        </div>
+      </div>
+
+      {/* 2. 상단 45%: 장인의 원목 쇼케이스 & 좌우 탐색 컨트롤러 */}
+      <div className="panel-wood p-3.5 flex flex-col items-center justify-between relative shadow-2xl overflow-hidden shrink-0 min-h-[225px] border-4 border-[#2b1306]">
+        {/* 상단: 캐릭터 이름 & 등급 뱃지 */}
+        <div className="w-full flex items-center justify-between z-10 px-1">
+          <div className="flex items-center gap-1.5">
+            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border border-black/30 shadow-xs ${getRarityBadge(previewSkin.rarity)}`}>
+              {previewSkin.rarity}
+            </span>
+            <h2 className="text-base font-black text-white tracking-tight drop-shadow-[0_2px_3px_#1a0a03]">
+              {previewSkin.name}
+            </h2>
+          </div>
+
+          <div className="wood-badge py-0.5 px-2 bg-emerald-900/90 border-emerald-500 text-emerald-200 shadow-xs">
+            <Shield size={11} className="text-emerald-400" />
+            <span>+{previewSkin.hpBonus} HP</span>
+          </div>
+        </div>
+
+        {/* 중앙: 대형 계란 일러스트 & 포근한 볏짚 둥지 발판 */}
+        <div className="relative my-auto flex items-center justify-center">
+          {/* 포근한 볏짚 둥지 발판 */}
+          <div className="absolute -bottom-3 w-32 h-7 bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 rounded-full border-2 border-[#2b1306] shadow-lg flex items-center justify-center overflow-hidden">
+            <span className="text-[10px] opacity-40 text-amber-200">🌾🌾🌾🌾🌾</span>
+          </div>
+
+          <div className="relative w-24 h-28 flex items-center justify-center z-10">
+            <EggIllustration
+              skin={previewSkin}
+              idPrefix="eggs-tab-hero-"
+              equippedCostumes={previewSkin.hasFixedOutfit ? previewSkin.bundledCostumes : progress.equippedCostumes}
+              className={`w-22 h-26 drop-shadow-2xl transition-all ${
+                !isUnlocked ? 'filter grayscale-[80%] opacity-60' : 'opacity-100 scale-105'
+              }`}
+            />
+
+            {!isUnlocked && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-[#1a0a03]/85 text-white flex items-center justify-center border-2 border-amber-400 shadow-xl">
+                  <Lock size={20} className="text-amber-300" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 하단 3버튼 컨트롤러: [ ◀ ] [ MAIN ACTION ] [ ▶ ] */}
+        <div className="w-full flex items-center justify-between gap-2 z-10 mt-1">
+          {/* 이전 버튼 */}
+          <button
+            type="button"
+            onClick={handlePrevSkin}
+            className="btn-wood w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer shrink-0"
+            aria-label="이전 계란"
+          >
+            <ChevronLeft size={22} className="stroke-[3] text-amber-100" />
+          </button>
+
+          {/* 중앙 메인 액션 버튼 */}
+          <div className="flex-1">
+            {isEquipped ? (
+              <div className="btn-3d-emerald py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black shadow-md cursor-default">
+                <Check size={16} className="stroke-[3]" />
+                <span>장착 중 (EQUIPPED)</span>
+              </div>
+            ) : isUnlocked ? (
+              <button
+                type="button"
+                onClick={() => handleSelectOrEquip(previewSkin)}
+                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md text-[#1e1b18]"
+              >
+                <span className="text-[#1e1b18]">장착하기 (SELECT)</span>
+              </button>
+            ) : previewSkin.priceGold ? (
+              <button
+                type="button"
+                onClick={handleBuySkin}
+                className="btn-3d-amber w-full py-2 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black cursor-pointer shadow-md text-[#1e1b18]"
+              >
+                <Coins size={14} className="text-[#1e1b18]" />
+                <span className="text-[#1e1b18]">{previewSkin.priceGold.toLocaleString()} 골드로 입양</span>
+              </button>
+            ) : (
+              <div className="wood-badge py-2 px-3 rounded-2xl bg-[#1a0a03]/90 text-amber-200/90 flex items-center justify-center gap-1.5 text-xs font-black shadow-inner">
+                <Lock size={13} className="text-amber-400" />
+                <span className="truncate">{previewSkin.unlockCondition}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 다음 버튼 */}
+          <button
+            type="button"
+            onClick={handleNextSkin}
+            className="btn-wood w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer shrink-0"
+            aria-label="다음 계란"
+          >
+            <ChevronRight size={22} className="stroke-[3] text-amber-100" />
+          </button>
+        </div>
+      </div>
+
+      {/* 3. 하단 55%: [4열 원목 달걀 보관함] or [4부위 의상 셀렉터] */}
+      {subTab === 'SKINS' ? (
+        <div className="flex-1 flex flex-col min-h-0 mt-2">
+          {/* 4열 컴팩트 도감 그리드 (원목 계란판 트레이) */}
+          <div className="flex-1 overflow-y-auto grid grid-cols-4 gap-2 pb-4 pr-0.5">
+            {EGG_SKINS.map((skin) => {
+              const isSkinUnlocked = progress.unlockedEggIds.includes(skin.id);
+              const isSkinEquipped = progress.selectedEggId === skin.id;
+              const isSkinSelected = previewSkin.id === skin.id;
+
+              return (
+                <div
+                  key={skin.id}
+                  onClick={() => handleSelectOrEquip(skin)}
+                  className={`relative p-2 rounded-2xl border-2 flex flex-col items-center justify-between transition-all cursor-pointer select-none ${
+                    isSkinSelected
+                      ? 'border-amber-400 bg-gradient-to-b from-amber-100 to-amber-200 ring-2 ring-amber-400 shadow-md scale-102'
+                      : isSkinEquipped
+                      ? 'border-emerald-600 bg-gradient-to-b from-emerald-100 to-emerald-200 shadow-sm ring-1 ring-emerald-500'
+                      : isSkinUnlocked
+                      ? 'border-[#2b1306] bg-gradient-to-b from-[#fffcf7] to-[#faedd8] shadow-xs hover:border-amber-700'
+                      : 'border-[#3a1d0d]/40 bg-[#2b1306]/20 opacity-60'
+                  }`}
+                >
+                  {/* 장착 뱃지 */}
+                  {isSkinEquipped && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] font-black shadow-sm z-10 border border-[#064e3b]">
+                      ✓
+                    </span>
+                  )}
+
+                  {/* 미니 계란 일러스트 */}
+                  <div className="relative w-12 h-14 flex items-center justify-center my-0.5">
+                    <EggIllustration
+                      skin={skin}
+                      idPrefix={`grid-mini-${skin.id}-`}
+                      equippedCostumes={skin.hasFixedOutfit ? skin.bundledCostumes : undefined}
+                      className={`w-10 h-12 drop-shadow-sm ${!isSkinUnlocked ? 'filter grayscale-[90%]' : ''}`}
+                    />
+                    {!isSkinUnlocked && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Lock size={14} className="text-[#2b1306]" />
+                      </div>
+                    )}
+                  </div>
+
+                  <span className={`text-[11px] font-black text-center truncate w-full mt-0.5 ${
+                    isSkinUnlocked ? 'text-[#2b1306]' : 'text-amber-200/60'
+                  }`}>
+                    {skin.name}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* 의상 코디 탭: 4부위 슬롯 스위처 & 의상 타일 */
+        <div className="flex-1 flex flex-col min-h-0 mt-2">
+          {/* 부위 슬롯 & 일괄 벗기 */}
+          <div className="flex items-center justify-between pb-1.5 gap-1.5">
+            <div className="flex-1 grid grid-cols-4 gap-1">
+              {[
+                { slot: 'hat' as const, label: '모자', icon: '🎩' },
+                { slot: 'top' as const, label: '상의', icon: '👔' },
+                { slot: 'bottom' as const, label: '하의', icon: '👖' },
+                { slot: 'hand' as const, label: '손도구', icon: '🪄' },
+              ].map((tab) => {
+                const isActive = costumeSlot === tab.slot;
+                const equippedItem = progress.equippedCostumes[tab.slot];
+                return (
+                  <button
+                    key={tab.slot}
+                    type="button"
+                    onClick={() => {
+                      setCostumeSlot(tab.slot);
+                      sound.playTurn();
+                    }}
+                    className={`py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1 border-2 transition-all cursor-pointer ${
+                      isActive
+                        ? 'btn-3d-amber text-[#1e1b18] border-[#2b1306]'
+                        : 'wood-badge text-amber-100 justify-center'
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                    {equippedItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 일괄 벗기 */}
+            <button
+              type="button"
+              onClick={handleClearAllCostumes}
+              className="btn-wood px-2.5 py-1.5 rounded-xl text-[11px] font-black flex items-center gap-1 text-rose-300 border-rose-950 cursor-pointer shrink-0"
+              title="모든 의상 벗기"
+            >
+              <RotateCcw size={12} />
+              <span>모두 벗기</span>
+            </button>
+          </div>
+
+          {/* 슬롯별 의상 리스트 그리드 (양피지 공방 타일) */}
+          <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pr-0.5 pb-4">
+            {getCostumesBySlot(costumeSlot).map((item) => {
+              const isOwned = progress.unlockedCostumeIds.includes(item.id);
+              const isEquippedThis = progress.equippedCostumes[item.slot] === item.id;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`p-2.5 rounded-2xl border-2 flex flex-col justify-between transition-all ${
+                    isEquippedThis
+                      ? 'border-emerald-600 bg-gradient-to-b from-emerald-50 to-emerald-100 ring-2 ring-emerald-400 shadow-md'
+                      : isOwned
+                      ? 'panel-parchment'
+                      : 'border-[#3a1d0d]/40 bg-[#2b1306]/20 opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">{item.iconText}</span>
+                    <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border border-black/20 ${getRarityBadge(item.rarity)}`}>
+                      {item.rarity}
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-black text-[#2b1306] mt-1 truncate">{item.name}</h4>
+
+                  <div className="mt-2 pt-1 border-t border-[#2b1306]/15">
+                    {isOwned ? (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCostume(item)}
+                        className={`w-full py-1.5 rounded-xl text-xs font-black cursor-pointer flex items-center justify-center gap-1 ${
+                          isEquippedThis ? 'btn-3d-rose' : 'btn-3d-emerald'
+                        }`}
+                      >
+                        {isEquippedThis ? '벗기' : '입히기'}
+                      </button>
+                    ) : (
+                      <div className="w-full py-1.5 rounded-xl bg-[#2b1306]/20 border border-[#2b1306]/40 text-amber-200/70 flex items-center justify-center gap-1 text-[10px] font-black">
+                        <Lock size={11} />
+                        <span>미보유</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { UserProgress, HomeTabType, EventMapItem } from '../../types/game';
 import { getEggSkinById } from '../../data/eggSkins';
 import { ACHIEVEMENTS, getAchievementProgress } from '../../data/achievements';
-import { getUIAsset } from '../../assets/assetRegistry';
 import { HomeHeader } from './HomeHeader';
 import { BottomTabBar } from './BottomTabBar';
 import { MainTab } from './tabs/MainTab';
@@ -10,7 +9,6 @@ import { EggsTab } from './tabs/EggsTab';
 import { EventsTab } from './tabs/EventsTab';
 import { AchievementsTab } from './tabs/AchievementsTab';
 import { ShopTab } from './tabs/ShopTab';
-import { AmbientAtmosphere } from '../common/AmbientAtmosphere';
 
 interface HomeViewProps {
   progress: UserProgress;
@@ -39,90 +37,78 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return isDone && !isClaimed;
   }).length;
 
-  // 5대 핵심 화면 마스터 에셋 매핑 (각 탭마다 전용 고화질 1536x2752 화면 표시)
-  const screenAssetMap: Record<HomeTabType, string | null> = {
-    MAIN: getUIAsset('screen_home'),
-    SHOP: getUIAsset('screen_shop'),
-    SKINS: getUIAsset('screen_skin'),
-    MISSIONS: getUIAsset('screen_mission'),
-    CHALLENGE: getUIAsset('screen_challenge'),
-  };
-
-  const currentScreen = screenAssetMap[activeTab] || getUIAsset('screen_home');
-
   return (
-    <div className="absolute inset-0 bg-[#1a0a03] flex items-center justify-center select-none z-20 overflow-hidden">
-      {/* 9:16 모바일 마스터 프레임 (왜곡 없이 100% 비율 고정) */}
-      <div 
-        className="relative w-full h-full max-w-[480px] aspect-[1536/2752] max-h-screen flex flex-col justify-between overflow-hidden shadow-2xl bg-cover bg-center"
-        style={currentScreen ? { backgroundImage: `url(${currentScreen})` } : undefined}
-      >
-        {/* 1. 상단 공통 헤더 (라이브 데이터 텍스트 오버레이, Z: 30) */}
-        <HomeHeader
-          progress={progress}
-          isMuted={isMuted}
-          onToggleMute={onToggleMute}
-          onUpdateProgress={onUpdateProgress}
-          isShellShopOpen={activeTab === 'SHOP'}
+    <div className="absolute inset-0 bg-barn-workshop flex flex-col justify-between select-none z-20 overflow-hidden">
+      {/* 따뜻한 햇살 광선 & 떠다니는 깃털/나뭇잎 장식 레이어 */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-40">
+        {/* 상단 좌측에서 쏟아지는 햇살 빛줄기 (God Rays) */}
+        <div 
+          className="absolute -top-10 -left-10 w-96 h-96 rounded-full blur-3xl pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(255,250,200,0.6) 0%, rgba(255,220,120,0.2) 50%, transparent 80%)'
+          }}
         />
-
-        {/* 플렉스 공간 확보 */}
-        <div className="flex-1 pointer-events-none" />
-
-        {/* 2. 중앙 탭 컨텐츠 렌더링 영역 (전체 1536x2752 화면 절대 좌표 오버레이, Z: 20) */}
-        <div className="absolute inset-0 pointer-events-none z-20">
-          {activeTab === 'MAIN' && (
-            <MainTab
-              progress={progress}
-              currentSkin={currentSkin}
-              onStartGame={() => onStartGame()}
-              onGoToEggsTab={() => setActiveTab('SKINS')}
-            />
-          )}
-
-          {activeTab === 'SKINS' && (
-            <EggsTab
-              progress={progress}
-              onUpdateProgress={onUpdateProgress}
-              onStartGame={() => onStartGame()}
-            />
-          )}
-
-          {activeTab === 'CHALLENGE' && (
-            <EventsTab
-              onStartEventGame={(eventMap) => onStartGame(eventMap)}
-            />
-          )}
-
-          {activeTab === 'MISSIONS' && (
-            <AchievementsTab
-              progress={progress}
-              onUpdateProgress={onUpdateProgress}
-              onStartGame={() => onStartGame()}
-            />
-          )}
-
-          {activeTab === 'SHOP' && (
-            <ShopTab
-              progress={progress}
-              onUpdateProgress={onUpdateProgress}
-            />
-          )}
-        </div>
-
-        {/* 3. 포근한 사선 햇살(God-Rays), 흩날리는 깃털 & 나뭇잎 앰비언트 대기 효과 */}
-        <AmbientAtmosphere
-          intensity="COZY"
-          showGodRays={activeTab === 'MAIN' || activeTab === 'SKINS'}
-        />
-
-        {/* 4. 하단 5대 탭 터치 바텀 네비게이션 (Z: 30) */}
-        <BottomTabBar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          achievementBadgeCount={unclaimedCount}
-        />
+        {/* 떠다니는 깃털과 나뭇잎 이모지 장식 */}
+        <span className="absolute top-28 left-8 text-amber-200 text-lg opacity-60 animate-pulse">🍃</span>
+        <span className="absolute top-44 right-12 text-yellow-100 text-sm opacity-50">🪶</span>
+        <span className="absolute bottom-48 left-16 text-emerald-200 text-xs opacity-50">🌱</span>
+        <span className="absolute bottom-56 right-20 text-amber-300 text-sm opacity-60">🍂</span>
       </div>
+
+      {/* 1. 상단 공통 헤더 */}
+      <HomeHeader
+        progress={progress}
+        isMuted={isMuted}
+        onToggleMute={onToggleMute}
+        onUpdateProgress={onUpdateProgress}
+      />
+
+      {/* 2. 중앙 탭 컨텐츠 렌더링 영역 */}
+      <main className="flex-1 flex flex-col min-h-0 w-full relative">
+        {activeTab === 'MAIN' && (
+          <MainTab
+            progress={progress}
+            currentSkin={currentSkin}
+            onStartGame={() => onStartGame()}
+            onGoToEggsTab={() => setActiveTab('EGGS')}
+          />
+        )}
+
+        {activeTab === 'EGGS' && (
+          <EggsTab
+            progress={progress}
+            onUpdateProgress={onUpdateProgress}
+            onStartGame={() => onStartGame()}
+          />
+        )}
+
+        {activeTab === 'EVENTS' && (
+          <EventsTab
+            onStartEventGame={(eventMap) => onStartGame(eventMap)}
+          />
+        )}
+
+        {activeTab === 'ACHIEVEMENTS' && (
+          <AchievementsTab
+            progress={progress}
+            onUpdateProgress={onUpdateProgress}
+          />
+        )}
+
+        {activeTab === 'SHOP' && (
+          <ShopTab
+            progress={progress}
+            onUpdateProgress={onUpdateProgress}
+          />
+        )}
+      </main>
+
+      {/* 3. 하단 5대 탭 바텀 네비게이션 */}
+      <BottomTabBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        achievementBadgeCount={unclaimedCount}
+      />
     </div>
   );
 };

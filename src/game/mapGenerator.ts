@@ -206,26 +206,13 @@ export class MapGenerator {
     this.straightCountInCurrentDir++;
 
     let item = undefined;
-    let obstacle = undefined;
-
-    if (!isCracked) {
-      if (hasItem) {
-        // 75% 확률로 황금 깃털(🪶), 25% 확률로 치료 반창고(BANDAGE)
-        const itemType = Math.random() < 0.75 ? ('FEATHER' as const) : ('BANDAGE' as const);
-        item = {
-          type: itemType,
-          x: startX + dx * 0.5,
-          y: startY + dy * 0.5 - 14,
-          collected: false,
-        };
-      } else if (steps >= 1.5 && Math.random() < 0.24) {
-        // 아이템이 없는 직선 도로에 건초 더미 장애물 배치!
-        obstacle = {
-          type: 'HAYSTACK' as const,
-          x: startX + dx * 0.5,
-          y: startY + dy * 0.5,
-        };
-      }
+    if (hasItem && !isCracked) {
+      item = {
+        type: 'BANDAGE' as const,
+        x: startX + dx * 0.5,
+        y: startY + dy * 0.5 - 12,
+        collected: false,
+      };
     }
 
     return {
@@ -238,7 +225,6 @@ export class MapGenerator {
       endY,
       length,
       item,
-      obstacle,
       isPassed: false,
       isCracked,
       isCollapsed: false,
