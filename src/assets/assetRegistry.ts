@@ -11,14 +11,7 @@ import screenSkin from './screens/screen_skin.png';
 import screenMission from './screens/screen_mission.png';
 import screenChallenge from './screens/screen_challenge.png';
 
-// 2. 인게임 조작 및 HUD 에셋
-import headerFeatherBoard from './ui/header_feather_board.png';
-import btnWoodSquare from './ui/btn_wood_square.png';
-import btnWoodMedium from './ui/btn_wood_medium.png';
-import btnOrangeJellyMedium from './ui/btn_orange_jelly_medium.png';
-import propGoldenFeather from './icons/prop_golden_feather.png';
-
-// 3. 3D 달걀 원화 8종 (스킨 탭 및 메인 탭 렌더링용)
+// 2. 3D 달걀 원화 8종 (스킨 탭 및 메인 탭 렌더링용)
 import eggArt1 from './eggs/art/egg_art_1.png';
 import eggArt2 from './eggs/art/egg_art_2.png';
 import eggArt3 from './eggs/art/egg_art_3.png';
@@ -45,12 +38,7 @@ export type UIAssetKey =
   | 'screen_shop'              // 상점 전체 마스터 화면
   | 'screen_skin'              // 스킨/보관함 전체 마스터 화면
   | 'screen_mission'           // 미션 전체 마스터 화면
-  | 'screen_challenge'         // 도전 모드 전체 마스터 화면
-  | 'header_feather_board'     // 인게임 HUD 깃털 수량 목판
-  | 'btn_wood_square'          // 인게임 HUD 일시정지 목판 버튼
-  | 'btn_wood_medium'          // 인게임 방향전환 목판 버튼
-  | 'btn_orange_jelly_medium'  // 인게임 점프 3D 오렌지 젤리 버튼
-  | 'prop_golden_feather';     // 인게임 트랙 획득 황금 깃털
+  | 'screen_challenge';        // 도전 모드 전체 마스터 화면
 
 const UI_ASSETS: Record<UIAssetKey, string> = {
   screen_home: screenHome,
@@ -58,11 +46,6 @@ const UI_ASSETS: Record<UIAssetKey, string> = {
   screen_skin: screenSkin,
   screen_mission: screenMission,
   screen_challenge: screenChallenge,
-  header_feather_board: headerFeatherBoard,
-  btn_wood_square: btnWoodSquare,
-  btn_wood_medium: btnWoodMedium,
-  btn_orange_jelly_medium: btnOrangeJellyMedium,
-  prop_golden_feather: propGoldenFeather,
 };
 
 /**

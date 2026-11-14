@@ -4,7 +4,6 @@ import { MapGenerator } from './mapGenerator';
 import { EggRenderer } from './eggRenderer';
 import { sound } from '../audio/sound';
 import { getEggSkinById } from '../data/eggSkins';
-import { getUIAsset } from '../assets/assetRegistry';
 
 export interface EggTrailPoint {
   x: number;
@@ -50,7 +49,6 @@ export class GameEngine {
 
   // 대기 환경 파티클 타이머 (눈송이, 불티 등)
   private ambientParticleTimer: number = 0;
-  private featherImg: HTMLImageElement | null = null;
 
   // 콜백
   public onGameOver?: (stats: GameStats, reason: 'CRACKED' | 'FALL') => void;
@@ -58,12 +56,6 @@ export class GameEngine {
   constructor(userLevel: number = 1) {
     this.mapGen = new MapGenerator();
     this.eggRenderer = new EggRenderer();
-
-    const featherSrc = getUIAsset('prop_golden_feather');
-    if (featherSrc) {
-      this.featherImg = new Image();
-      this.featherImg.src = featherSrc;
-    }
 
     const maxHp = GAME_CONSTANTS.BASE_HP + (userLevel - 1) * GAME_CONSTANTS.HP_PER_LEVEL;
 
@@ -2038,39 +2030,35 @@ export class GameEngine {
           ctx.translate(item.x, floatY);
           ctx.rotate(Math.sin(time * 0.7) * 0.15);
 
-          if (this.featherImg && this.featherImg.complete && this.featherImg.naturalWidth > 0) {
-            ctx.drawImage(this.featherImg, -14, -14, 28, 28);
-          } else {
-            // 정밀 캔버스 황금 깃털 백업 렌더링
-            ctx.fillStyle = '#facc15';
-            ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.bezierCurveTo(8, -8, 9, 4, 3, 10);
-            ctx.lineTo(0, 13);
-            ctx.lineTo(-3, 10);
-            ctx.bezierCurveTo(-9, 4, -8, -8, 0, -12);
-            ctx.closePath();
-            ctx.fill();
+          // 정밀 캔버스 황금 깃털 렌더링
+          ctx.fillStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(0, -12);
+          ctx.bezierCurveTo(8, -8, 9, 4, 3, 10);
+          ctx.lineTo(0, 13);
+          ctx.lineTo(-3, 10);
+          ctx.bezierCurveTo(-9, 4, -8, -8, 0, -12);
+          ctx.closePath();
+          ctx.fill();
 
-            // 깃대 (Quill)
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.4;
+          // 깃대 (Quill)
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(0, -12);
+          ctx.lineTo(0, 13);
+          ctx.stroke();
+
+          // 깃털 빗살 하이라이트
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 1;
+          for (let k = -6; k <= 6; k += 4) {
             ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.lineTo(0, 13);
+            ctx.moveTo(0, k);
+            ctx.lineTo(5, k - 3);
+            ctx.moveTo(0, k);
+            ctx.lineTo(-5, k - 3);
             ctx.stroke();
-
-            // 깃털 빗살 하이라이트
-            ctx.strokeStyle = '#fef08a';
-            ctx.lineWidth = 1;
-            for (let k = -6; k <= 6; k += 4) {
-              ctx.beginPath();
-              ctx.moveTo(0, k);
-              ctx.lineTo(5, k - 3);
-              ctx.moveTo(0, k);
-              ctx.lineTo(-5, k - 3);
-              ctx.stroke();
-            }
           }
 
           // 반짝임 스파클

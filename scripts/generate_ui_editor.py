@@ -72,48 +72,6 @@ ASSET_CATALOG = [
         'usage': '스킨 8번 슬롯 (최종 히든)',
         'desc': '빛나는 황금 보석 왕관을 쓴 전설의 왕 달걀'
     },
-
-    # --- 인게임 HUD & 컨트롤 조작 에셋 ---
-    {
-        'id': 'header_feather_board',
-        'path': f'{WORKSPACE}/src/assets/ui/header_feather_board.png',
-        'category': 'INGAME',
-        'name': '황금 깃털 카운터 목판',
-        'usage': '인게임 HUD 우상단 깃털 표시',
-        'desc': '주행 중 획득한 황금 깃털 수량을 표시하는 원목 프레임'
-    },
-    {
-        'id': 'btn_wood_square',
-        'path': f'{WORKSPACE}/src/assets/ui/btn_wood_square.png',
-        'category': 'INGAME',
-        'name': '일시정지 [⏸] 목판 버튼',
-        'usage': '인게임 HUD 좌상단',
-        'desc': '게임을 잠시 멈추고 메뉴를 여는 정사각 원목 버튼'
-    },
-    {
-        'id': 'btn_wood_medium',
-        'path': f'{WORKSPACE}/src/assets/ui/btn_wood_medium.png',
-        'category': 'INGAME',
-        'name': '[방향전환] 직사각 목판 버튼',
-        'usage': '인게임 조작부 좌측',
-        'desc': '코너에서 달걀의 구르는 방향을 회전시키는 조작 버튼'
-    },
-    {
-        'id': 'btn_orange_jelly_medium',
-        'path': f'{WORKSPACE}/src/assets/ui/btn_orange_jelly_medium.png',
-        'category': 'INGAME',
-        'name': '[점프] 3D 오렌지 젤리 버튼',
-        'usage': '인게임 조작부 우측',
-        'desc': '끊어진 길과 건초 더미를 뛰어넘는 3D 젤리 버튼'
-    },
-    {
-        'id': 'prop_golden_feather',
-        'path': f'{WORKSPACE}/src/assets/icons/prop_golden_feather.png',
-        'category': 'INGAME',
-        'name': '수집용 황금 깃털 오브젝트',
-        'usage': '트랙 위 캔버스 2D 렌더링',
-        'desc': '주행 중 획득 가능한 반짝이는 황금 깃털 아이템'
-    },
 ]
 
 # 2. Master Background Screens (무손상 원본 원화 배경 가이드)
