@@ -17,9 +17,10 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_MODELS = (
-    "gemini-3.1-flash-image-preview",
-    "gemini-3.1-flash-image",
     "gemini-2.5-flash-image",
+    "gemini-2.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-3.1-flash-image-preview",
     "gemini-3-pro-image-preview",
 )
 
@@ -61,6 +62,23 @@ def encode_reference_part(path: Path) -> dict:
             "data": base64.b64encode(raw).decode("ascii"),
         }
     }
+
+
+def list_models_on_key(api_key: str) -> list[dict]:
+    """Query official Gemini API ListModels endpoint to inspect models enabled on this key."""
+    url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=100"
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={"x-goog-api-key": api_key},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        return data.get("models", [])
+    except Exception as exc:
+        print(f"ListModels check failed: {exc}", file=sys.stderr)
+        return []
 
 
 def extract_image_bytes(resp_json: dict) -> tuple[bytes, str, str]:
@@ -143,6 +161,7 @@ def main() -> int:
         else (requested_model,)
     )
 
+    had_quota_error = False
     for model in candidates:
         print(f"Trying Gemini AI Studio model: {model}")
         for use_img_cfg in (True, False):
@@ -153,9 +172,12 @@ def main() -> int:
             except urllib.error.HTTPError as err:
                 err_body = err.read().decode("utf-8", errors="replace")[:500]
                 print(f"HTTP {err.code} from {model} (imageConfig={use_img_cfg}): {err_body}", file=sys.stderr)
-                if err.code == 429 or err.code in (401, 403):
-                    # Quota or auth error: stop immediately without retrying.
+                if err.code in (401, 403):
                     return 2
+                if err.code == 429:
+                    had_quota_error = True
+                    # Do not retry this model; check next distinct model if in 'auto' mode.
+                    break
                 if err.code == 400 and use_img_cfg and "imageConfig" in err_body:
                     continue
                 if err.code in (400, 404):
@@ -177,8 +199,15 @@ def main() -> int:
                     fh.write(f"used_model={model}\n")
             return 0
 
+    print("Listing models available on this API key for diagnostics:")
+    for m in list_models_on_key(api_key):
+        m_name = m.get("name", "")
+        methods = m.get("supportedGenerationMethods", [])
+        if any(k in m_name.lower() for k in ("flash", "image", "imagen")):
+            print(f"  - {m_name} (methods={methods})")
+
     print("Error: no candidate model succeeded.", file=sys.stderr)
-    return 4
+    return 2 if had_quota_error else 4
 
 
 if __name__ == "__main__":
