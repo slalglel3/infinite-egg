@@ -1,0 +1,70 @@
+name: Generate Road Asset Sample
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Gemini AI Studio model ID (or 'auto')"
+        required: false
+        default: "auto"
+      output_stem:
+        description: "Output filename without extension inside docs/asset_samples"
+        required: false
+        default: "rustic_master_straight_02_v3"
+      aspect_ratio:
+        description: "Image aspect ratio (e.g. 16:9, 1:1)"
+        required: false
+        default: "16:9"
+      refs:
+        description: "Comma-separated repo reference image paths"
+        required: false
+        default: "docs/asset_samples/rustic_master_straight_01_v2.jpg,docs/asset_samples/rustic_master_straight_02_v2.jpg"
+      prompt:
+        description: "Optional prompt override (leave blank for aligned straight_02_v3 default)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate image via Gemini AI Studio
+        id: gen
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          INPUT_MODEL: ${{ inputs.model }}
+          INPUT_OUTPUT_STEM: ${{ inputs.output_stem }}
+          INPUT_ASPECT_RATIO: ${{ inputs.aspect_ratio }}
+          INPUT_REFS: ${{ inputs.refs }}
+          INPUT_PROMPT: ${{ inputs.prompt }}
+        run: python3 .github/scripts/generate_road_asset.py
+
+      - name: Upload generated image artifact
+        if: steps.gen.outputs.output_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.output_stem }}
+          path: ${{ steps.gen.outputs.output_path }}
+
+      - name: Commit generated sample to docs/asset_samples
+        if: steps.gen.outputs.output_path != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          git add "${{ steps.gen.outputs.output_path }}"
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: add ${{ inputs.output_stem }} generated via Gemini AI Studio (${{ steps.gen.outputs.used_model }})"
+            git push origin main
+          fi
