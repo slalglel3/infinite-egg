@@ -17,9 +17,8 @@ import urllib.request
 from pathlib import Path
 
 DEFAULT_MODELS = (
+    "gemini-3.1-flash-lite-image",
     "gemini-2.5-flash-image",
-    "gemini-2.5-flash-lite",
-    "gemini-3.8-flash",
     "gemini-3.1-flash-image-preview",
     "gemini-3-pro-image-preview",
 )
@@ -178,7 +177,7 @@ def main() -> int:
                     had_quota_error = True
                     # Do not retry this model; check next distinct model if in 'auto' mode.
                     break
-                if err.code == 400 and use_img_cfg and "imageConfig" in err_body:
+                if err.code == 400 and use_img_cfg and ("imageConfig" in err_body or "aspect" in err_body.lower()):
                     continue
                 if err.code in (400, 404):
                     break
