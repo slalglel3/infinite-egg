@@ -1,12 +1,13 @@
 {
   "name": "infinite-egg",
   "private": true,
-  "version": "3.3.0",
+  "version": "3.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && cp dist/index.html infinite-egg.html",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "apply-layout": "node scripts/apply-layout-spec.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

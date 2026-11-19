@@ -1,41 +1,25 @@
 import React, { useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import { GameStats, UserProgress } from '../types/game';
-import { RotateCcw, Trophy, Home, Coins, Sparkles } from 'lucide-react';
-import { getEggSkinById } from '../data/eggSkins';
-import { EggIllustration } from './common/EggIllustration';
+import { RotateCcw, Home } from 'lucide-react';
 
 interface GameOverModalProps {
   stats: GameStats;
   reason: 'CRACKED' | 'FALL';
   progress: UserProgress;
-  leveledUp: boolean;
   isNewRecord: boolean;
-  earnedGold?: number;
   onRestart: () => void;
   onGoHome: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
   stats,
+  reason,
   progress,
-  leveledUp,
   isNewRecord,
-  earnedGold = 0,
   onRestart,
   onGoHome,
 }) => {
-  const currentSkin = getEggSkinById(progress.selectedEggId);
-
   useEffect(() => {
-    if (isNewRecord && stats.distanceMeters > 0) {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-    }
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'Enter') {
         e.preventDefault();
@@ -45,125 +29,63 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isNewRecord, stats.distanceMeters, onRestart]);
+  }, [onRestart]);
 
   return (
-    <div className="absolute inset-0 bg-black/75 backdrop-blur-[4px] flex items-center justify-center p-4 z-50 animate-fade-in select-none">
-      {/* 아늑한 헛간 치료실 & 원목 전광판 패널 */}
-      <div className="panel-wood w-full max-w-[350px] p-5 flex flex-col items-center gap-2.5 text-center shadow-2xl border-4 border-[#2b1306] animate-scale-up relative">
-        {/* 상단 밧줄 매듭 장식 */}
-        <div className="absolute -top-3.5 left-6 text-sm opacity-80 pointer-events-none">🪢</div>
-        <div className="absolute -top-3.5 right-6 text-sm opacity-80 pointer-events-none">🪢</div>
+    <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex items-center justify-center p-4 z-50 select-none">
+      <div className="w-full max-w-[330px] p-5 rounded-2xl border-2 border-slate-900 bg-white flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-col items-center gap-1">
+          <h2 className="text-2xl font-black font-mono tracking-wider text-slate-900">
+            GAME OVER
+          </h2>
+          <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full border border-rose-600 text-rose-600">
+            {reason === 'CRACKED' ? 'CRACKED (내구도 0)' : 'FALL (경로 이탈/추락)'}
+          </span>
+        </div>
 
-        {/* 상단: 묵직한 3D GAME OVER 텍스트 */}
-        <h2
-          style={{
-            fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-            textShadow: '-2px -2px 0 #2b1306, 2px -2px 0 #2b1306, -2px 2px 0 #2b1306, 2px 2px 0 #2b1306, 0 4px 0 #1a0a03',
-          }}
-          className="text-4xl font-black text-rose-400 tracking-wider -mt-1"
-        >
-          GAME OVER
-        </h2>
-
-        {/* 신기록 엠블럼 */}
         {isNewRecord && stats.distanceMeters > 0 && (
-          <div className="wood-badge py-1 px-3.5 bg-gradient-to-r from-amber-400 to-amber-500 text-[#2b1306] font-black text-xs shadow-md border-2 border-[#2b1306] flex items-center gap-1.5 animate-bounce">
-            <Trophy size={14} className="fill-[#2b1306] text-[#2b1306]" />
-            <span>최고 신기록 경신!</span>
-          </div>
+          <span className="text-xs font-mono font-black px-2.5 py-0.5 rounded-full border border-emerald-700 text-emerald-700">
+            NEW RECORD
+          </span>
         )}
 
-        {/* 상단 캐릭터: 포근한 볏짚 둥지에서 쉬고 있는 아픈 달걀 */}
-        <div className="relative w-24 h-24 my-1 flex items-center justify-center">
-          {/* 바닥 볏짚 둥지 */}
-          <div className="absolute -bottom-2 w-24 h-6 bg-amber-800/60 rounded-full border border-amber-600/40 blur-[1px] flex items-center justify-center">
-            <span className="text-[10px] opacity-40 text-amber-200">🌾🌾🌾</span>
-          </div>
-
-          <EggIllustration
-            skin={currentSkin}
-            equippedCostumes={currentSkin.hasFixedOutfit ? currentSkin.bundledCostumes : progress.equippedCostumes}
-            expression="HURT"
-            idPrefix="gameover-hero-"
-            className="w-18 h-22 drop-shadow-xl overflow-visible animate-pulse relative z-10"
-          />
-        </div>
-
-        {/* 헛간 원목 거리 전광판 스코어보드 */}
-        <div className="w-full bg-[#1a0a03] rounded-2xl p-3 border-2 border-amber-600/60 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] flex flex-col items-center gap-1.5 text-white">
-          <span className="text-[10px] font-black tracking-widest text-amber-400 uppercase">
-            RUN DISTANCE
-          </span>
-
-          <div className="flex items-baseline gap-1">
-            <span
-              style={{
-                fontFamily: "'Fredoka', 'Jua', 'Black Han Sans', sans-serif",
-                textShadow: '0 2px 4px rgba(245, 158, 11, 0.5)',
-              }}
-              className="text-4xl font-black text-amber-300 tracking-tight"
-            >
+        {/* 핵심 플레이 지표 요약 박스 */}
+        <div className="w-full border border-slate-900 rounded-xl p-3 flex flex-col gap-2 font-mono text-xs">
+          <div className="flex items-baseline justify-center gap-1 pb-2 border-b border-slate-300">
+            <span className="text-3xl font-black text-slate-900">
               {stats.distanceMeters.toLocaleString()}
             </span>
-            <span className="text-sm font-bold text-amber-400">m</span>
+            <span className="text-sm font-bold text-slate-600">m</span>
           </div>
 
-          {/* 획득 보상 원목 뱃지 바 */}
-          <div className="w-full pt-1.5 mt-0.5 border-t border-white/15 flex items-center justify-around text-xs font-black">
-            <div className="flex items-center gap-1 text-emerald-400">
-              <Sparkles size={12} />
-              <span>+{stats.distanceMeters} EXP</span>
-            </div>
-
-            {earnedGold > 0 && (
-              <div className="flex items-center gap-1 text-yellow-300">
-                <Coins size={12} className="fill-yellow-300" />
-                <span>+{earnedGold} G</span>
-              </div>
-            )}
-
-            {leveledUp && (
-              <span className="bg-emerald-600 text-white px-2 py-0.2 rounded-full text-[10px] font-black border border-white/40 animate-pulse">
-                Lv.{progress.level} UP!
-              </span>
-            )}
+          <div className="flex justify-between text-slate-700">
+            <span>최고 기록</span>
+            <span className="font-bold text-slate-900">{progress.bestDistanceMeters.toLocaleString()} m</span>
+          </div>
+          <div className="flex justify-between text-slate-700">
+            <span>반창고 획득</span>
+            <span className="font-bold text-slate-900">{stats.itemsCollected}</span>
           </div>
         </div>
 
-        {/* 하단 2대 3D 볼륨 버튼: [ 🔄 다시 굴러가기 ] & [ 🏠 헛간 홈으로 ] */}
-        <div className="w-full grid grid-cols-2 gap-3 mt-2">
+        {/* 재시작 / 홈 버튼 */}
+        <div className="w-full grid grid-cols-2 gap-2.5 mt-1">
           <button
             type="button"
             onClick={onRestart}
-            className="btn-3d-emerald h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-white active:scale-95 transition-transform"
+            className="h-12 rounded-xl border-2 border-slate-900 bg-transparent text-slate-900 font-black text-sm flex items-center justify-center gap-1.5 active:bg-slate-900/10"
           >
-            <RotateCcw size={18} className="stroke-[3] text-white" />
-            <span
-              style={{
-                textShadow: '-1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 3px 0 #064e3b',
-                WebkitTextStroke: '0.8px #064e3b',
-              }}
-              className="text-white tracking-wide"
-            >
-              다시 굴러가기
-            </span>
+            <RotateCcw size={16} />
+            <span>다시 시작</span>
           </button>
 
           <button
             type="button"
             onClick={onGoHome}
-            className="btn-3d-amber h-14 rounded-2xl flex items-center justify-center gap-2 text-base font-black cursor-pointer shadow-xl text-[#1e1b18] active:scale-95 transition-transform"
+            className="h-12 rounded-xl border-2 border-slate-900 bg-transparent text-slate-900 font-black text-sm flex items-center justify-center gap-1.5 active:bg-slate-900/10"
           >
-            <Home size={18} className="stroke-[3] text-[#1e1b18]" />
-            <span
-              style={{
-                textShadow: '0 1px 0 rgba(255, 255, 255, 0.4)',
-              }}
-              className="text-[#1e1b18] tracking-wide"
-            >
-              헛간 홈으로
-            </span>
+            <Home size={16} />
+            <span>홈으로</span>
           </button>
         </div>
       </div>

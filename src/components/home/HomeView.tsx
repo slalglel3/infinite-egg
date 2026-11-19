@@ -1,21 +1,87 @@
-import React, { useState } from 'react';
-import { UserProgress, HomeTabType, EventMapItem } from '../../types/game';
-import { getEggSkinById } from '../../data/eggSkins';
-import { ACHIEVEMENTS, getAchievementProgress } from '../../data/achievements';
-import { HomeHeader } from './HomeHeader';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  Copy,
+  FileCode2,
+  Grid,
+  Layers,
+  Pencil,
+  Play,
+  SlidersHorizontal,
+  Trash2,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
+import { HomeTabType, UserProgress } from '../../types/game';
+import {
+  HomeLayoutElement,
+  HomeTabsLayoutMap,
+  LayerAction,
+  ResizeHandleDir,
+  WireframeElementKind,
+} from '../../types/homeLayout';
+import {
+  clampElementRect,
+  cloneDefaultAllLayouts,
+  cloneDefaultTabLayout,
+  ELEMENT_MIN_HEIGHT,
+  ELEMENT_MIN_WIDTH,
+  HOME_TAB_META,
+  loadHomeLayouts,
+  MOBILE_STAGE_WIDTH,
+  moveElementLayer,
+  normalizeTabZOrder,
+  saveHomeLayouts,
+} from '../../data/defaultHomeLayouts';
+import { computeLayoutChanges, decodeLayoutsFromUrlHash } from '../../utils/layoutSync';
 import { BottomTabBar } from './BottomTabBar';
-import { MainTab } from './tabs/MainTab';
-import { EggsTab } from './tabs/EggsTab';
-import { EventsTab } from './tabs/EventsTab';
-import { AchievementsTab } from './tabs/AchievementsTab';
-import { ShopTab } from './tabs/ShopTab';
+import { WireframeElementBox } from './WireframeElementBox';
+import {
+  LeftLayerPanel,
+  MobileInspectorSheet,
+  MobileLayerSheet,
+  RightInspectorPanel,
+} from './HomeLayoutPanels';
+import { LayoutSyncModal } from './LayoutSyncModal';
 
 interface HomeViewProps {
   progress: UserProgress;
   isMuted: boolean;
   onToggleMute: () => void;
-  onStartGame: (eventMap?: EventMapItem) => void;
-  onUpdateProgress: (updated: UserProgress) => void;
+  onStartGame: () => void;
+}
+
+type DragInteraction =
+  | {
+      mode: 'MOVE';
+      elementId: string;
+      startClientX: number;
+      startClientY: number;
+      origX: number;
+      origY: number;
+      origW: number;
+      origH: number;
+    }
+  | {
+      mode: 'RESIZE';
+      elementId: string;
+      handle: ResizeHandleDir;
+      startClientX: number;
+      startClientY: number;
+      origX: number;
+      origY: number;
+      origW: number;
+      origH: number;
+    };
+
+function getInitialLayouts(): HomeTabsLayoutMap {
+  if (typeof window !== 'undefined' && window.location.hash.startsWith('#layout=')) {
+    const fromHash = decodeLayoutsFromUrlHash(window.location.hash);
+    if (fromHash) return fromHash;
+  }
+  return loadHomeLayouts();
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -23,92 +89,710 @@ export const HomeView: React.FC<HomeViewProps> = ({
   isMuted,
   onToggleMute,
   onStartGame,
-  onUpdateProgress,
 }) => {
   const [activeTab, setActiveTab] = useState<HomeTabType>('MAIN');
+  const [layouts, setLayouts] = useState<HomeTabsLayoutMap>(() => getInitialLayouts());
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    const initial = getInitialLayouts().MAIN;
+    return initial[initial.length - 1]?.id ?? null;
+  });
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isMobileEditMode, setIsMobileEditMode] = useState(false);
+  const [snapGrid, setSnapGrid] = useState(true);
+  const [viewportWidth, setViewportWidth] = useState<number>(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 390
+  );
 
-  const currentSkin = getEggSkinById(progress.selectedEggId);
+  // 모바일 시트 & 공용 AGY 반영 모달 상태
+  const [mobileLayerOpen, setMobileLayerOpen] = useState(false);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [syncModalMode, setSyncModalMode] = useState<'EXPORT' | 'IMPORT' | null>(null);
 
-  // 수령 가능한 도전 과제 개수 계산 (하단 탭 뱃지)
-  const unclaimedCount = ACHIEVEMENTS.filter((ach) => {
-    const val = getAchievementProgress(ach.id, progress);
-    const isDone = val >= ach.target;
-    const isClaimed = progress.claimedAchievementIds.includes(ach.id);
-    return isDone && !isClaimed;
-  }).length;
+  const dragRef = useRef<DragInteraction | null>(null);
+  const activeTabRef = useRef<HomeTabType>(activeTab);
+  const snapPx = snapGrid ? 4 : 0;
+  activeTabRef.current = activeTab;
+
+  const isDesktopViewport = viewportWidth >= 840;
+  const mobileFrameWidth = isDesktopViewport ? MOBILE_STAGE_WIDTH : Math.min(viewportWidth, 430);
+  const stageScale = isDesktopViewport ? 1 : mobileFrameWidth / MOBILE_STAGE_WIDTH;
+  const stageScaleRef = useRef<number>(stageScale);
+  stageScaleRef.current = stageScale;
+
+  // PC에서는 기본 편집 모드(미리보기 토글 가능), 모바일에서는 기본 미리보기([UI 편집] 탭 시 즉시 편집)
+  const stageEditable = isDesktopViewport ? !isPreviewMode : isMobileEditMode;
+
+  useEffect(() => {
+    const onResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    saveHomeLayouts(layouts);
+  }, [layouts]);
+
+  // 편집 모드 키보드 미세 이동(화살표) & 삭제(Delete) 단축키
+  useEffect(() => {
+    if (!stageEditable || !selectedId) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+        return;
+      }
+      const step = snapGrid ? 4 : 1;
+      const tab = activeTabRef.current;
+      const cur = layouts[tab].find((el) => el.id === selectedId);
+      if (!cur) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setLayouts((prev) => ({
+          ...prev,
+          [tab]: prev[tab].map((el) =>
+            el.id === selectedId ? { ...el, ...clampElementRect({ ...el, x: el.x - step }) } : el
+          ),
+        }));
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setLayouts((prev) => ({
+          ...prev,
+          [tab]: prev[tab].map((el) =>
+            el.id === selectedId ? { ...el, ...clampElementRect({ ...el, x: el.x + step }) } : el
+          ),
+        }));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setLayouts((prev) => ({
+          ...prev,
+          [tab]: prev[tab].map((el) =>
+            el.id === selectedId ? { ...el, ...clampElementRect({ ...el, y: el.y - step }) } : el
+          ),
+        }));
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setLayouts((prev) => ({
+          ...prev,
+          [tab]: prev[tab].map((el) =>
+            el.id === selectedId ? { ...el, ...clampElementRect({ ...el, y: el.y + step }) } : el
+          ),
+        }));
+      } else if (e.key === 'Delete') {
+        e.preventDefault();
+        const remaining = normalizeTabZOrder(layouts[tab].filter((el) => el.id !== selectedId));
+        setLayouts((prev) => ({ ...prev, [tab]: remaining }));
+        setSelectedId([...remaining].sort((a, b) => b.zIndex - a.zIndex)[0]?.id ?? null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [stageEditable, selectedId, snapGrid, layouts]);
+
+  const currentElements = layouts[activeTab];
+  const selectedElement = useMemo(
+    () => currentElements.find((el) => el.id === selectedId) ?? null,
+    [currentElements, selectedId]
+  );
+  const diffSummary = useMemo(() => computeLayoutChanges(layouts), [layouts]);
+
+  const updateTabElements = useCallback(
+    (tab: HomeTabType, updater: (prev: HomeLayoutElement[]) => HomeLayoutElement[]) => {
+      setLayouts((prev) => ({
+        ...prev,
+        [tab]: updater(prev[tab]),
+      }));
+    },
+    []
+  );
+
+  const handleTabChange = useCallback(
+    (nextTab: HomeTabType) => {
+      setActiveTab(nextTab);
+      const nextList = layouts[nextTab];
+      const topEl = [...nextList].sort((a, b) => b.zIndex - a.zIndex)[0] ?? null;
+      setSelectedId(topEl?.id ?? null);
+    },
+    [layouts]
+  );
+
+  const handleUpdateElement = useCallback(
+    (id: string, patch: Partial<HomeLayoutElement>) => {
+      updateTabElements(activeTabRef.current, (prev) =>
+        prev.map((el) => {
+          if (el.id !== id) return el;
+          const merged = { ...el, ...patch };
+          if (
+            patch.x !== undefined ||
+            patch.y !== undefined ||
+            patch.w !== undefined ||
+            patch.h !== undefined
+          ) {
+            return { ...merged, ...clampElementRect(merged, 0) };
+          }
+          return merged;
+        })
+      );
+    },
+    [updateTabElements]
+  );
+
+  const handleLayerAction = useCallback(
+    (id: string, action: LayerAction) => {
+      updateTabElements(activeTabRef.current, (prev) => moveElementLayer(prev, id, action));
+    },
+    [updateTabElements]
+  );
+
+  const handleCreateElement = useCallback(
+    (kind: WireframeElementKind) => {
+      const tab = activeTabRef.current;
+      const newId = `${tab.toLowerCase()}-custom-${Date.now().toString(36)}`;
+      const maxZ = layouts[tab].reduce((m, el) => Math.max(m, el.zIndex), 0);
+      const defaultH =
+        kind === 'slot-grid' || kind === 'avatar'
+          ? 160
+          : kind === 'banner'
+            ? 120
+            : kind === 'button' || kind === 'segmented' || kind === 'badge'
+              ? 42
+              : 74;
+
+      const created: HomeLayoutElement = {
+        id: newId,
+        name: `새 요소 ${layouts[tab].length + 1}`,
+        description: '신규 추가된 UI 요소 설명',
+        kind,
+        x: 55,
+        y: 160,
+        w: 280,
+        h: defaultH,
+        zIndex: maxZ + 1,
+      };
+      updateTabElements(tab, (prev) => normalizeTabZOrder([...prev, created]));
+      setSelectedId(newId);
+    },
+    [layouts, updateTabElements]
+  );
+
+  const handleDuplicateElement = useCallback(
+    (id: string) => {
+      const tab = activeTabRef.current;
+      const src = layouts[tab].find((el) => el.id === id);
+      if (!src) return;
+      const dupId = `${tab.toLowerCase()}-dup-${Date.now().toString(36)}`;
+      const maxZ = layouts[tab].reduce((m, el) => Math.max(m, el.zIndex), 0);
+      const rect = clampElementRect({ x: src.x + 12, y: src.y + 12, w: src.w, h: src.h });
+      const duplicated: HomeLayoutElement = {
+        ...src,
+        ...rect,
+        id: dupId,
+        name: `${src.name} 사본`,
+        zIndex: maxZ + 1,
+      };
+      updateTabElements(tab, (prev) => normalizeTabZOrder([...prev, duplicated]));
+      setSelectedId(dupId);
+    },
+    [layouts, updateTabElements]
+  );
+
+  const handleDeleteElement = useCallback(
+    (id: string) => {
+      const tab = activeTabRef.current;
+      const remaining = normalizeTabZOrder(layouts[tab].filter((el) => el.id !== id));
+      updateTabElements(tab, () => remaining);
+      if (selectedId === id) {
+        const nextTop = [...remaining].sort((a, b) => b.zIndex - a.zIndex)[0] ?? null;
+        setSelectedId(nextTop?.id ?? null);
+      }
+    },
+    [layouts, selectedId, updateTabElements]
+  );
+
+  const handleResetTab = useCallback(() => {
+    const tab = activeTabRef.current;
+    const resetList = cloneDefaultTabLayout(tab);
+    updateTabElements(tab, () => resetList);
+    setSelectedId(resetList[resetList.length - 1]?.id ?? null);
+  }, [updateTabElements]);
+
+  const handleResetAll = useCallback(() => {
+    const fresh = cloneDefaultAllLayouts();
+    setLayouts(fresh);
+    const list = fresh[activeTabRef.current];
+    setSelectedId(list[list.length - 1]?.id ?? null);
+  }, []);
+
+  const handleImportLayouts = useCallback((imported: HomeTabsLayoutMap) => {
+    setLayouts(imported);
+    const list = imported[activeTabRef.current];
+    const topEl = [...list].sort((a, b) => b.zIndex - a.zIndex)[0] ?? null;
+    setSelectedId(topEl?.id ?? null);
+  }, []);
+
+  // 전역 포인터 드래그/리사이즈 핸들러 (모바일 스케일 보정 포함)
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+
+      const scale = stageScaleRef.current || 1;
+      const dx = (e.clientX - drag.startClientX) / scale;
+      const dy = (e.clientY - drag.startClientY) / scale;
+
+      if (drag.mode === 'MOVE') {
+        const next = clampElementRect(
+          {
+            x: drag.origX + dx,
+            y: drag.origY + dy,
+            w: drag.origW,
+            h: drag.origH,
+          },
+          snapPx
+        );
+        updateTabElements(activeTabRef.current, (prev) =>
+          prev.map((el) => (el.id === drag.elementId ? { ...el, ...next } : el))
+        );
+        return;
+      }
+
+      // 8방향 리사이즈 계산
+      let nx = drag.origX;
+      let ny = drag.origY;
+      let nw = drag.origW;
+      let nh = drag.origH;
+
+      if (drag.handle.includes('e')) {
+        nw = drag.origW + dx;
+      }
+      if (drag.handle.includes('s')) {
+        nh = drag.origH + dy;
+      }
+      if (drag.handle.includes('w')) {
+        const clampedDx = Math.min(drag.origW - ELEMENT_MIN_WIDTH, Math.max(-drag.origX, dx));
+        nx = drag.origX + clampedDx;
+        nw = drag.origW - clampedDx;
+      }
+      if (drag.handle.includes('n')) {
+        const clampedDy = Math.min(drag.origH - ELEMENT_MIN_HEIGHT, Math.max(-drag.origY, dy));
+        ny = drag.origY + clampedDy;
+        nh = drag.origH - clampedDy;
+      }
+
+      const snap = (v: number) => (snapPx > 1 ? Math.round(v / snapPx) * snapPx : Math.round(v));
+      nw = Math.max(ELEMENT_MIN_WIDTH, Math.min(MOBILE_STAGE_WIDTH - nx, snap(nw)));
+      nh = Math.max(ELEMENT_MIN_HEIGHT, Math.min(900, snap(nh)));
+      nx = Math.max(0, Math.min(MOBILE_STAGE_WIDTH - ELEMENT_MIN_WIDTH, snap(nx)));
+      ny = Math.max(0, Math.min(1150, snap(ny)));
+
+      updateTabElements(activeTabRef.current, (prev) =>
+        prev.map((el) => (el.id === drag.elementId ? { ...el, x: nx, y: ny, w: nw, h: nh } : el))
+      );
+    };
+
+    const handlePointerUp = () => {
+      dragRef.current = null;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, [snapPx, updateTabElements]);
+
+  const handleSelectMouseDown = useCallback(
+    (e: React.PointerEvent, elementId: string) => {
+      e.stopPropagation();
+      const target = currentElements.find((el) => el.id === elementId);
+      if (!target) return;
+      setSelectedId(elementId);
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch {
+        // 합성 마우스 이벤트 등 무시
+      }
+      dragRef.current = {
+        mode: 'MOVE',
+        elementId,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        origX: target.x,
+        origY: target.y,
+        origW: target.w,
+        origH: target.h,
+      };
+    },
+    [currentElements]
+  );
+
+  const handleResizeHandleDown = useCallback(
+    (e: React.PointerEvent, elementId: string, handle: ResizeHandleDir) => {
+      e.stopPropagation();
+      const target = currentElements.find((el) => el.id === elementId);
+      if (!target) return;
+      setSelectedId(elementId);
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      } catch {
+        // 합성 마우스 이벤트 등 무시
+      }
+      dragRef.current = {
+        mode: 'RESIZE',
+        elementId,
+        handle,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        origX: target.x,
+        origY: target.y,
+        origW: target.w,
+        origH: target.h,
+      };
+    },
+    [currentElements]
+  );
+
+  const sortedForRender = useMemo(
+    () => [...currentElements].sort((a, b) => a.zIndex - b.zIndex),
+    [currentElements]
+  );
+
+  const stageHeightPx = useMemo(() => {
+    const maxBottom = currentElements.reduce((m, el) => Math.max(m, el.y + el.h + 24), 580);
+    return Math.max(580, maxBottom);
+  }, [currentElements]);
+
+  const tabMeta = HOME_TAB_META[activeTab];
 
   return (
-    <div className="absolute inset-0 bg-barn-workshop flex flex-col justify-between select-none z-20 overflow-hidden">
-      {/* 따뜻한 햇살 광선 & 떠다니는 깃털/나뭇잎 장식 레이어 */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden opacity-40">
-        {/* 상단 좌측에서 쏟아지는 햇살 빛줄기 (God Rays) */}
-        <div 
-          className="absolute -top-10 -left-10 w-96 h-96 rounded-full blur-3xl pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(255,250,200,0.6) 0%, rgba(255,220,120,0.2) 50%, transparent 80%)'
+    <div className="absolute inset-0 bg-slate-100 flex items-center justify-center select-none z-20 overflow-hidden">
+      {/* 1. 좌측 여백: UI 레이어/요소 목록 & 생성 패널 (데스크톱 >= 840px) */}
+      {isDesktopViewport && (
+        <div className="flex-1 h-full flex justify-end overflow-hidden">
+          <LeftLayerPanel
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            elements={currentElements}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onCreateElement={handleCreateElement}
+            onDeleteElement={handleDeleteElement}
+            onDuplicateElement={handleDuplicateElement}
+            onLayerAction={handleLayerAction}
+            onResetTab={handleResetTab}
+            isPreviewMode={isPreviewMode}
+            onTogglePreview={() => setIsPreviewMode((v) => !v)}
+            snapGrid={snapGrid}
+            onToggleSnap={() => setSnapGrid((v) => !v)}
+            onStartGame={onStartGame}
+          />
+        </div>
+      )}
+
+      {/* 2. 중앙: 실제 모바일 화면 프레임 (PC 390px 고정 / 모바일 가용 폭 반응형) */}
+      <div
+        style={!isDesktopViewport ? { width: `${mobileFrameWidth}px` } : undefined}
+        className={`relative bg-white flex flex-col justify-between overflow-hidden shrink-0 ${
+          isDesktopViewport
+            ? 'w-[390px] h-full max-h-[860px] border-x-2 border-slate-300 shadow-xl'
+            : 'h-full'
+        }`}
+      >
+        {/* 2.1 상단 공통 와이어프레임 헤더 */}
+        <header className="w-full flex items-center justify-between px-3.5 py-2 pt-safe border-b border-slate-300 z-30 shrink-0 bg-white">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-base font-black tracking-tight text-slate-900 shrink-0">
+              무한의 계란
+            </span>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border border-slate-400 text-slate-500 truncate">
+              TAB {tabMeta.num}/5 · {tabMeta.label}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border border-slate-400 text-slate-700">
+              BEST {progress.bestDistanceMeters.toLocaleString()}m
+            </span>
+
+            <button
+              type="button"
+              onClick={onToggleMute}
+              className="w-8 h-8 rounded-lg border border-slate-900 bg-transparent text-slate-900 flex items-center justify-center active:bg-slate-900/10"
+              aria-label="음소거 토글"
+            >
+              {isMuted ? <VolumeX size={15} className="text-rose-600" /> : <Volume2 size={15} />}
+            </button>
+          </div>
+        </header>
+
+        {/* 2.1b 모바일 전용 컴팩트 에디터 / 반영 툴바 (< 840px) */}
+        {!isDesktopViewport && (
+          <div
+            role="toolbar"
+            aria-label="모바일 UI 편집 툴바"
+            className="w-full px-2.5 py-1.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between gap-1.5 shrink-0 z-30"
+          >
+            {!isMobileEditMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileEditMode(true);
+                    if (!selectedId) {
+                      const topEl = [...currentElements].sort((a, b) => b.zIndex - a.zIndex)[0];
+                      setSelectedId(topEl?.id ?? null);
+                    }
+                  }}
+                  className="h-8 px-2.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-[11px] font-black flex items-center gap-1 active:bg-blue-100"
+                >
+                  <Pencil size={12} />
+                  <span>UI 편집</span>
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSyncModalMode('EXPORT')}
+                    className={`h-8 px-2.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 ${
+                      diffSummary.totalChanges > 0
+                        ? 'border-blue-600 bg-white text-blue-700'
+                        : 'border-slate-300 bg-white text-slate-700'
+                    }`}
+                  >
+                    <FileCode2 size={12} />
+                    <span>
+                      {diffSummary.totalChanges > 0
+                        ? `AGY 반영 (${diffSummary.totalChanges})`
+                        : '내보내기/불러오기'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onStartGame}
+                    className="h-8 px-2.5 rounded-lg border-2 border-slate-900 bg-white text-slate-900 text-[11px] font-black flex items-center gap-1 active:bg-slate-900/10"
+                  >
+                    <Play size={11} className="stroke-[2.5]" />
+                    <span>플레이</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="w-full flex items-center justify-between gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileEditMode(false)}
+                  className="h-8 px-2 rounded-lg border-2 border-slate-900 bg-slate-900 text-white text-[11px] font-black flex items-center gap-1 shrink-0"
+                >
+                  <Check size={12} />
+                  <span>완료</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileLayerOpen(true)}
+                  className="h-8 px-2 rounded-lg border border-slate-400 bg-white text-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0"
+                >
+                  <Layers size={12} />
+                  <span>레이어+</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSnapGrid((v) => !v)}
+                  className={`h-8 px-2 rounded-lg border text-[11px] font-bold flex items-center gap-1 shrink-0 ${
+                    snapGrid
+                      ? 'border-slate-800 bg-slate-200/70 text-slate-900'
+                      : 'border-slate-300 bg-white text-slate-500'
+                  }`}
+                >
+                  <Grid size={12} />
+                  <span>{snapGrid ? '스냅' : '자유'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSyncModalMode('EXPORT')}
+                  className="h-8 px-2 rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-[11px] font-black flex items-center gap-1 shrink-0"
+                >
+                  <FileCode2 size={12} />
+                  <span>
+                    반영{diffSummary.totalChanges > 0 ? `(${diffSummary.totalChanges})` : ''}
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 2.2 중앙 탭 캔버스 (개별 와이어프레임 UI 요소 배치 영역) */}
+        <main
+          onPointerDown={() => {
+            if (stageEditable) setSelectedId(null);
           }}
-        />
-        {/* 떠다니는 깃털과 나뭇잎 이모지 장식 */}
-        <span className="absolute top-28 left-8 text-amber-200 text-lg opacity-60 animate-pulse">🍃</span>
-        <span className="absolute top-44 right-12 text-yellow-100 text-sm opacity-50">🪶</span>
-        <span className="absolute bottom-48 left-16 text-emerald-200 text-xs opacity-50">🌱</span>
-        <span className="absolute bottom-56 right-20 text-amber-300 text-sm opacity-60">🍂</span>
+          className="flex-1 w-full overflow-y-auto overflow-x-hidden relative bg-white"
+        >
+          <div
+            style={{
+              width: `${MOBILE_STAGE_WIDTH * stageScale}px`,
+              height: `${stageHeightPx * stageScale}px`,
+            }}
+            className="relative mx-auto"
+          >
+            <div
+              style={{
+                width: `${MOBILE_STAGE_WIDTH}px`,
+                minHeight: `${stageHeightPx}px`,
+                transform: stageScale === 1 ? undefined : `scale(${stageScale})`,
+                transformOrigin: 'top left',
+              }}
+              className={`relative ${
+                stageEditable
+                  ? 'bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:16px_16px]'
+                  : 'bg-white'
+              }`}
+            >
+              {sortedForRender.map((el) => (
+                <WireframeElementBox
+                  key={el.id}
+                  element={el}
+                  isSelected={stageEditable && el.id === selectedId}
+                  editable={stageEditable}
+                  onSelectMouseDown={handleSelectMouseDown}
+                  onResizeHandleDown={handleResizeHandleDown}
+                  onTriggerPlay={onStartGame}
+                />
+              ))}
+            </div>
+          </div>
+        </main>
+
+        {/* 2.2b 모바일 편집 모드: 선택 요소 플로팅 퀵 액션 바 */}
+        {!isDesktopViewport && isMobileEditMode && selectedElement && (
+          <div className="w-full px-2.5 py-1.5 border-t border-blue-200 bg-blue-50/95 flex items-center justify-between gap-1.5 shrink-0 z-30">
+            <button
+              type="button"
+              onClick={() => setMobileInspectorOpen(true)}
+              className="flex-1 min-w-0 flex items-center gap-1.5 text-left px-2 py-1 rounded-lg bg-white border border-blue-400 active:bg-blue-100/50"
+            >
+              <span className="px-1 py-0.5 rounded bg-blue-600 text-white text-[9px] font-mono font-bold shrink-0">
+                z{selectedElement.zIndex}
+              </span>
+              <span className="text-[11px] font-black text-slate-900 truncate">
+                {selectedElement.name}
+              </span>
+              <span className="ml-auto inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-700 shrink-0">
+                <SlidersHorizontal size={11} />
+                <span>속성</span>
+              </span>
+            </button>
+
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleLayerAction(selectedElement.id, 'UP')}
+                className="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 flex items-center justify-center active:bg-slate-100"
+                aria-label="선택 요소 앞으로"
+                title="앞으로"
+              >
+                <ArrowUp size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLayerAction(selectedElement.id, 'DOWN')}
+                className="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 flex items-center justify-center active:bg-slate-100"
+                aria-label="선택 요소 뒤로"
+                title="뒤로"
+              >
+                <ArrowDown size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDuplicateElement(selectedElement.id)}
+                className="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-700 flex items-center justify-center active:bg-slate-100"
+                aria-label="선택 요소 복제"
+                title="복제"
+              >
+                <Copy size={12} />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteElement(selectedElement.id)}
+                className="w-8 h-8 rounded-lg border border-rose-300 bg-white text-rose-600 flex items-center justify-center active:bg-rose-50"
+                aria-label="선택 요소 삭제"
+                title="삭제"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 2.3 하단 5대 탭 네비게이션 */}
+        <BottomTabBar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
 
-      {/* 1. 상단 공통 헤더 */}
-      <HomeHeader
-        progress={progress}
-        isMuted={isMuted}
-        onToggleMute={onToggleMute}
-        onUpdateProgress={onUpdateProgress}
-      />
-
-      {/* 2. 중앙 탭 컨텐츠 렌더링 영역 */}
-      <main className="flex-1 flex flex-col min-h-0 w-full relative">
-        {activeTab === 'MAIN' && (
-          <MainTab
-            progress={progress}
-            currentSkin={currentSkin}
-            onStartGame={() => onStartGame()}
-            onGoToEggsTab={() => setActiveTab('EGGS')}
+      {/* 3. 우측 여백: 선택 요소 이름/설명/크기/순서/내보내기 인스펙터 (데스크톱 >= 840px) */}
+      {isDesktopViewport && (
+        <div className="flex-1 h-full flex justify-start overflow-hidden">
+          <RightInspectorPanel
+            activeTab={activeTab}
+            selectedElement={selectedElement}
+            allLayouts={layouts}
+            onUpdateElement={handleUpdateElement}
+            onLayerAction={handleLayerAction}
+            onDuplicateElement={handleDuplicateElement}
+            onDeleteElement={handleDeleteElement}
+            onResetAll={handleResetAll}
+            onOpenSyncModal={(mode) => setSyncModalMode(mode)}
           />
-        )}
+        </div>
+      )}
 
-        {activeTab === 'EGGS' && (
-          <EggsTab
-            progress={progress}
-            onUpdateProgress={onUpdateProgress}
-            onStartGame={() => onStartGame()}
-          />
-        )}
+      {/* 4. 모바일 레이어 & 요소 추가 시트 */}
+      {!isDesktopViewport && mobileLayerOpen && (
+        <MobileLayerSheet
+          activeTab={activeTab}
+          elements={currentElements}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onCreateElement={handleCreateElement}
+          onDeleteElement={handleDeleteElement}
+          onDuplicateElement={handleDuplicateElement}
+          onLayerAction={handleLayerAction}
+          onResetTab={handleResetTab}
+          onClose={() => setMobileLayerOpen(false)}
+        />
+      )}
 
-        {activeTab === 'EVENTS' && (
-          <EventsTab
-            onStartEventGame={(eventMap) => onStartGame(eventMap)}
-          />
-        )}
+      {/* 5. 모바일 요소 속성 편집 시트 */}
+      {!isDesktopViewport && mobileInspectorOpen && selectedElement && (
+        <MobileInspectorSheet
+          activeTab={activeTab}
+          selectedElement={selectedElement}
+          onUpdateElement={handleUpdateElement}
+          onLayerAction={handleLayerAction}
+          onDuplicateElement={handleDuplicateElement}
+          onDeleteElement={handleDeleteElement}
+          onClose={() => setMobileInspectorOpen(false)}
+        />
+      )}
 
-        {activeTab === 'ACHIEVEMENTS' && (
-          <AchievementsTab
-            progress={progress}
-            onUpdateProgress={onUpdateProgress}
-          />
-        )}
-
-        {activeTab === 'SHOP' && (
-          <ShopTab
-            progress={progress}
-            onUpdateProgress={onUpdateProgress}
-          />
-        )}
-      </main>
-
-      {/* 3. 하단 5대 탭 바텀 네비게이션 */}
-      <BottomTabBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        achievementBadgeCount={unclaimedCount}
-      />
+      {/* 6. PC / 모바일 공용 AGY 반영 · 백업 · 불러오기 모달 */}
+      {syncModalMode && (
+        <LayoutSyncModal
+          allLayouts={layouts}
+          initialMode={syncModalMode}
+          onImportLayouts={handleImportLayouts}
+          onResetAll={handleResetAll}
+          onClose={() => setSyncModalMode(null)}
+        />
+      )}
     </div>
   );
 };

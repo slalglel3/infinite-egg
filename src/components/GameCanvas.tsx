@@ -5,10 +5,23 @@ interface GameCanvasProps {
   engine: GameEngine;
   onJump: () => void;
   onTurn: () => void;
+  onTogglePause?: () => void;
 }
 
-export const GameCanvas: React.FC<GameCanvasProps> = ({ engine, onJump, onTurn }) => {
+export const GameCanvas: React.FC<GameCanvasProps> = ({
+  engine,
+  onJump,
+  onTurn,
+  onTogglePause,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const onJumpRef = useRef(onJump);
+  const onTurnRef = useRef(onTurn);
+  const onTogglePauseRef = useRef(onTogglePause);
+
+  onJumpRef.current = onJump;
+  onTurnRef.current = onTurn;
+  onTogglePauseRef.current = onTogglePause;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,20 +44,35 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ engine, onJump, onTurn }
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       engine.setScreenSize(width, height);
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // 2. 키보드 단축키 핸들러
+    // 2. 키보드 단축키 핸들러 (입력창 포커스 중이거나 홈/로비 대기 상태에서는 키 입력 가로채기 금지)
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.repeat) return;
+      if (!engine.isRunning) return;
+
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+        return;
+      }
+
+      if (e.code === 'KeyP' || e.code === 'Escape') {
+        if (onTogglePauseRef.current) {
+          e.preventDefault();
+          onTogglePauseRef.current();
+        }
+        return;
+      }
 
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         e.preventDefault();
-        onJump();
+        onJumpRef.current();
       } else if (
         e.code === 'KeyZ' ||
         e.code === 'KeyX' ||
@@ -54,16 +82,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ engine, onJump, onTurn }
         e.code === 'KeyD'
       ) {
         e.preventDefault();
-        onTurn();
+        onTurnRef.current();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
-    // 3. 메인 게임 루프 (60/120 FPS 부드러운 가변 델타타임)
+    // 3. 메인 게임 루프 (60/120 FPS 부드러운 가변 델타타임, 음수/스파이크 dt 원천 차단)
     const loop = (currentTime: number) => {
-      const dt = Math.min(0.08, (currentTime - lastTime) / 1000); // 델타 타임 상한선 80ms
-      lastTime = currentTime;
+      const rawDt = (currentTime - lastTime) / 1000;
+      lastTime = Math.max(lastTime, currentTime);
+      const dt = Number.isFinite(rawDt) && rawDt > 0 ? Math.min(0.08, rawDt) : 0;
 
       engine.update(dt);
       engine.render(ctx);
@@ -79,7 +108,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ engine, onJump, onTurn }
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [engine, onJump, onTurn]);
+  }, [engine]);
 
   return (
     <canvas

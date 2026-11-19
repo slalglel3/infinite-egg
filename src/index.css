@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Mobile APK Standard Base CSS & Safe Area
+   Mobile APK Standard Base CSS & Safe Area (Wireframe Skeleton)
    ========================================================================== */
 
-/* 1. Global Reset & Box Sizing */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
-/* 2. 뷰포트 고정 및 터치 제스처 방어 (화면 움직임 원천 차단) */
 html, body {
   width: 100%;
   height: 100%;
@@ -30,7 +30,8 @@ html, body {
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", Roboto, sans-serif;
-  background-color: #f0f9ff;
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 #root {
@@ -46,266 +47,31 @@ html, body {
   flex-direction: column;
 }
 
-/* 3. 스마트폰 Safe Area 안전 영역 (상단 노치/상태바 & 하단 제스처 바 오버랩 방지) */
 .safe-container {
-  padding-top: max(env(safe-area-inset-top, 0px), 18px);
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  padding-top: max(env(safe-area-inset-top, 0px), 16px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
   padding-left: max(env(safe-area-inset-left, 0px), 14px);
   padding-right: max(env(safe-area-inset-right, 0px), 14px);
 }
 
 .pt-safe {
-  padding-top: max(env(safe-area-inset-top, 0px), 16px);
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
 }
 
 .pb-safe {
-  padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px);
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px);
 }
 
-/* 4. 버튼 기본 리셋 */
 button {
   cursor: pointer;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ==========================================================================
-   Tactile Arcade 3D GUI Design System ('운빨존많겜' & '무한의 계단' 스타일)
-   ========================================================================== */
-
-/* 5. 3D 청키 볼륨 버튼 시스템 */
-.btn-3d-amber {
-  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
-  border: 3.5px solid #1e1b18 !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #92400e, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
-  color: #1e1b18 !important;
-  font-weight: 900 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-3d-amber * {
-  color: #1e1b18 !important;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) !important;
-}
-.btn-3d-amber:active {
-  transform: translateY(3.5px) !important;
-  box-shadow: 0 1.5px 0 #92400e, 0 3px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
-.btn-3d-emerald {
-  background: linear-gradient(180deg, #34d399 0%, #10b981 50%, #059669 100%) !important;
-  border: 3.5px solid #064e3b !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #065f46, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  -webkit-text-stroke: 0.6px #064e3b;
-  text-shadow: -1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 2px 0 #064e3b !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-3d-emerald * {
-  color: #ffffff !important;
-  -webkit-text-stroke: 0.6px #064e3b;
-  text-shadow: -1.5px -1.5px 0 #064e3b, 1.5px -1.5px 0 #064e3b, -1.5px 1.5px 0 #064e3b, 1.5px 1.5px 0 #064e3b, 0 2px 0 #064e3b !important;
-}
-.btn-3d-emerald:active {
-  transform: translateY(3.5px) !important;
-  box-shadow: 0 1.5px 0 #065f46, 0 3px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
-.btn-3d-sky {
-  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%) !important;
-  border: 3.5px solid #082f49 !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #075985, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  -webkit-text-stroke: 0.6px #082f49;
-  text-shadow: -1.5px -1.5px 0 #082f49, 1.5px -1.5px 0 #082f49, -1.5px 1.5px 0 #082f49, 1.5px 1.5px 0 #082f49, 0 2px 0 #082f49 !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-3d-sky:active {
-  transform: translateY(3.5px) !important;
-  box-shadow: 0 1.5px 0 #075985, 0 3px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
-.btn-3d-rose {
-  background: linear-gradient(180deg, #fb7185 0%, #f43f5e 50%, #e11d48 100%) !important;
-  border: 3.5px solid #4c0519 !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #9f1239, 0 8px 12px rgba(0, 0, 0, 0.3) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  -webkit-text-stroke: 0.6px #4c0519;
-  text-shadow: -1.5px -1.5px 0 #4c0519, 1.5px -1.5px 0 #4c0519, -1.5px 1.5px 0 #4c0519, 1.5px 1.5px 0 #4c0519, 0 2px 0 #4c0519 !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-3d-rose:active {
-  transform: translateY(3.5px) !important;
-  box-shadow: 0 1.5px 0 #9f1239, 0 3px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* 6. 무한의 계단식 사각 네비게이터 [ < ] [ > ] 버튼 */
-.btn-3d-square {
-  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%) !important;
-  border: 3px solid #1e1b18 !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 4px 0 #64748b, 0 6px 10px rgba(0, 0, 0, 0.2) !important;
-  color: #1e1b18 !important;
-  font-weight: 900 !important;
-  transition: all 0.08s ease-in-out !important;
-}
-.btn-3d-square:active {
-  transform: translateY(3px) !important;
-  box-shadow: 0 1px 0 #64748b, 0 2px 4px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* 7. 운빨존많겜 스타일 독립 캡슐 알약 HUD */
-.hud-capsule {
-  background: rgba(255, 255, 255, 0.95);
-  border: 2.5px solid #1e1b18;
-  box-shadow: 0 3px 0 #1e1b18, 0 4px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 9999px;
-  padding: 0.2rem 0.55rem;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-weight: 900;
-  font-size: 0.75rem;
-  color: #1e1b18;
-}
-
-/* 8. 아케이드 프레임 패널 */
-.panel-arcade {
-  background: #fffbeb;
-  border: 3.5px solid #1e1b18;
-  box-shadow: 0 5px 0 #1e1b18, inset 0 2px 0 rgba(255, 255, 255, 0.8);
-  border-radius: 1.5rem;
-}
-
-/* ==========================================================================
-   Chunky Toy-Box & Cozy Farm Workshop Theme ('꼬마 에그' 콘셉트 스타일)
-   ========================================================================== */
-
-/* 따뜻한 햇살 비추는 시골 농장 / 헛간 배경 */
-.bg-barn-workshop {
-  background-color: #c9935d;
-  background-image: 
-    linear-gradient(125deg, rgba(255, 255, 230, 0.35) 0%, rgba(255, 235, 170, 0.15) 30%, transparent 60%),
-    repeating-linear-gradient(90deg, #996335 0px, #885226 68px, #704018 70px, #915a2c 140px),
-    radial-gradient(ellipse at 50% 25%, #fbe8ba 0%, #c48b52 55%, #663814 100%);
-  background-blend-mode: overlay, multiply, normal;
-}
-
-/* 정교하게 조각된 따뜻한 나무 패널 (Wooden Plank Board) */
-.panel-wood {
-  background: linear-gradient(180deg, #9e6435 0%, #7e4620 50%, #5e3112 100%) !important;
-  border: 3.5px solid #2b1306 !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #1a0a03, inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 8px 16px rgba(0, 0, 0, 0.35) !important;
-  color: #ffffff !important;
-  text-shadow: 0 2px 2px #1a0a03 !important;
-}
-
-/* 농장 양피지 / 나무 알림판 패널 (Parchment Board) */
-.panel-parchment {
-  background: linear-gradient(180deg, #fdfbf7 0%, #fef8ee 50%, #faedd8 100%) !important;
-  border: 3.5px solid #2b1306 !important;
-  border-radius: 1.25rem !important;
-  box-shadow: 0 5px 0 #1a0a03, inset 0 2px 0 rgba(255, 255, 255, 0.9), 0 8px 16px rgba(0, 0, 0, 0.25) !important;
-  color: #1e1b18 !important;
-}
-
-/* 통나무 깎아 만든 3D 액션 버튼 (Wooden Action Button) */
-.btn-wood {
-  background: linear-gradient(180deg, #9e6435 0%, #7e4620 50%, #5e3112 100%) !important;
-  border: 3px solid #2b1306 !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 4px 0 #1a0a03, 0 6px 10px rgba(0, 0, 0, 0.3), inset 0 1.5px 0 rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  text-shadow: 0 1.5px 1px #1a0a03 !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-wood:active {
-  transform: translateY(3px) !important;
-  box-shadow: 0 1px 0 #1a0a03, 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* 상단 자원 및 레벨용 조각 나무 뱃지 (Wood Badge) */
-.wood-badge {
-  background: linear-gradient(180deg, #8c5327 0%, #693715 100%);
-  border: 2.5px solid #2b1306;
-  border-radius: 0.95rem;
-  box-shadow: 0 3px 0 #1a0a02, inset 0 1.5px 0 rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-weight: 900;
-  text-shadow: 0 1.5px 1px #1a0a02;
-  padding: 0.25rem 0.65rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  user-select: none;
-}
-
-/* 밧줄로 묶인 메인 나무 간판 거치대 (Rope-bound Signboard) */
-.signboard-wood-frame {
-  background: linear-gradient(180deg, #8c5226 0%, #6c3a16 55%, #4f250b 100%);
-  border: 4px solid #291205;
-  border-radius: 1.75rem;
-  box-shadow: 0 6px 0 #170902, inset 0 2px 0 rgba(255, 255, 255, 0.3), 0 12px 24px rgba(0, 0, 0, 0.45);
-  position: relative;
-}
-
-/* 콘셉트 이미지의 초대형 쫀득한 골든 앰버 [출발하기! (PLAY)] 버튼 */
-.btn-play-sunshine {
-  background: linear-gradient(180deg, #fff368 0%, #ffbe1a 38%, #fa8600 78%, #e65800 100%) !important;
-  border: 4px solid #2b1306 !important;
-  border-radius: 1.75rem !important;
-  box-shadow: 0 7px 0 #8f3400, 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 3px 2px rgba(255, 255, 255, 0.75) !important;
-  color: #ffffff !important;
-  font-weight: 900 !important;
-  text-shadow: -2px -2px 0 #2b1306, 2px -2px 0 #2b1306, -2px 2px 0 #2b1306, 2px 2px 0 #2b1306, 0 4px 0 #170902 !important;
-  transition: all 0.08s ease-in-out !important;
-  user-select: none;
-}
-.btn-play-sunshine:active {
-  transform: translateY(4.5px) !important;
-  box-shadow: 0 2.5px 0 #8f3400, 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 1px rgba(255, 255, 255, 0.5) !important;
-}
-
-/* 통나무 깎아 만든 묵직한 하단 네비게이션 독 (Wooden Nav Dock) */
-.nav-wood-dock {
-  background: linear-gradient(180deg, #8a5026 0%, #683614 55%, #462007 100%);
-  border-top: 4px solid #261004;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.22);
-}
-
-/* 볏짚/지푸라기 둥지 화환 모양의 홈 버튼 테두리 (Straw Wreath) */
-.nav-straw-wreath {
-  background: radial-gradient(circle, #fef08a 0%, #f59e0b 55%, #b45309 100%);
-  border: 3.5px solid #2b1306;
-  box-shadow: 0 4px 0 #1a0a02, 0 6px 14px rgba(0, 0, 0, 0.4);
-}
-
-/* 9. 텍스트 스트로크 & 아케이드 전광판 폰트 */
-.text-stroke-black {
-  -webkit-text-stroke: 1.5px #18181b;
-  text-shadow: 
-    -2px -2px 0 #18181b,  2px -2px 0 #18181b,
-    -2px  2px 0 #18181b,  2px  2px 0 #18181b,
-     0px  3px 0 #09090b;
-}
-
-.text-arcade-gold {
-  background: linear-gradient(180deg, #fef08a 0%, #f59e0b 70%, #b45309 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 0 #18181b);
+input,
+textarea,
+select {
+  user-select: text;
+  -webkit-user-select: text;
+  touch-action: auto;
 }

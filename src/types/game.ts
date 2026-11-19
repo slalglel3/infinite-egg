@@ -2,7 +2,18 @@ export type SlopeDirection = 'LEFT_DOWN' | 'RIGHT_DOWN';
 
 export type SegmentType = 'STRAIGHT' | 'GAP' | 'TURN';
 
-export type ItemType = 'BANDAGE' | 'GOLDEN_EGG';
+export type ItemType = 'BANDAGE';
+
+export type ObstacleKind = 'ROCK' | 'HAY' | 'VINE';
+
+export interface RoadObstacle {
+  kind: ObstacleKind;
+  t: number; // 세그먼트 진행률 (0 ~ 1)
+  x: number;
+  y: number;
+  damage: number;
+  hit: boolean;
+}
 
 export interface SlopeSegment {
   id: number;
@@ -13,12 +24,13 @@ export interface SlopeSegment {
   endX: number;
   endY: number;
   length: number;
-  // 끊어진 길(GAP)인 경우
+  // 끊어진 길(GAP)
   gapDistance?: number;
   gapHeight?: number;
-  // [피드백 11] 금이 간 길 (CRACKED) - 점프하지 않고 굴러가면 붕괴 후 아래 길로 추락 낙하
+  // 금이 간 길 (CRACKED) - 점프하지 않고 굴러가면 붕괴 후 추락
   isCracked?: boolean;
   isCollapsed?: boolean;
+  obstacles?: RoadObstacle[];
   item?: {
     type: ItemType;
     x: number;
@@ -31,10 +43,9 @@ export interface SlopeSegment {
 export type EggState =
   | 'ROLLING'          // 슬로프 위를 굴러가는 중
   | 'JUMPING'          // 점프 포물선 비행 중
-  | 'DROPPING_TURN'    // 방향 전환을 일찍 눌러서 아랫길로 자유 낙하 중
-  | 'SURPRISED_FALL'   // 추락 직전 공중에 멈춰 당황하는 만화적 연출
-  | 'DEAD_FALLING'     // 화면 아래로 회전하며 추락 중
-  | 'DEAD_CRACKED'     // 착지 충격으로 깨져 흰자/노른자가 퍼지는 연출 중
+  | 'SURPRISED_FALL'   // 길 영역 이탈 직후 당황하며 미끄러지는 구간
+  | 'DEAD_FALLING'     // 길 아래로 떨어지는 낙하 애니메이션 진행 중
+  | 'DEAD_CRACKED'     // 착지 충격으로 깨진 상태
   | 'DEAD_OVER';       // 연출 완료 후 게임 종료 상태
 
 export type EggExpression = 'NORMAL' | 'DIZZY' | 'SURPRISED' | 'PAIN';
@@ -67,9 +78,6 @@ export interface Egg {
   squishY: number;
   flashDamage: boolean;
   crackLevel: number;      // 0(멀쩡) ~ 4(파괴 직전)
-  // 신규 계란 특수 상태
-  devilStage?: number;     // 0: 기본, 1: 100m 뿔, 2: 200m 날개
-  trailTimer?: number;     // 특수 트레일 생성 주기 타이머
 }
 
 export interface EggSplat {
@@ -82,7 +90,6 @@ export interface EggSplat {
     offsetY: number;
     size: number;
     rot: number;
-    color: string;
   }>;
 }
 
@@ -98,122 +105,23 @@ export interface Particle {
   maxLife: number;
   rotation?: number;
   vRot?: number;
-  type?: 'SHELL' | 'YOLK' | 'DUST' | 'SPARK' | 'TEXT' | 'CHUNK' | 'BOLT' | 'POISON_SMOKE' | 'HOLY_GLOW' | 'DARK_SMOKE';
+  type: 'SHELL' | 'TEXT' | 'CHUNK';
   text?: string;
 }
 
 export interface UserProgress {
-  level: number;
-  exp: number;
-  nextLevelExp: number;
   bestDistanceMeters: number;
-  totalDistanceMeters: number;
   totalGamesPlayed: number;
-  gold: number;
-  eggShells: number; // 중복 계란 획득 시 지급되는 계란 껍데기 재화
-  selectedEggId: string;
-  unlockedEggIds: string[];
-  equippedCostumes: {
-    hat?: string;
-    top?: string;
-    bottom?: string;
-    hand?: string;
-  };
-  unlockedCostumeIds: string[];
-  lastFreeGoldDate?: string; // 일일 무료 선물 수령일 (YYYY-MM-DD)
-  achievementProgress: Record<string, number>;
-  claimedAchievementIds: string[];
-}
-
-export type CostumeSlot = 'hat' | 'top' | 'bottom' | 'hand';
-
-export interface CostumeItem {
-  id: string;
-  name: string;
-  slot: CostumeSlot;
-  setTheme: 'police' | 'cowboy' | 'mermaid' | 'king' | 'special';
-  rarity: EggRarity;
-  priceGold?: number;
-  priceShells?: number;
-  desc: string;
-  iconText?: string;
-  requiredEggSkinId?: string; // [피드백 2] 독립 의상 계란 귀속 ID (해당 계란 보유 필수)
 }
 
 export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'ACHIEVEMENTS' | 'SHOP';
-
-export type EggRarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
-
-export interface EggSkinColors {
-  top: string;
-  mid1: string;
-  mid2: string;
-  bottom: string;
-  shadow: string;
-  line: string;
-  eyeColor: string;
-  cheekColor: string;
-  pattern?: 'NONE' | 'SPOTS' | 'CRACKS' | 'CYBER_LINES' | 'GOLD_SHINE' | 'FIRE_AURA' | 'METAL_BOLTS' | 'POISON_BUBBLES' | 'ANGEL_WINGS' | 'DEVIL';
-}
-
-export type SpecialEggType = 'NORMAL' | 'METAL' | 'POISON' | 'ANGEL' | 'DEVIL';
-
-export interface EggSkin {
-  id: string;
-  name: string;
-  tagline: string;
-  desc: string;
-  rarity: EggRarity;
-  specialType?: SpecialEggType;
-  unlocked: boolean;
-  unlockCondition: string;
-  unlockReq?: {
-    type: 'DISTANCE' | 'LEVEL' | 'GAMES' | 'GOLD';
-    value: number;
-  };
-  priceGold?: number;
-  hpBonus: number;
-  colors: EggSkinColors;
-  // [피드백 2 & 3] 의상이 갖춰진 고유 계란 여부 및 번들 의상 세트
-  hasFixedOutfit?: boolean;
-  bundledCostumes?: {
-    hat?: string;
-    top?: string;
-    bottom?: string;
-    hand?: string;
-  };
-}
-
-export interface AchievementItem {
-  id: string;
-  title: string;
-  desc: string;
-  category: 'DISTANCE' | 'PLAY' | 'SKILL';
-  target: number;
-  rewardGold: number;
-  rewardExp: number;
-}
-
-export interface EventMapItem {
-  id: string;
-  title: string;
-  tag: string;
-  badgeColor: string;
-  desc: string;
-  bgGradient: string;
-  speedMultiplier: number;
-  bandageRate: number;
-  rewardText: string;
-  isOpen: boolean;
-  dDayText?: string;
-}
 
 export interface GameStats {
   distanceMeters: number;
   speed: number;
   hp: number;
   maxHp: number;
-  perfectLandings: number;
   itemsCollected: number;
   isNewRecord: boolean;
+  eggState: EggState;
 }

@@ -75,36 +75,7 @@ class SoundSynthesizer {
     osc.stop(now + 0.09);
   }
 
-  // 3. 퍼펙트 착지 (상쾌한 팅-!)
-  public playPerfect() {
-    if (this.isMuted) return;
-    this.initContext();
-    if (!this.ctx) return;
-
-    const now = this.ctx.currentTime;
-    const osc1 = this.ctx.createOscillator();
-    const osc2 = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc1.type = 'sine';
-    osc2.type = 'sine';
-    osc1.frequency.setValueAtTime(1046.5, now);
-    osc2.frequency.setValueAtTime(1318.5, now);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc1.start(now);
-    osc2.start(now);
-    osc1.stop(now + 0.22);
-    osc2.stop(now + 0.22);
-  }
-
-  // 4. 낙하 충격음
+  // 3. 낙하 충격음
   public playImpact(damage: number) {
     if (this.isMuted) return;
     this.initContext();
