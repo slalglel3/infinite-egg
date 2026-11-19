@@ -17,12 +17,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TARGET_FILE = path.join(REPO_ROOT, 'src/data/defaultHomeLayouts.ts');
 
-const ALL_TABS = ['EGGS', 'EVENTS', 'MAIN', 'ACHIEVEMENTS', 'SHOP'];
+const ALL_TABS = ['EGGS', 'EVENTS', 'MAIN', 'MISSIONS', 'SHOP'];
 const VALID_KINDS = new Set([
   'card',
   'button',
   'play-button',
   'avatar',
+  'asset-slot',
+  'resource-chip',
   'progress',
   'segmented',
   'slot-grid',
@@ -168,7 +170,8 @@ function main() {
 
   for (const tab of ALL_TABS) {
     const prevNormalized = normalizeTabZOrder(currentLayouts[tab] || []);
-    const incoming = Array.isArray(sourceMap[tab]) ? sourceMap[tab] : prevNormalized;
+    const rawIncoming = tab === 'MISSIONS' ? sourceMap.MISSIONS ?? sourceMap.ACHIEVEMENTS : sourceMap[tab];
+    const incoming = Array.isArray(rawIncoming) ? rawIncoming : prevNormalized;
     nextLayouts[tab] = normalizeTabZOrder(
       incoming.map((item, idx) => sanitizeElement(item, idx, tab))
     );

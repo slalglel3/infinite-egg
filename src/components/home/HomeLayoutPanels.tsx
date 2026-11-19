@@ -14,8 +14,10 @@ import {
   Pencil,
   Play,
   Plus,
+  Redo2,
   RotateCcw,
   Trash2,
+  Undo2,
   X,
 } from 'lucide-react';
 import { HomeTabType } from '../../types/game';
@@ -381,6 +383,12 @@ interface LeftLayerPanelProps extends LayerControlsCommonProps {
   snapGrid: boolean;
   onToggleSnap: () => void;
   onStartGame: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  undoCount: number;
+  redoCount: number;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
 export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
@@ -399,6 +407,12 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
   snapGrid,
   onToggleSnap,
   onStartGame,
+  canUndo,
+  canRedo,
+  undoCount,
+  redoCount,
+  onUndo,
+  onRedo,
 }) => {
   return (
     <aside className="flex flex-col h-full w-full max-w-[330px] bg-white border-r border-slate-200 p-3 gap-3 overflow-y-auto select-none">
@@ -447,9 +461,36 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
           </button>
         </div>
 
+        {/* Undo / Redo 히스토리 컨트롤 */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            disabled={!canUndo}
+            onClick={onUndo}
+            title="실행 취소 (Ctrl+Z)"
+            aria-label="실행 취소"
+            className="h-8 rounded-lg border border-slate-300 bg-white text-[11px] font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+          >
+            <Undo2 size={13} />
+            <span>실행취소{undoCount > 0 ? ` (${undoCount})` : ''}</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={!canRedo}
+            onClick={onRedo}
+            title="다시 실행 (Ctrl+Y / Ctrl+Shift+Z)"
+            aria-label="다시 실행"
+            className="h-8 rounded-lg border border-slate-300 bg-white text-[11px] font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+          >
+            <Redo2 size={13} />
+            <span>다시실행{redoCount > 0 ? ` (${redoCount})` : ''}</span>
+          </button>
+        </div>
+
         {/* 5대 탭 빠른 전환 */}
         <div className="grid grid-cols-5 gap-1">
-          {(['EGGS', 'EVENTS', 'MAIN', 'ACHIEVEMENTS', 'SHOP'] as HomeTabType[]).map((t) => (
+          {(['EGGS', 'EVENTS', 'MAIN', 'MISSIONS', 'SHOP'] as HomeTabType[]).map((t) => (
             <button
               key={t}
               type="button"

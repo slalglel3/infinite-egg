@@ -17,7 +17,7 @@ const TABS: TabItem[] = [
   { id: 'EGGS', num: 1, label: '도감' },
   { id: 'EVENTS', num: 2, label: '이벤트' },
   { id: 'MAIN', num: 3, label: '홈' },
-  { id: 'ACHIEVEMENTS', num: 4, label: '도전과제' },
+  { id: 'MISSIONS', num: 4, label: '미션' },
   { id: 'SHOP', num: 5, label: '상점' },
 ];
 

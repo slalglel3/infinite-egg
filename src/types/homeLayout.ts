@@ -5,6 +5,8 @@ export type WireframeElementKind =
   | 'button'
   | 'play-button'
   | 'avatar'
+  | 'asset-slot'
+  | 'resource-chip'
   | 'progress'
   | 'segmented'
   | 'slot-grid'

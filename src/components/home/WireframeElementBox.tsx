@@ -1,13 +1,16 @@
 import React from 'react';
 import {
+  Award,
+  Coins,
   Flame,
   Gift,
   Grid2x2,
+  Image as ImageIcon,
   Play,
   Settings,
   Sparkles,
   Square,
-  Trophy,
+  Target,
 } from 'lucide-react';
 import { HomeLayoutElement, ResizeHandleDir } from '../../types/homeLayout';
 
@@ -31,8 +34,23 @@ const RESIZE_HANDLES: Array<{ dir: ResizeHandleDir; style: string; cursor: strin
   { dir: 'w', style: 'top-1/2 -left-1.5 -translate-y-1/2', cursor: 'ew-resize' },
 ];
 
+function extractSegmentLabels(name: string): string[] {
+  const parenMatch = name.match(/\(([^)]+)\)/);
+  if (parenMatch?.[1]) {
+    const parts = parenMatch[1]
+      .split(/[\/|·,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length >= 2 && parts.length <= 5) {
+      return parts;
+    }
+  }
+  return ['옵션 A', '옵션 B'];
+}
+
 function renderInnerWireframe(el: HomeLayoutElement) {
-  const isCompact = el.h < 44 || el.w < 120;
+  const isCompact = el.h < 42 || el.w < 110;
+  const isVeryNarrow = el.w < 84;
 
   switch (el.kind) {
     case 'play-button':
@@ -47,25 +65,89 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'button':
       return (
-        <div className="w-full h-full flex items-center justify-center gap-1.5 px-2">
+        <div
+          className={`w-full h-full flex items-center justify-center px-1.5 ${
+            isVeryNarrow && el.h >= 56 ? 'flex-col gap-1 text-center' : 'gap-1'
+          }`}
+        >
           {el.name.includes('설정') ? (
-            <Settings size={14} className="shrink-0 text-slate-800" />
-          ) : (
-            <Sparkles size={13} className="shrink-0 text-slate-800" />
-          )}
-          <span className="text-xs font-extrabold text-slate-900 truncate">{el.name}</span>
+            <Settings size={13} className="shrink-0 text-slate-800" />
+          ) : !isVeryNarrow || el.h >= 56 ? (
+            <Sparkles size={12} className="shrink-0 text-slate-800" />
+          ) : null}
+          <span
+            className={`${
+              isVeryNarrow ? 'text-[10px]' : 'text-xs'
+            } font-extrabold text-slate-900 leading-tight truncate max-w-full`}
+          >
+            {el.name}
+          </span>
         </div>
       );
 
     case 'badge':
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center px-2">
-          <span className="text-sm font-black tracking-wide text-slate-900 truncate">
+        <div className="w-full h-full flex flex-col items-center justify-center px-2 text-center">
+          <span
+            className={`${
+              isCompact ? 'text-[11px]' : 'text-sm'
+            } font-black tracking-wide text-slate-900 truncate max-w-full`}
+          >
             {el.name}
           </span>
           {!isCompact && (
             <span className="text-[10px] font-mono text-slate-500 truncate max-w-full">
-              {el.description || 'TITLE / BADGE'}
+              {el.description || 'BADGE'}
+            </span>
+          )}
+        </div>
+      );
+
+    case 'resource-chip': {
+      const hasEmbeddedQty = /\+\d|\d+/.test(el.name);
+      const sampleValue = el.id.includes('record')
+        ? '0 m'
+        : el.id.includes('count')
+          ? '0 회'
+          : el.id.includes('timer')
+            ? '3일 12h'
+            : el.id.includes('grade')
+              ? '희귀'
+              : hasEmbeddedQty || el.id.includes('reward')
+                ? '보상'
+                : '0';
+
+      return (
+        <div
+          className={`w-full h-full flex items-center justify-center px-2 py-1 overflow-hidden ${
+            isVeryNarrow || el.h >= 60 ? 'flex-col gap-0.5 text-center' : 'justify-between gap-1.5'
+          }`}
+        >
+          <div className="flex items-center gap-1 min-w-0 max-w-full">
+            {el.name.includes('기록') ? (
+              <Award size={12} className="shrink-0 text-slate-700" />
+            ) : (
+              <Coins size={12} className="shrink-0 text-slate-700" />
+            )}
+            <span className="text-[10px] font-bold text-slate-800 truncate">{el.name}</span>
+          </div>
+          <span className="text-[10px] font-mono font-semibold text-slate-600 shrink-0">
+            {sampleValue}
+          </span>
+        </div>
+      );
+    }
+
+    case 'asset-slot':
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 overflow-hidden text-center">
+          <ImageIcon size={el.h >= 75 ? 18 : 14} className="text-slate-600 shrink-0" />
+          <span className="text-[11px] font-mono font-bold text-slate-700 truncate max-w-full">
+            [{el.name}]
+          </span>
+          {el.h >= 72 && el.description && (
+            <span className="text-[9px] font-mono text-slate-400 line-clamp-2 max-w-full">
+              {el.description}
             </span>
           )}
         </div>
@@ -73,12 +155,8 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'avatar':
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 p-2 overflow-hidden">
-          <svg
-            viewBox="0 0 100 116"
-            className="max-h-[68%] w-auto shrink"
-            fill="none"
-          >
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 overflow-hidden">
+          <svg viewBox="0 0 100 116" className="max-h-[68%] w-auto shrink" fill="none">
             <path
               d="M 50 10 C 74 10, 92 38, 92 65 C 92 90, 75 106, 50 106 C 25 106, 8 90, 8 65 C 8 38, 26 10, 50 10 Z"
               stroke="#0f172a"
@@ -112,30 +190,38 @@ function renderInnerWireframe(el: HomeLayoutElement) {
         </div>
       );
 
-    case 'segmented':
+    case 'segmented': {
+      const labels = extractSegmentLabels(el.name);
       return (
         <div className="w-full h-full flex items-center gap-1 p-1">
-          <div className="flex-1 h-full rounded-md border border-slate-900 bg-slate-900/5 flex items-center justify-center text-[11px] font-bold text-slate-900 truncate px-1">
-            옵션 A
-          </div>
-          <div className="flex-1 h-full rounded-md border border-slate-300 flex items-center justify-center text-[11px] font-medium text-slate-500 truncate px-1">
-            옵션 B
-          </div>
+          {labels.map((label, idx) => (
+            <div
+              key={`${label}-${idx}`}
+              className={`flex-1 h-full rounded-md flex items-center justify-center text-[10px] truncate px-1 ${
+                idx === 0
+                  ? 'border border-slate-900 bg-slate-900/5 font-black text-slate-900'
+                  : 'border border-slate-300 font-medium text-slate-500'
+              }`}
+            >
+              {label}
+            </div>
+          ))}
         </div>
       );
+    }
 
     case 'progress':
       return (
-        <div className="w-full h-full flex flex-col justify-center gap-1.5 px-3 py-1.5 overflow-hidden">
+        <div className="w-full h-full flex flex-col justify-center gap-1 px-2.5 py-1 overflow-hidden">
           <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-800">
             <span className="truncate">{el.name}</span>
             <span className="font-mono text-[10px] text-slate-500 shrink-0">65%</span>
           </div>
-          <div className="w-full h-2.5 rounded-full border border-slate-800 p-0.5">
+          <div className="w-full h-2 rounded-full border border-slate-800 p-0.5">
             <div className="h-full w-[65%] rounded-full border border-slate-800 bg-slate-900/15" />
           </div>
-          {el.h >= 62 && el.description && (
-            <span className="text-[10px] font-mono text-slate-400 truncate">
+          {el.h >= 60 && el.description && (
+            <span className="text-[9px] font-mono text-slate-400 truncate">
               {el.description}
             </span>
           )}
@@ -173,16 +259,16 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'list-row':
       return (
-        <div className="w-full h-full flex items-center gap-2.5 px-3 py-2 overflow-hidden">
-          <div className="w-9 h-9 rounded-lg border border-slate-700 shrink-0 flex items-center justify-center text-slate-700">
-            <Trophy size={16} />
+        <div className="w-full h-full flex items-center gap-2 px-2.5 py-1.5 overflow-hidden">
+          <div className="w-7 h-7 rounded-lg border border-slate-700 shrink-0 flex items-center justify-center text-slate-700">
+            <Target size={14} />
           </div>
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-            <span className="text-xs font-black text-slate-900 truncate">{el.name}</span>
-            <span className="text-[10px] font-mono text-slate-500 truncate">
-              {el.description || '리스트 항목 요약'}
+          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+            <span className="text-[11px] font-black text-slate-900 truncate">{el.name}</span>
+            <span className="text-[9px] font-mono text-slate-500 truncate">
+              {el.description || '항목 요약'}
             </span>
-            <div className="w-full max-w-[150px] h-1.5 rounded-full border border-slate-400">
+            <div className="w-full max-w-[130px] h-1.5 rounded-full border border-slate-400">
               <div className="h-full w-1/2 bg-slate-400/50 rounded-full" />
             </div>
           </div>
@@ -191,17 +277,16 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'banner':
       return (
-        <div className="w-full h-full flex flex-col justify-start gap-2.5 p-3 overflow-hidden">
+        <div className="w-full h-full flex flex-col justify-start gap-2 p-3 overflow-hidden">
           <div className="flex items-center justify-between gap-2 shrink-0">
             <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-slate-500 text-slate-600">
-              <Flame size={11} /> EVENT / FEATURED
+              <Flame size={11} /> BANNER
             </span>
-            <span className="text-[10px] font-mono text-slate-400">BANNER</span>
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <span className="text-sm font-black text-slate-900 truncate">{el.name}</span>
             <span className="text-[11px] font-mono text-slate-500 line-clamp-2">
-              {el.description || '배너 안내 문구 및 핵심 보상'}
+              {el.description || '배너 안내 문구'}
             </span>
           </div>
         </div>
@@ -209,11 +294,11 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'text':
       return (
-        <div className="w-full h-full flex flex-col justify-center px-2.5 py-1 overflow-hidden">
-          <span className="text-xs font-extrabold text-slate-900 truncate">{el.name}</span>
-          {el.h >= 38 && (
-            <span className="text-[10px] font-mono text-slate-500 truncate">
-              {el.description || '텍스트 설명'}
+        <div className="w-full h-full flex flex-col justify-center px-2 py-1 overflow-hidden">
+          <span className="text-[11px] font-extrabold text-slate-900 truncate">{el.name}</span>
+          {el.h >= 36 && (
+            <span className="text-[9px] font-mono text-slate-500 truncate">
+              {el.description || '텍스트 영역'}
             </span>
           )}
         </div>
@@ -222,13 +307,13 @@ function renderInnerWireframe(el: HomeLayoutElement) {
     case 'card':
     default:
       return (
-        <div className="w-full h-full flex flex-col justify-center gap-1 px-3 py-2 overflow-hidden">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <Gift size={13} className="shrink-0 text-slate-600" />
-            <span className="text-xs font-black text-slate-900 truncate">{el.name}</span>
+        <div className="w-full h-full flex flex-col justify-center gap-1 px-2.5 py-1.5 overflow-hidden">
+          <div className="flex items-center gap-1 min-w-0">
+            <Gift size={12} className="shrink-0 text-slate-600" />
+            <span className="text-[11px] font-black text-slate-900 truncate">{el.name}</span>
           </div>
-          {el.h >= 48 && (
-            <span className="text-[10px] font-mono text-slate-500 line-clamp-2">
+          {el.h >= 46 && (
+            <span className="text-[9px] font-mono text-slate-500 line-clamp-2">
               {el.description || '패널 / 카드 컨텐츠 영역'}
             </span>
           )}
@@ -249,11 +334,15 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
   const borderClass =
     element.kind === 'play-button' || element.kind === 'button' || element.kind === 'badge'
       ? 'border-2 border-slate-900 rounded-xl bg-white'
-      : element.kind === 'avatar' || element.kind === 'banner'
-        ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white'
-        : element.kind === 'text'
-          ? 'border border-dashed border-slate-400 rounded-lg bg-white'
-          : 'border-[1.5px] border-slate-700 rounded-xl bg-white';
+      : element.kind === 'avatar'
+        ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white/80'
+        : element.kind === 'banner' || element.kind === 'asset-slot'
+          ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white/95'
+          : element.kind === 'text'
+            ? 'border border-dashed border-slate-400 rounded-lg bg-white'
+            : element.kind === 'resource-chip'
+              ? 'border-[1.5px] border-slate-800 rounded-xl bg-slate-50/70'
+              : 'border-[1.5px] border-slate-700 rounded-xl bg-white';
 
   const interactivePreviewClick = !editable && isPlayButton && onTriggerPlay;
 
