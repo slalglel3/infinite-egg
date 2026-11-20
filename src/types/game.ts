@@ -114,7 +114,7 @@ export interface UserProgress {
   totalGamesPlayed: number;
 }
 
-export type HomeTabType = 'EGGS' | 'EVENTS' | 'MAIN' | 'MISSIONS' | 'SHOP';
+export type HomeTabType = 'SHOP' | 'SKINS' | 'MAIN' | 'MISSIONS' | 'CHALLENGE';
 
 export interface GameStats {
   distanceMeters: number;

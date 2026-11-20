@@ -17,11 +17,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..');
 const TARGET_FILE = path.join(REPO_ROOT, 'src/data/defaultHomeLayouts.ts');
 
-const ALL_TABS = ['EGGS', 'EVENTS', 'MAIN', 'MISSIONS', 'SHOP'];
+const ALL_TABS = ['SHOP', 'SKINS', 'MAIN', 'MISSIONS', 'CHALLENGE'];
 const VALID_KINDS = new Set([
   'card',
   'button',
   'play-button',
+  'active-backing',
   'avatar',
   'asset-slot',
   'resource-chip',
@@ -35,8 +36,8 @@ const VALID_KINDS = new Set([
 ]);
 
 const MOBILE_STAGE_WIDTH = 390;
-const ELEMENT_MIN_WIDTH = 32;
-const ELEMENT_MIN_HEIGHT = 24;
+const ELEMENT_MIN_WIDTH = 16;
+const ELEMENT_MIN_HEIGHT = 14;
 
 function clampRect(rect) {
   const w = Math.max(ELEMENT_MIN_WIDTH, Math.min(MOBILE_STAGE_WIDTH, Math.round(rect.w)));
@@ -124,6 +125,24 @@ function formatLayoutsBlock(layouts) {
   return lines.join('\n');
 }
 
+function evaluateCurrentLayouts(targetSrc, rawBlock) {
+  const helperStartMarker = '// BEGIN_LAYOUT_HELPERS';
+  const helperEndMarker = '// END_LAYOUT_HELPERS';
+  const hStart = targetSrc.indexOf(helperStartMarker);
+  const hEnd = targetSrc.indexOf(helperEndMarker);
+  let helpersJs = '';
+  if (hStart !== -1 && hEnd !== -1 && hEnd > hStart) {
+    helpersJs = targetSrc
+      .slice(hStart + helperStartMarker.length, hEnd)
+      .replace(/\(prefix:\s*string\):\s*HomeLayoutElement\[\]/g, '(prefix)');
+  }
+
+  const objStart = rawBlock.indexOf('{');
+  const objEnd = rawBlock.lastIndexOf('}');
+  const objLiteral = rawBlock.slice(objStart, objEnd + 1);
+  return new Function(`${helpersJs}\nreturn (${objLiteral});`)();
+}
+
 function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
@@ -159,18 +178,22 @@ function main() {
     throw new Error(`Could not locate ${startMarker}..${endMarker} in ${TARGET_FILE}`);
   }
 
-  // Evaluate existing block in-memory (pure JS object literal) for partial-tab merge & diff summary
   const existingCode = targetSrc.slice(startIdx + startMarker.length, endIdx).trim();
-  const objStart = existingCode.indexOf('{');
-  const objEnd = existingCode.lastIndexOf('}');
-  const currentLayouts = new Function(`return (${existingCode.slice(objStart, objEnd + 1)});`)();
+  const currentLayouts = evaluateCurrentLayouts(targetSrc, existingCode);
 
   const nextLayouts = {};
   const summaryLines = [];
 
   for (const tab of ALL_TABS) {
     const prevNormalized = normalizeTabZOrder(currentLayouts[tab] || []);
-    const rawIncoming = tab === 'MISSIONS' ? sourceMap.MISSIONS ?? sourceMap.ACHIEVEMENTS : sourceMap[tab];
+    const rawIncoming =
+      tab === 'SKINS'
+        ? sourceMap.SKINS ?? sourceMap.EGGS
+        : tab === 'MISSIONS'
+          ? sourceMap.MISSIONS ?? sourceMap.ACHIEVEMENTS
+          : tab === 'CHALLENGE'
+            ? sourceMap.CHALLENGE ?? sourceMap.EVENTS
+            : sourceMap[tab];
     const incoming = Array.isArray(rawIncoming) ? rawIncoming : prevNormalized;
     nextLayouts[tab] = normalizeTabZOrder(
       incoming.map((item, idx) => sanitizeElement(item, idx, tab))

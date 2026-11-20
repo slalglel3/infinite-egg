@@ -4,6 +4,7 @@ export type WireframeElementKind =
   | 'card'
   | 'button'
   | 'play-button'
+  | 'active-backing'
   | 'avatar'
   | 'asset-slot'
   | 'resource-chip'

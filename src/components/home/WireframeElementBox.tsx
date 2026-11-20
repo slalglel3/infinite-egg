@@ -6,11 +6,13 @@ import {
   Gift,
   Grid2x2,
   Image as ImageIcon,
+  Lock,
   Play,
   Settings,
   Sparkles,
   Square,
   Target,
+  Wheat,
 } from 'lucide-react';
 import { HomeLayoutElement, ResizeHandleDir } from '../../types/homeLayout';
 
@@ -23,15 +25,15 @@ interface WireframeElementBoxProps {
   onTriggerPlay?: () => void;
 }
 
-const RESIZE_HANDLES: Array<{ dir: ResizeHandleDir; style: string; cursor: string }> = [
-  { dir: 'nw', style: '-top-1.5 -left-1.5', cursor: 'nwse-resize' },
-  { dir: 'n', style: '-top-1.5 left-1/2 -translate-x-1/2', cursor: 'ns-resize' },
-  { dir: 'ne', style: '-top-1.5 -right-1.5', cursor: 'nesw-resize' },
-  { dir: 'e', style: 'top-1/2 -right-1.5 -translate-y-1/2', cursor: 'ew-resize' },
-  { dir: 'se', style: '-bottom-1.5 -right-1.5', cursor: 'nwse-resize' },
-  { dir: 's', style: '-bottom-1.5 left-1/2 -translate-x-1/2', cursor: 'ns-resize' },
-  { dir: 'sw', style: '-bottom-1.5 -left-1.5', cursor: 'nesw-resize' },
-  { dir: 'w', style: 'top-1/2 -left-1.5 -translate-y-1/2', cursor: 'ew-resize' },
+const RESIZE_HANDLES: Array<{ dir: ResizeHandleDir; style: string; cursor: string; corner: boolean }> = [
+  { dir: 'nw', style: '-top-1.5 -left-1.5', cursor: 'nwse-resize', corner: true },
+  { dir: 'n', style: '-top-1.5 left-1/2 -translate-x-1/2', cursor: 'ns-resize', corner: false },
+  { dir: 'ne', style: '-top-1.5 -right-1.5', cursor: 'nesw-resize', corner: true },
+  { dir: 'e', style: 'top-1/2 -right-1.5 -translate-y-1/2', cursor: 'ew-resize', corner: false },
+  { dir: 'se', style: '-bottom-1.5 -right-1.5', cursor: 'nwse-resize', corner: true },
+  { dir: 's', style: '-bottom-1.5 left-1/2 -translate-x-1/2', cursor: 'ns-resize', corner: false },
+  { dir: 'sw', style: '-bottom-1.5 -left-1.5', cursor: 'nesw-resize', corner: true },
+  { dir: 'w', style: 'top-1/2 -left-1.5 -translate-y-1/2', cursor: 'ew-resize', corner: false },
 ];
 
 function extractSegmentLabels(name: string): string[] {
@@ -48,32 +50,90 @@ function extractSegmentLabels(name: string): string[] {
   return ['옵션 A', '옵션 B'];
 }
 
+function isPrimaryCtaButton(el: HomeLayoutElement): boolean {
+  return (
+    el.id.includes('active') ||
+    el.id.includes('daily') ||
+    el.id.includes('claim') ||
+    el.id.includes('enter') ||
+    el.id.includes('equip') ||
+    el.id.includes('hatch') ||
+    el.id.includes('slot1-btn') ||
+    el.id.includes('slot3-btn') ||
+    el.id.includes('start-btn')
+  );
+}
+
+function isBackgroundContainerAsset(el: HomeLayoutElement): boolean {
+  return (
+    el.id.includes('-bg-') ||
+    el.id.endsWith('-bg') ||
+    el.id.includes('-board') ||
+    el.id.includes('-frame') ||
+    el.id.includes('-plate') ||
+    el.id.includes('-ropes') ||
+    el.id.includes('-particles') ||
+    (el.w >= 200 && el.h >= 84)
+  );
+}
+
+function isContainerCardOrButton(el: HomeLayoutElement): boolean {
+  return (
+    (el.kind === 'card' && el.id.endsWith('-card')) ||
+    el.id === 'shop-hatch1-btn' ||
+    el.id === 'shop-hatch10-btn' ||
+    el.id.endsWith('-hud-settings-btn')
+  );
+}
+
 function renderInnerWireframe(el: HomeLayoutElement) {
+  const isTiny = el.h <= 26 || el.w <= 42;
   const isCompact = el.h < 42 || el.w < 110;
   const isVeryNarrow = el.w < 84;
 
   switch (el.kind) {
+    case 'active-backing':
+      return <div className="w-full h-full pointer-events-none" />;
+
     case 'play-button':
       return (
         <div className="w-full h-full flex items-center justify-center gap-2 px-3">
           <Play size={18} className="stroke-[2.5] shrink-0 text-slate-900" />
-          <span className="text-sm font-black tracking-tight text-slate-900 truncate">
+          <span className="text-base font-black tracking-tight text-slate-900 truncate">
             {el.name}
           </span>
         </div>
       );
 
     case 'button':
+      if (isContainerCardOrButton(el)) {
+        return <div className="w-full h-full pointer-events-none" />;
+      }
+      if (isTiny) {
+        return (
+          <div className="w-full h-full flex items-center justify-center px-1">
+            {el.name.includes('설정') || el.id.includes('settings') ? (
+              <Settings size={13} className="text-slate-800 shrink-0" />
+            ) : (
+              <span className="text-[10px] font-black text-slate-900 truncate leading-none">
+                {el.name}
+              </span>
+            )}
+          </div>
+        );
+      }
       return (
         <div
           className={`w-full h-full flex items-center justify-center px-1.5 ${
-            isVeryNarrow && el.h >= 56 ? 'flex-col gap-1 text-center' : 'gap-1'
+            isVeryNarrow && el.h >= 54 ? 'flex-col gap-1 text-center' : 'gap-1'
           }`}
         >
-          {el.name.includes('설정') ? (
-            <Settings size={13} className="shrink-0 text-slate-800" />
-          ) : !isVeryNarrow || el.h >= 56 ? (
-            <Sparkles size={12} className="shrink-0 text-slate-800" />
+          {el.name.includes('설정') || el.id.includes('settings') ? (
+            <Settings size={14} className="shrink-0 text-slate-800" />
+          ) : el.name.includes('잠금') ? (
+            <Lock size={12} className="shrink-0 text-slate-500" />
+          ) : !isVeryNarrow || el.h >= 54 ? (
+            <Sparkles size={11} className="shrink-0 text-slate-700" />
           ) : null}
           <span
             className={`${
@@ -87,16 +147,16 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'badge':
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center px-2 text-center">
+        <div className="w-full h-full flex flex-col items-center justify-center px-1.5 text-center overflow-hidden">
           <span
             className={`${
-              isCompact ? 'text-[11px]' : 'text-sm'
+              isTiny ? 'text-[10px]' : isCompact ? 'text-xs' : 'text-sm'
             } font-black tracking-wide text-slate-900 truncate max-w-full`}
           >
             {el.name}
           </span>
-          {!isCompact && (
-            <span className="text-[10px] font-mono text-slate-500 truncate max-w-full">
+          {!isCompact && el.h >= 46 && (
+            <span className="text-[9px] font-mono text-slate-500 truncate max-w-full">
               {el.description || 'BADGE'}
             </span>
           )}
@@ -104,59 +164,101 @@ function renderInnerWireframe(el: HomeLayoutElement) {
       );
 
     case 'resource-chip': {
-      const hasEmbeddedQty = /\+\d|\d+/.test(el.name);
-      const sampleValue = el.id.includes('record')
-        ? '0 m'
-        : el.id.includes('count')
-          ? '0 회'
-          : el.id.includes('timer')
-            ? '3일 12h'
-            : el.id.includes('grade')
-              ? '희귀'
-              : hasEmbeddedQty || el.id.includes('reward')
-                ? '보상'
-                : '0';
+      const sampleValue = el.id.includes('stamina-value')
+        ? '24/50'
+        : el.id.includes('feather-value')
+          ? '1,245'
+          : el.id.includes('stamina-cost')
+            ? '활동력 5'
+            : el.id.includes('hatch1-cost')
+              ? '100'
+              : el.id.includes('hatch10-cost')
+                ? '900'
+                : el.id.includes('reward-val')
+                  ? el.name.match(/\d+/)?.[0] ?? '10'
+                  : el.id.includes('best-record')
+                    ? 'BEST 0m'
+                    : el.name;
+
+      if (isTiny) {
+        return (
+          <div className="w-full h-full flex items-center justify-center px-1 overflow-hidden">
+            <span className="text-[10px] font-mono font-black text-slate-900 truncate">
+              {sampleValue}
+            </span>
+          </div>
+        );
+      }
 
       return (
-        <div
-          className={`w-full h-full flex items-center justify-center px-2 py-1 overflow-hidden ${
-            isVeryNarrow || el.h >= 60 ? 'flex-col gap-0.5 text-center' : 'justify-between gap-1.5'
-          }`}
-        >
-          <div className="flex items-center gap-1 min-w-0 max-w-full">
+        <div className="w-full h-full flex items-center justify-between gap-1 px-2 py-0.5 overflow-hidden">
+          <div className="flex items-center gap-1 min-w-0">
             {el.name.includes('기록') ? (
-              <Award size={12} className="shrink-0 text-slate-700" />
+              <Award size={11} className="shrink-0 text-slate-700" />
+            ) : el.name.includes('활동력') || el.name.includes('곡식') ? (
+              <Wheat size={11} className="shrink-0 text-amber-700" />
             ) : (
-              <Coins size={12} className="shrink-0 text-slate-700" />
+              <Coins size={11} className="shrink-0 text-amber-600" />
             )}
-            <span className="text-[10px] font-bold text-slate-800 truncate">{el.name}</span>
+            <span className="text-[10px] font-bold text-slate-700 truncate">{el.name}</span>
           </div>
-          <span className="text-[10px] font-mono font-semibold text-slate-600 shrink-0">
+          <span className="text-[10px] font-mono font-black text-slate-900 shrink-0">
             {sampleValue}
           </span>
         </div>
       );
     }
 
-    case 'asset-slot':
+    case 'asset-slot': {
+      const isBgContainer = isBackgroundContainerAsset(el);
+      if (isBgContainer) {
+        const isSmallPlate = el.id.includes('-plate') || el.id.includes('-ropes') || el.h < 50;
+        if (isSmallPlate) {
+          return <div className="w-full h-full pointer-events-none" />;
+        }
+        return (
+          <div className="w-full h-full relative overflow-hidden p-1 pointer-events-none">
+            <span className="inline-block px-1 py-0.5 text-[8px] font-mono text-slate-400 leading-none truncate max-w-full">
+              [{el.name}]
+            </span>
+          </div>
+        );
+      }
+
+      if (isTiny) {
+        return (
+          <div className="w-full h-full flex items-center justify-center overflow-hidden">
+            {el.name.includes('자물쇠') || el.name.includes('잠금') ? (
+              <Lock size={12} className="text-slate-600 shrink-0" />
+            ) : el.name.includes('곡식') || el.name.includes('활동력') ? (
+              <Wheat size={12} className="text-amber-700 shrink-0" />
+            ) : el.name.includes('설정') ? (
+              <Settings size={13} className="text-slate-700 shrink-0" />
+            ) : (
+              <ImageIcon size={12} className="text-slate-600 shrink-0" />
+            )}
+          </div>
+        );
+      }
+
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 overflow-hidden text-center">
-          <ImageIcon size={el.h >= 75 ? 18 : 14} className="text-slate-600 shrink-0" />
-          <span className="text-[11px] font-mono font-bold text-slate-700 truncate max-w-full">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5 p-1 overflow-hidden text-center">
+          {el.name.includes('자물쇠') || el.name.includes('잠금') ? (
+            <Lock size={14} className="text-slate-600 shrink-0" />
+          ) : (
+            <ImageIcon size={el.h >= 70 ? 18 : 13} className="text-slate-600 shrink-0" />
+          )}
+          <span className="text-[9px] font-mono font-bold text-slate-700 truncate max-w-full leading-tight">
             [{el.name}]
           </span>
-          {el.h >= 72 && el.description && (
-            <span className="text-[9px] font-mono text-slate-400 line-clamp-2 max-w-full">
-              {el.description}
-            </span>
-          )}
         </div>
       );
+    }
 
     case 'avatar':
       return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-2 overflow-hidden">
-          <svg viewBox="0 0 100 116" className="max-h-[68%] w-auto shrink" fill="none">
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1.5 overflow-hidden">
+          <svg viewBox="0 0 100 116" className="max-h-[72%] w-auto shrink" fill="none">
             <path
               d="M 50 10 C 74 10, 92 38, 92 65 C 92 90, 75 106, 50 106 C 25 106, 8 90, 8 65 C 8 38, 26 10, 50 10 Z"
               stroke="#0f172a"
@@ -184,7 +286,7 @@ function renderInnerWireframe(el: HomeLayoutElement) {
             <circle cx="64" cy="62" r="3" stroke="#0f172a" strokeWidth="1.8" />
             <path d="M 44 71 Q 51 77 58 71" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span className="text-[11px] font-mono font-bold text-slate-600 truncate max-w-full">
+          <span className="text-[10px] font-mono font-bold text-slate-600 truncate max-w-full">
             [{el.name}]
           </span>
         </div>
@@ -199,7 +301,7 @@ function renderInnerWireframe(el: HomeLayoutElement) {
               key={`${label}-${idx}`}
               className={`flex-1 h-full rounded-md flex items-center justify-center text-[10px] truncate px-1 ${
                 idx === 0
-                  ? 'border border-slate-900 bg-slate-900/5 font-black text-slate-900'
+                  ? 'border border-slate-900 bg-amber-100/70 font-black text-slate-900'
                   : 'border border-slate-300 font-medium text-slate-500'
               }`}
             >
@@ -212,45 +314,42 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'progress':
       return (
-        <div className="w-full h-full flex flex-col justify-center gap-1 px-2.5 py-1 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-slate-800">
+        <div className="w-full h-full flex flex-col justify-center gap-0.5 px-2 py-0.5 overflow-hidden">
+          <div className="flex items-center justify-between gap-1 text-[10px] font-bold text-slate-800">
             <span className="truncate">{el.name}</span>
-            <span className="font-mono text-[10px] text-slate-500 shrink-0">65%</span>
-          </div>
-          <div className="w-full h-2 rounded-full border border-slate-800 p-0.5">
-            <div className="h-full w-[65%] rounded-full border border-slate-800 bg-slate-900/15" />
-          </div>
-          {el.h >= 60 && el.description && (
-            <span className="text-[9px] font-mono text-slate-400 truncate">
-              {el.description}
+            <span className="font-mono text-[9px] text-slate-600 shrink-0">
+              {el.id.includes('row2') ? '124/500' : el.id.includes('row1') ? '3/3' : '50/50'}
             </span>
-          )}
+          </div>
+          <div className="w-full h-2 rounded-full border border-slate-800 p-0.5 bg-white">
+            <div
+              className={`h-full rounded-full ${
+                el.id.includes('row2')
+                  ? 'w-[28%] bg-amber-500'
+                  : 'w-full bg-amber-400'
+              }`}
+            />
+          </div>
         </div>
       );
 
     case 'slot-grid':
       return (
-        <div className="w-full h-full flex flex-col gap-1.5 p-2.5 overflow-hidden">
-          <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 shrink-0">
+        <div className="w-full h-full flex flex-col gap-1 p-2 overflow-hidden">
+          <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 shrink-0">
             <span className="flex items-center gap-1 font-bold text-slate-700 truncate">
-              <Grid2x2 size={12} /> {el.name}
+              <Grid2x2 size={11} /> {el.name}
             </span>
-            <span>4 x 2</span>
+            <span>스크롤 영역</span>
           </div>
-          <div className="flex-1 grid grid-cols-4 grid-rows-2 gap-1.5 min-h-0">
-            {Array.from({ length: 8 }).map((_, idx) => (
+          <div className="flex-1 grid grid-cols-4 gap-1.5 min-h-0">
+            {Array.from({ length: 4 }).map((_, idx) => (
               <div
                 key={idx}
-                className={`rounded-lg border flex flex-col items-center justify-center gap-0.5 text-[9px] font-mono ${
-                  idx === 0
-                    ? 'border-2 border-slate-900 text-slate-900 font-bold'
-                    : idx < 4
-                      ? 'border-slate-500 text-slate-600'
-                      : 'border-dashed border-slate-300 text-slate-400'
-                }`}
+                className="rounded-lg border border-dashed border-slate-400 flex flex-col items-center justify-center gap-0.5 text-[9px] font-mono text-slate-500"
               >
-                <Square size={12} />
-                <span>#{idx + 1}</span>
+                <Square size={11} />
+                <span>#{idx + 5}</span>
               </div>
             ))}
           </div>
@@ -259,62 +358,72 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
     case 'list-row':
       return (
-        <div className="w-full h-full flex items-center gap-2 px-2.5 py-1.5 overflow-hidden">
+        <div className="w-full h-full flex items-center gap-2 px-2 py-1 overflow-hidden">
           <div className="w-7 h-7 rounded-lg border border-slate-700 shrink-0 flex items-center justify-center text-slate-700">
-            <Target size={14} />
+            <Target size={13} />
           </div>
           <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
             <span className="text-[11px] font-black text-slate-900 truncate">{el.name}</span>
             <span className="text-[9px] font-mono text-slate-500 truncate">
               {el.description || '항목 요약'}
             </span>
-            <div className="w-full max-w-[130px] h-1.5 rounded-full border border-slate-400">
-              <div className="h-full w-1/2 bg-slate-400/50 rounded-full" />
-            </div>
           </div>
         </div>
       );
 
     case 'banner':
       return (
-        <div className="w-full h-full flex flex-col justify-start gap-2 p-3 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 shrink-0">
-            <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded border border-slate-500 text-slate-600">
-              <Flame size={11} /> BANNER
-            </span>
-          </div>
-          <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-sm font-black text-slate-900 truncate">{el.name}</span>
-            <span className="text-[11px] font-mono text-slate-500 line-clamp-2">
-              {el.description || '배너 안내 문구'}
-            </span>
-          </div>
+        <div className="w-full h-full flex flex-col justify-start gap-1.5 p-2.5 overflow-hidden">
+          <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded border border-slate-500 text-slate-600 self-start">
+            <Flame size={10} /> BANNER
+          </span>
+          <span className="text-xs font-black text-slate-900 truncate">{el.name}</span>
         </div>
       );
 
-    case 'text':
+    case 'text': {
+      const isCenteredText =
+        el.id.includes('header-text') ||
+        el.id.includes('stat-text') ||
+        el.id.includes('reward-label') ||
+        el.id.includes('locked-label') ||
+        el.id.includes('hatch1-label') ||
+        el.id.includes('hatch10-label');
       return (
-        <div className="w-full h-full flex flex-col justify-center px-2 py-1 overflow-hidden">
-          <span className="text-[11px] font-extrabold text-slate-900 truncate">{el.name}</span>
-          {el.h >= 36 && (
-            <span className="text-[9px] font-mono text-slate-500 truncate">
-              {el.description || '텍스트 영역'}
-            </span>
-          )}
+        <div
+          className={`w-full h-full flex flex-col justify-center overflow-hidden ${
+            isTiny ? 'px-1 py-0' : 'px-1.5 py-0.5'
+          } ${isCenteredText ? 'items-center text-center' : ''}`}
+        >
+          <span
+            className={`${
+              isTiny
+                ? 'text-[10px] truncate'
+                : el.h >= 42
+                  ? 'text-[11px] line-clamp-2 whitespace-normal'
+                  : 'text-[11px] truncate'
+            } font-extrabold text-slate-900 leading-tight max-w-full`}
+          >
+            {el.name}
+          </span>
         </div>
       );
+    }
 
     case 'card':
     default:
+      if (isContainerCardOrButton(el)) {
+        return <div className="w-full h-full pointer-events-none" />;
+      }
       return (
-        <div className="w-full h-full flex flex-col justify-center gap-1 px-2.5 py-1.5 overflow-hidden">
+        <div className="w-full h-full flex flex-col justify-start gap-0.5 px-2 py-1.5 overflow-hidden">
           <div className="flex items-center gap-1 min-w-0">
-            <Gift size={12} className="shrink-0 text-slate-600" />
-            <span className="text-[11px] font-black text-slate-900 truncate">{el.name}</span>
+            <Gift size={11} className="shrink-0 text-slate-600" />
+            <span className="text-[10px] font-black text-slate-900 truncate">{el.name}</span>
           </div>
-          {el.h >= 46 && (
-            <span className="text-[9px] font-mono text-slate-500 line-clamp-2">
-              {el.description || '패널 / 카드 컨텐츠 영역'}
+          {el.h >= 54 && (
+            <span className="text-[8px] font-mono text-slate-400 truncate">
+              {el.description}
             </span>
           )}
         </div>
@@ -331,20 +440,41 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
   onTriggerPlay,
 }) => {
   const isPlayButton = element.kind === 'play-button';
+  const isPrimaryBtn = isPrimaryCtaButton(element);
+  const isBgContainer = element.kind === 'asset-slot' && isBackgroundContainerAsset(element);
+  const isFullscreenBackdrop =
+    element.id.endsWith('-bg-barn') || element.id.endsWith('-bg-particles');
+  const smallBox = element.w < 44 || element.h < 44;
+
   const borderClass =
-    element.kind === 'play-button' || element.kind === 'button' || element.kind === 'badge'
-      ? 'border-2 border-slate-900 rounded-xl bg-white'
-      : element.kind === 'avatar'
-        ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white/80'
-        : element.kind === 'banner' || element.kind === 'asset-slot'
-          ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white/95'
-          : element.kind === 'text'
-            ? 'border border-dashed border-slate-400 rounded-lg bg-white'
-            : element.kind === 'resource-chip'
-              ? 'border-[1.5px] border-slate-800 rounded-xl bg-slate-50/70'
-              : 'border-[1.5px] border-slate-700 rounded-xl bg-white';
+    element.kind === 'active-backing'
+      ? 'border-2 border-amber-500 rounded-xl bg-amber-100/80 shadow-[0_0_0_2px_rgba(245,158,11,0.2)]'
+      : element.kind === 'play-button'
+        ? 'border-2 border-slate-900 rounded-xl bg-amber-200/85'
+        : element.kind === 'button'
+          ? isPrimaryBtn
+            ? 'border-2 border-slate-900 rounded-xl bg-amber-100/90'
+            : 'border-[1.5px] border-slate-800 rounded-xl bg-white'
+          : element.kind === 'badge'
+            ? 'border-2 border-slate-800 rounded-xl bg-white'
+            : element.kind === 'avatar'
+              ? 'border-[1.5px] border-dashed border-slate-600 rounded-2xl bg-white/75'
+              : element.kind === 'asset-slot'
+                ? isBgContainer
+                  ? 'border border-dashed border-slate-400 rounded-2xl bg-slate-50/70'
+                  : 'border-[1.5px] border-dashed border-slate-500 rounded-xl bg-white/95'
+                : element.kind === 'banner'
+                  ? 'border-[1.5px] border-dashed border-slate-500 rounded-2xl bg-white/95'
+                  : element.kind === 'text'
+                    ? 'border border-dashed border-slate-400 rounded-md bg-white/85'
+                    : element.kind === 'resource-chip'
+                      ? 'border border-slate-700 rounded-lg bg-white/95'
+                      : 'border-[1.5px] border-slate-700 rounded-xl bg-white/95';
 
   const interactivePreviewClick = !editable && isPlayButton && onTriggerPlay;
+  const visibleHandles = smallBox
+    ? RESIZE_HANDLES.filter((h) => h.corner)
+    : RESIZE_HANDLES;
 
   return (
     <div
@@ -365,14 +495,16 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
         }
       }}
       className={`absolute select-none transition-shadow ${borderClass} ${
-        editable
-          ? isSelected
-            ? 'ring-2 ring-blue-600 ring-offset-1 cursor-move shadow-sm touch-none'
-            : 'hover:ring-1 hover:ring-blue-400 cursor-grab touch-none'
-          : isPlayButton
-            ? 'cursor-pointer active:bg-slate-900/10'
-            : ''
-      }`}
+        isFullscreenBackdrop
+          ? 'pointer-events-none'
+          : editable
+            ? isSelected
+              ? 'ring-2 ring-blue-600 ring-offset-1 cursor-move shadow-sm touch-none'
+              : 'hover:ring-1 hover:ring-blue-400 cursor-grab touch-none'
+            : isPlayButton
+              ? 'cursor-pointer active:bg-amber-300/90'
+              : ''
+      } ${isFullscreenBackdrop && editable && isSelected ? 'ring-2 ring-blue-600' : ''}`}
     >
       {interactivePreviewClick ? (
         <button
@@ -385,25 +517,27 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
         renderInnerWireframe(element)
       )}
 
-      {/* 에디터 모드: 선택 시 레이어 순서 배지 & 8방향 크기 조절 핸들 */}
+      {/* 에디터 모드: 선택 시 레이어 순서 배지 & 크기 조절 핸들 */}
       {editable && isSelected && (
         <>
           <div
             className={`absolute ${
-              element.y < 22 ? 'top-1 left-1' : '-top-5 left-0'
-            } px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-mono font-bold whitespace-nowrap pointer-events-none flex items-center gap-1 shadow z-40`}
+              element.y < 22 ? 'top-full mt-0.5 left-0' : '-top-5 left-0'
+            } px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-mono font-bold whitespace-nowrap pointer-events-none flex items-center gap-1 shadow z-50`}
           >
             <span>z:{element.zIndex}</span>
             <span>·</span>
             <span className="max-w-[140px] truncate">{element.name}</span>
           </div>
 
-          {RESIZE_HANDLES.map((h) => (
+          {visibleHandles.map((h) => (
             <div
               key={h.dir}
               onPointerDown={(e) => onResizeHandleDown(e, element.id, h.dir)}
               style={{ cursor: h.cursor }}
-              className={`absolute w-3.5 h-3.5 rounded-[3px] bg-white border-2 border-blue-600 z-50 touch-none after:content-[''] after:absolute after:-inset-2 ${h.style}`}
+              className={`absolute ${
+                smallBox ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'
+              } rounded-[3px] bg-white border-2 border-blue-600 z-50 touch-none after:content-[''] after:absolute after:-inset-2 ${h.style}`}
               title="드래그하여 크기 조절"
             />
           ))}

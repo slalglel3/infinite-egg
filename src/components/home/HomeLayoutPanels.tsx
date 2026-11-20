@@ -490,7 +490,7 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
 
         {/* 5대 탭 빠른 전환 */}
         <div className="grid grid-cols-5 gap-1">
-          {(['EGGS', 'EVENTS', 'MAIN', 'MISSIONS', 'SHOP'] as HomeTabType[]).map((t) => (
+          {(['SHOP', 'SKINS', 'MAIN', 'MISSIONS', 'CHALLENGE'] as HomeTabType[]).map((t) => (
             <button
               key={t}
               type="button"

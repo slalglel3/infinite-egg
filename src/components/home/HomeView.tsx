@@ -112,11 +112,11 @@ type EditorHistoryAction =
 
 function cloneLayoutMap(map: HomeTabsLayoutMap): HomeTabsLayoutMap {
   return {
-    EGGS: map.EGGS.map((el) => ({ ...el })),
-    EVENTS: map.EVENTS.map((el) => ({ ...el })),
+    SHOP: map.SHOP.map((el) => ({ ...el })),
+    SKINS: map.SKINS.map((el) => ({ ...el })),
     MAIN: map.MAIN.map((el) => ({ ...el })),
     MISSIONS: map.MISSIONS.map((el) => ({ ...el })),
-    SHOP: map.SHOP.map((el) => ({ ...el })),
+    CHALLENGE: map.CHALLENGE.map((el) => ({ ...el })),
   };
 }
 
@@ -479,7 +479,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           ? 160
           : kind === 'banner' || kind === 'asset-slot'
             ? 100
-            : kind === 'button' || kind === 'segmented' || kind === 'badge' || kind === 'resource-chip'
+            : kind === 'button' ||
+                kind === 'segmented' ||
+                kind === 'badge' ||
+                kind === 'resource-chip' ||
+                kind === 'active-backing'
               ? 42
               : 74;
 

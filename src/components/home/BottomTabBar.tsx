@@ -14,11 +14,11 @@ interface TabItem {
 }
 
 const TABS: TabItem[] = [
-  { id: 'EGGS', num: 1, label: '도감' },
-  { id: 'EVENTS', num: 2, label: '이벤트' },
+  { id: 'SHOP', num: 1, label: '상점' },
+  { id: 'SKINS', num: 2, label: '스킨' },
   { id: 'MAIN', num: 3, label: '홈' },
   { id: 'MISSIONS', num: 4, label: '미션' },
-  { id: 'SHOP', num: 5, label: '상점' },
+  { id: 'CHALLENGE', num: 5, label: '도전' },
 ];
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({

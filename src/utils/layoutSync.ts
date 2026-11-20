@@ -13,12 +13,13 @@ import {
 
 export const LAYOUT_SYNC_FENCE = 'infinite-egg-layout-v1';
 
-const ALL_TABS: HomeTabType[] = ['EGGS', 'EVENTS', 'MAIN', 'MISSIONS', 'SHOP'];
+const ALL_TABS: HomeTabType[] = ['SHOP', 'SKINS', 'MAIN', 'MISSIONS', 'CHALLENGE'];
 
 const VALID_KINDS = new Set<WireframeElementKind>([
   'card',
   'button',
   'play-button',
+  'active-backing',
   'avatar',
   'asset-slot',
   'resource-chip',
@@ -148,13 +149,15 @@ export function createLayoutEnvelope(layouts: HomeTabsLayoutMap): LayoutSyncEnve
     app: 'infinite-egg',
     exportedAt: new Date().toISOString(),
     layouts: {
-      EGGS: normalizeTabZOrder((layouts.EGGS ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
-      EVENTS: normalizeTabZOrder((layouts.EVENTS ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
+      SHOP: normalizeTabZOrder((layouts.SHOP ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
+      SKINS: normalizeTabZOrder((layouts.SKINS ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
       MAIN: normalizeTabZOrder((layouts.MAIN ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
       MISSIONS: normalizeTabZOrder(
         (layouts.MISSIONS ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))
       ),
-      SHOP: normalizeTabZOrder((layouts.SHOP ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))),
+      CHALLENGE: normalizeTabZOrder(
+        (layouts.CHALLENGE ?? []).map((el) => ({ ...el, ...clampElementRect(el) }))
+      ),
     },
   };
 }
@@ -276,18 +279,25 @@ export function parseLayoutImportText(
       : root;
 
   const result: HomeTabsLayoutMap = {
-    EGGS: normalizeTabZOrder(fallbackBase.EGGS.map((el) => ({ ...el }))),
-    EVENTS: normalizeTabZOrder(fallbackBase.EVENTS.map((el) => ({ ...el }))),
+    SHOP: normalizeTabZOrder(fallbackBase.SHOP.map((el) => ({ ...el }))),
+    SKINS: normalizeTabZOrder(fallbackBase.SKINS.map((el) => ({ ...el }))),
     MAIN: normalizeTabZOrder(fallbackBase.MAIN.map((el) => ({ ...el }))),
     MISSIONS: normalizeTabZOrder(fallbackBase.MISSIONS.map((el) => ({ ...el }))),
-    SHOP: normalizeTabZOrder(fallbackBase.SHOP.map((el) => ({ ...el }))),
+    CHALLENGE: normalizeTabZOrder(fallbackBase.CHALLENGE.map((el) => ({ ...el }))),
   };
 
   const updatedTabs: HomeTabType[] = [];
   let totalElements = 0;
 
   for (const tab of ALL_TABS) {
-    const rawList = tab === 'MISSIONS' ? sourceMap.MISSIONS ?? sourceMap.ACHIEVEMENTS : sourceMap[tab];
+    const rawList =
+      tab === 'SKINS'
+        ? sourceMap.SKINS ?? sourceMap.EGGS
+        : tab === 'MISSIONS'
+          ? sourceMap.MISSIONS ?? sourceMap.ACHIEVEMENTS
+          : tab === 'CHALLENGE'
+            ? sourceMap.CHALLENGE ?? sourceMap.EVENTS
+            : sourceMap[tab];
     if (!Array.isArray(rawList)) continue;
 
     const sanitized: HomeLayoutElement[] = [];
@@ -302,7 +312,7 @@ export function parseLayoutImportText(
   }
 
   if (updatedTabs.length === 0) {
-    throw new Error('EGGS, EVENTS, MAIN, MISSIONS, SHOP 탭 데이터를 찾을 수 없습니다.');
+    throw new Error('SHOP, SKINS, MAIN, MISSIONS, CHALLENGE 탭 데이터를 찾을 수 없습니다.');
   }
 
   return { layouts: result, updatedTabs, totalElements };
