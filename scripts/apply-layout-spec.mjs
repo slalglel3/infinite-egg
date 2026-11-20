@@ -134,7 +134,7 @@ function evaluateCurrentLayouts(targetSrc, rawBlock) {
   if (hStart !== -1 && hEnd !== -1 && hEnd > hStart) {
     helpersJs = targetSrc
       .slice(hStart + helperStartMarker.length, hEnd)
-      .replace(/\(prefix:\s*string\):\s*HomeLayoutElement\[\]/g, '(prefix)');
+      .replace(/\(prefix:\s*string(?:,\s*activeTab:\s*HomeTabType)?\):\s*HomeLayoutElement\[\]/g, '(prefix, activeTab)');
   }
 
   const objStart = rawBlock.indexOf('{');

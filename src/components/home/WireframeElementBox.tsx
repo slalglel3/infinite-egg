@@ -14,15 +14,18 @@ import {
   Target,
   Wheat,
 } from 'lucide-react';
+import { HomeTabType } from '../../types/game';
 import { HomeLayoutElement, ResizeHandleDir } from '../../types/homeLayout';
 
 interface WireframeElementBoxProps {
   element: HomeLayoutElement;
+  activeTab: HomeTabType;
   isSelected: boolean;
   editable: boolean;
   onSelectMouseDown: (e: React.PointerEvent, elementId: string) => void;
   onResizeHandleDown: (e: React.PointerEvent, elementId: string, handle: ResizeHandleDir) => void;
   onTriggerPlay?: () => void;
+  onTriggerTabChange?: (tab: HomeTabType) => void;
 }
 
 const RESIZE_HANDLES: Array<{ dir: ResizeHandleDir; style: string; cursor: string; corner: boolean }> = [
@@ -50,7 +53,26 @@ function extractSegmentLabels(name: string): string[] {
   return ['옵션 A', '옵션 B'];
 }
 
-function isPrimaryCtaButton(el: HomeLayoutElement): boolean {
+const NAV_ID_TO_TAB: Array<[string, HomeTabType]> = [
+  ['-nav-tab1-', 'SHOP'],
+  ['-nav-tab2-', 'SKINS'],
+  ['-nav-tab3-', 'MAIN'],
+  ['-nav-tab4-', 'MISSIONS'],
+  ['-nav-tab5-', 'CHALLENGE'],
+];
+
+function getNavTargetTab(id: string): HomeTabType | null {
+  for (const [token, tab] of NAV_ID_TO_TAB) {
+    if (id.includes(token)) return tab;
+  }
+  return null;
+}
+
+function isPrimaryCtaButton(el: HomeLayoutElement, activeTab: HomeTabType): boolean {
+  const navTab = getNavTargetTab(el.id);
+  if (navTab) {
+    return navTab === activeTab;
+  }
   return (
     el.id.includes('active') ||
     el.id.includes('daily') ||
@@ -73,6 +95,7 @@ function isBackgroundContainerAsset(el: HomeLayoutElement): boolean {
     el.id.includes('-plate') ||
     el.id.includes('-ropes') ||
     el.id.includes('-particles') ||
+    el.id.includes('-nav-home-nest') ||
     (el.w >= 200 && el.h >= 84)
   );
 }
@@ -212,7 +235,12 @@ function renderInnerWireframe(el: HomeLayoutElement) {
     case 'asset-slot': {
       const isBgContainer = isBackgroundContainerAsset(el);
       if (isBgContainer) {
-        const isSmallPlate = el.id.includes('-plate') || el.id.includes('-ropes') || el.h < 50;
+        const isSmallPlate =
+          el.id.includes('-plate') ||
+          el.id.includes('-ropes') ||
+          el.id.includes('-nav-bar-bg') ||
+          el.id.includes('-nav-home-nest') ||
+          el.h < 50;
         if (isSmallPlate) {
           return <div className="w-full h-full pointer-events-none" />;
         }
@@ -433,14 +461,17 @@ function renderInnerWireframe(el: HomeLayoutElement) {
 
 export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
   element,
+  activeTab,
   isSelected,
   editable,
   onSelectMouseDown,
   onResizeHandleDown,
   onTriggerPlay,
+  onTriggerTabChange,
 }) => {
   const isPlayButton = element.kind === 'play-button';
-  const isPrimaryBtn = isPrimaryCtaButton(element);
+  const navTargetTab = getNavTargetTab(element.id);
+  const isPrimaryBtn = isPrimaryCtaButton(element, activeTab);
   const isBgContainer = element.kind === 'asset-slot' && isBackgroundContainerAsset(element);
   const isFullscreenBackdrop =
     element.id.endsWith('-bg-barn') || element.id.endsWith('-bg-particles');
@@ -472,6 +503,7 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
                       : 'border-[1.5px] border-slate-700 rounded-xl bg-white/95';
 
   const interactivePreviewClick = !editable && isPlayButton && onTriggerPlay;
+  const interactiveNavClick = !editable && navTargetTab !== null && onTriggerTabChange;
   const visibleHandles = smallBox
     ? RESIZE_HANDLES.filter((h) => h.corner)
     : RESIZE_HANDLES;
@@ -492,6 +524,8 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
       onClick={() => {
         if (interactivePreviewClick) {
           onTriggerPlay();
+        } else if (interactiveNavClick) {
+          onTriggerTabChange(navTargetTab);
         }
       }}
       className={`absolute select-none transition-shadow ${borderClass} ${
@@ -503,7 +537,9 @@ export const WireframeElementBox: React.FC<WireframeElementBoxProps> = ({
               : 'hover:ring-1 hover:ring-blue-400 cursor-grab touch-none'
             : isPlayButton
               ? 'cursor-pointer active:bg-amber-300/90'
-              : ''
+              : interactiveNavClick
+                ? 'cursor-pointer active:bg-amber-100/70'
+                : ''
       } ${isFullscreenBackdrop && editable && isSelected ? 'ring-2 ring-blue-600' : ''}`}
     >
       {interactivePreviewClick ? (

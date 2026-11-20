@@ -5,6 +5,7 @@ import {
   ArrowUp,
   ArrowUpToLine,
   Check,
+  ClipboardPaste,
   Copy,
   Eye,
   FileCode2,
@@ -34,10 +35,12 @@ interface LayerControlsCommonProps {
   activeTab: HomeTabType;
   elements: HomeLayoutElement[];
   selectedId: string | null;
+  copiedElementName: string | null;
   onSelect: (id: string) => void;
   onCreateElement: (kind: WireframeElementKind) => void;
   onDeleteElement: (id: string) => void;
-  onDuplicateElement: (id: string) => void;
+  onCopyElement: (id: string) => void;
+  onPasteElement: () => void;
   onLayerAction: (id: string, action: LayerAction) => void;
   onResetTab: () => void;
 }
@@ -48,10 +51,12 @@ const LayerManagerContent: React.FC<
   activeTab,
   elements,
   selectedId,
+  copiedElementName,
   onSelect,
   onCreateElement,
   onDeleteElement,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onLayerAction,
   onResetTab,
   onAfterSelect,
@@ -62,10 +67,10 @@ const LayerManagerContent: React.FC<
 
   return (
     <>
-      {/* 신규 요소 생성 컨트롤 */}
+      {/* 신규 요소 생성 & 붙여넣기 컨트롤 */}
       <div className="flex flex-col gap-1.5 p-2.5 rounded-xl border border-slate-200 bg-slate-50/70">
         <span className="text-[11px] font-bold text-slate-700">
-          [{tabInfo.num}. {tabInfo.label}] 새 요소 생성
+          [{tabInfo.num}. {tabInfo.label}] 새 요소 생성 · 붙여넣기
         </span>
         <div className="flex items-center gap-1.5">
           <select
@@ -87,6 +92,28 @@ const LayerManagerContent: React.FC<
             <Plus size={14} /> 추가
           </button>
         </div>
+
+        <button
+          type="button"
+          disabled={!copiedElementName}
+          onClick={() => {
+            onPasteElement();
+            onAfterSelect?.();
+          }}
+          className={`h-8 px-2.5 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors ${
+            copiedElementName
+              ? 'border-blue-600 bg-blue-50 text-blue-800 hover:bg-blue-100'
+              : 'border-slate-300 bg-white text-slate-400 cursor-not-allowed'
+          }`}
+          title="복사한 요소를 현재 탭에 붙여넣기 (Ctrl+V)"
+        >
+          <ClipboardPaste size={13} className="shrink-0" />
+          <span className="truncate">
+            {copiedElementName
+              ? `붙여넣기: ${copiedElementName}`
+              : '붙여넣기 (복사된 요소 없음)'}
+          </span>
+        </button>
       </div>
 
       {/* 레이어 계층 목록 (앞 -> 뒤) */}
@@ -154,10 +181,10 @@ const LayerManagerContent: React.FC<
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDuplicateElement(el.id);
+                        onCopyElement(el.id);
                       }}
                       className="p-1.5 rounded hover:bg-slate-200 text-slate-600"
-                      title="요소 복제"
+                      title="요소 복사 (다른 탭에서도 붙여넣기 가능)"
                     >
                       <Copy size={12} />
                     </button>
@@ -189,9 +216,11 @@ const LayerManagerContent: React.FC<
 
 interface ElementInspectorFormProps {
   selectedElement: HomeLayoutElement;
+  copiedElementName: string | null;
   onUpdateElement: (id: string, patch: Partial<HomeLayoutElement>) => void;
   onLayerAction: (id: string, action: LayerAction) => void;
-  onDuplicateElement: (id: string) => void;
+  onCopyElement: (id: string) => void;
+  onPasteElement: () => void;
   onDeleteElement: (id: string) => void;
   compactStepControls?: boolean;
 }
@@ -205,9 +234,11 @@ const RECT_FIELDS: Array<{ field: 'x' | 'y' | 'w' | 'h'; label: string }> = [
 
 const ElementInspectorForm: React.FC<ElementInspectorFormProps> = ({
   selectedElement,
+  copiedElementName,
   onUpdateElement,
   onLayerAction,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onDeleteElement,
   compactStepControls = false,
 }) => {
@@ -355,21 +386,40 @@ const ElementInspectorForm: React.FC<ElementInspectorFormProps> = ({
         </div>
       </div>
 
-      {/* 복제 / 삭제 */}
-      <div className="grid grid-cols-2 gap-1.5 pt-1">
+      {/* 복사 / 붙여넣기 / 삭제 */}
+      <div className="flex flex-col gap-1.5 pt-1">
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => onCopyElement(selectedElement.id)}
+            className="h-9 rounded-lg border border-slate-400 text-xs font-bold text-slate-800 hover:bg-slate-100 flex items-center justify-center gap-1"
+            title="클립보드에 요소 복사 (Ctrl+C)"
+          >
+            <Copy size={12} /> 복사
+          </button>
+          <button
+            type="button"
+            onClick={() => onDeleteElement(selectedElement.id)}
+            className="h-9 rounded-lg border border-rose-400 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center justify-center gap-1"
+          >
+            <Trash2 size={12} /> 삭제
+          </button>
+        </div>
+
         <button
           type="button"
-          onClick={() => onDuplicateElement(selectedElement.id)}
-          className="h-9 rounded-lg border border-slate-400 text-xs font-bold text-slate-800 hover:bg-slate-100 flex items-center justify-center gap-1"
+          disabled={!copiedElementName}
+          onClick={onPasteElement}
+          className={`h-8 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 px-2 ${
+            copiedElementName
+              ? 'border-blue-600 bg-blue-50 text-blue-800 hover:bg-blue-100'
+              : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+          }`}
         >
-          <Copy size={12} /> 복제
-        </button>
-        <button
-          type="button"
-          onClick={() => onDeleteElement(selectedElement.id)}
-          className="h-9 rounded-lg border border-rose-400 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center justify-center gap-1"
-        >
-          <Trash2 size={12} /> 삭제
+          <ClipboardPaste size={12} className="shrink-0" />
+          <span className="truncate">
+            {copiedElementName ? `이 탭에 붙여넣기: ${copiedElementName}` : '붙여넣기 (복사 없음)'}
+          </span>
         </button>
       </div>
     </div>
@@ -396,10 +446,12 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
   onTabChange,
   elements,
   selectedId,
+  copiedElementName,
   onSelect,
   onCreateElement,
   onDeleteElement,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onLayerAction,
   onResetTab,
   isPreviewMode,
@@ -511,10 +563,12 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
         activeTab={activeTab}
         elements={elements}
         selectedId={selectedId}
+        copiedElementName={copiedElementName}
         onSelect={onSelect}
         onCreateElement={onCreateElement}
         onDeleteElement={onDeleteElement}
-        onDuplicateElement={onDuplicateElement}
+        onCopyElement={onCopyElement}
+        onPasteElement={onPasteElement}
         onLayerAction={onLayerAction}
         onResetTab={onResetTab}
       />
@@ -525,10 +579,12 @@ export const LeftLayerPanel: React.FC<LeftLayerPanelProps> = ({
 interface RightInspectorPanelProps {
   activeTab: HomeTabType;
   selectedElement: HomeLayoutElement | null;
+  copiedElementName: string | null;
   allLayouts: HomeTabsLayoutMap;
   onUpdateElement: (id: string, patch: Partial<HomeLayoutElement>) => void;
   onLayerAction: (id: string, action: LayerAction) => void;
-  onDuplicateElement: (id: string) => void;
+  onCopyElement: (id: string) => void;
+  onPasteElement: () => void;
   onDeleteElement: (id: string) => void;
   onResetAll: () => void;
   onOpenSyncModal: (mode: 'EXPORT' | 'IMPORT') => void;
@@ -537,10 +593,12 @@ interface RightInspectorPanelProps {
 export const RightInspectorPanel: React.FC<RightInspectorPanelProps> = ({
   activeTab,
   selectedElement,
+  copiedElementName,
   allLayouts,
   onUpdateElement,
   onLayerAction,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onDeleteElement,
   onResetAll,
   onOpenSyncModal,
@@ -573,14 +631,26 @@ export const RightInspectorPanel: React.FC<RightInspectorPanelProps> = ({
       {selectedElement ? (
         <ElementInspectorForm
           selectedElement={selectedElement}
+          copiedElementName={copiedElementName}
           onUpdateElement={onUpdateElement}
           onLayerAction={onLayerAction}
-          onDuplicateElement={onDuplicateElement}
+          onCopyElement={onCopyElement}
+          onPasteElement={onPasteElement}
           onDeleteElement={onDeleteElement}
         />
       ) : (
-        <div className="p-4 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-500">
-          가운데 모바일 화면에서 요소를 클릭하거나 좌측 목록에서 선택해 수정하세요.
+        <div className="p-4 rounded-xl border border-dashed border-slate-300 text-center text-xs text-slate-500 flex flex-col gap-2">
+          <span>가운데 모바일 화면에서 요소를 클릭하거나 좌측 목록에서 선택해 수정하세요.</span>
+          {copiedElementName && (
+            <button
+              type="button"
+              onClick={onPasteElement}
+              className="h-8 px-2.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-800 text-xs font-bold flex items-center justify-center gap-1 hover:bg-blue-100"
+            >
+              <ClipboardPaste size={12} />
+              <span className="truncate">붙여넣기: {copiedElementName}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -654,10 +724,12 @@ export const MobileLayerSheet: React.FC<MobileLayerSheetProps> = ({
   activeTab,
   elements,
   selectedId,
+  copiedElementName,
   onSelect,
   onCreateElement,
   onDeleteElement,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onLayerAction,
   onResetTab,
   onClose,
@@ -692,10 +764,12 @@ export const MobileLayerSheet: React.FC<MobileLayerSheetProps> = ({
           activeTab={activeTab}
           elements={elements}
           selectedId={selectedId}
+          copiedElementName={copiedElementName}
           onSelect={onSelect}
           onCreateElement={onCreateElement}
           onDeleteElement={onDeleteElement}
-          onDuplicateElement={onDuplicateElement}
+          onCopyElement={onCopyElement}
+          onPasteElement={onPasteElement}
           onLayerAction={onLayerAction}
           onResetTab={onResetTab}
           onAfterSelect={onClose}
@@ -708,9 +782,11 @@ export const MobileLayerSheet: React.FC<MobileLayerSheetProps> = ({
 interface MobileInspectorSheetProps {
   activeTab: HomeTabType;
   selectedElement: HomeLayoutElement;
+  copiedElementName: string | null;
   onUpdateElement: (id: string, patch: Partial<HomeLayoutElement>) => void;
   onLayerAction: (id: string, action: LayerAction) => void;
-  onDuplicateElement: (id: string) => void;
+  onCopyElement: (id: string) => void;
+  onPasteElement: () => void;
   onDeleteElement: (id: string) => void;
   onClose: () => void;
 }
@@ -718,9 +794,11 @@ interface MobileInspectorSheetProps {
 export const MobileInspectorSheet: React.FC<MobileInspectorSheetProps> = ({
   activeTab,
   selectedElement,
+  copiedElementName,
   onUpdateElement,
   onLayerAction,
-  onDuplicateElement,
+  onCopyElement,
+  onPasteElement,
   onDeleteElement,
   onClose,
 }) => {
@@ -757,9 +835,14 @@ export const MobileInspectorSheet: React.FC<MobileInspectorSheetProps> = ({
 
         <ElementInspectorForm
           selectedElement={selectedElement}
+          copiedElementName={copiedElementName}
           onUpdateElement={onUpdateElement}
           onLayerAction={onLayerAction}
-          onDuplicateElement={onDuplicateElement}
+          onCopyElement={onCopyElement}
+          onPasteElement={() => {
+            onPasteElement();
+            onClose();
+          }}
           onDeleteElement={(id) => {
             onDeleteElement(id);
             onClose();

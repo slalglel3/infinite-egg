@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  ClipboardPaste,
   Copy,
   FileCode2,
   Grid,
@@ -38,7 +39,7 @@ import {
   saveHomeLayouts,
 } from '../../data/defaultHomeLayouts';
 import { computeLayoutChanges, decodeLayoutsFromUrlHash } from '../../utils/layoutSync';
-import { BottomTabBar } from './BottomTabBar';
+import { sound } from '../../audio/sound';
 import { WireframeElementBox } from './WireframeElementBox';
 import {
   LeftLayerPanel,
@@ -65,6 +66,7 @@ type DragInteraction =
       origY: number;
       origW: number;
       origH: number;
+      hasMoved: boolean;
       startLayouts: HomeTabsLayoutMap;
     }
   | {
@@ -82,6 +84,8 @@ type DragInteraction =
 
 const MAX_HISTORY_STEPS = 60;
 const EDIT_GROUP_WINDOW_MS = 700;
+const DRAG_MOVE_THRESHOLD_PX = 5;
+const TAB_ORDER: HomeTabType[] = ['SHOP', 'SKINS', 'MAIN', 'MISSIONS', 'CHALLENGE'];
 
 interface EditGroupMeta {
   elementId: string;
@@ -252,6 +256,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
     const initial = historyState.present.MAIN;
     return initial[initial.length - 1]?.id ?? null;
   });
+  const [copiedElement, setCopiedElement] = useState<HomeLayoutElement | null>(null);
+  const [clipboardNotice, setClipboardNotice] = useState<string | null>(null);
+
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [isMobileEditMode, setIsMobileEditMode] = useState(false);
   const [snapGrid, setSnapGrid] = useState(true);
@@ -277,6 +284,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   // PC에서는 기본 편집 모드(미리보기 토글 가능), 모바일에서는 기본 미리보기([UI 편집] 탭 시 즉시 편집)
   const stageEditable = isDesktopViewport ? !isPreviewMode : isMobileEditMode;
+
+  const showClipboardNotice = useCallback((msg: string) => {
+    setClipboardNotice(msg);
+    setTimeout(() => {
+      setClipboardNotice((cur) => (cur === msg ? null : cur));
+    }, 1800);
+  }, []);
 
   useEffect(() => {
     const onResize = () => {
@@ -306,7 +320,83 @@ export const HomeView: React.FC<HomeViewProps> = ({
     dispatchHistory({ type: 'REDO' });
   }, []);
 
-  // 편집 모드 키보드 단축키 (Ctrl+Z Undo, Ctrl+Y/Ctrl+Shift+Z Redo, 화살표 이동, Delete 삭제)
+  const handleTabChange = useCallback(
+    (nextTab: HomeTabType) => {
+      setActiveTab(nextTab);
+      const nextList = layouts[nextTab];
+      const topEl = [...nextList].sort((a, b) => b.zIndex - a.zIndex)[0] ?? null;
+      setSelectedId(topEl?.id ?? null);
+    },
+    [layouts]
+  );
+
+  const handleNavPreviewTabChange = useCallback(
+    (nextTab: HomeTabType) => {
+      sound.playTurn();
+      handleTabChange(nextTab);
+    },
+    [handleTabChange]
+  );
+
+  const handleCopyElement = useCallback(
+    (id: string) => {
+      const tab = activeTabRef.current;
+      const src = layouts[tab].find((el) => el.id === id);
+      if (!src) return;
+      setCopiedElement({ ...src });
+      showClipboardNotice(`복사됨: ${src.name} (원하는 탭에서 붙여넣기)`);
+    },
+    [layouts, showClipboardNotice]
+  );
+
+  const handlePasteElement = useCallback(() => {
+    if (!copiedElement) return;
+    const tab = activeTabRef.current;
+    const existingList = layouts[tab];
+    const pasteId = `${tab.toLowerCase()}-paste-${Date.now().toString(36)}-${Math.random()
+      .toString(36)
+      .slice(2, 5)}`;
+    const maxZ = existingList.reduce((m, el) => Math.max(m, el.zIndex), 0);
+
+    // 같은 탭 내 동일 좌표에 이미 요소가 있으면 +12px 계단 오프셋, 빈 위치면 원래 좌표 유지
+    let targetX = copiedElement.x;
+    let targetY = copiedElement.y;
+    for (let step = 0; step < 8; step += 1) {
+      const overlap = existingList.some(
+        (el) => Math.abs(el.x - targetX) < 4 && Math.abs(el.y - targetY) < 4
+      );
+      if (!overlap) break;
+      targetX += 12;
+      targetY += 12;
+    }
+
+    const rect = clampElementRect({
+      x: targetX,
+      y: targetY,
+      w: copiedElement.w,
+      h: copiedElement.h,
+    });
+    const hasSameName = existingList.some((el) => el.name === copiedElement.name);
+    const pasted: HomeLayoutElement = {
+      ...copiedElement,
+      ...rect,
+      id: pasteId,
+      name: hasSameName ? `${copiedElement.name} 사본` : copiedElement.name,
+      zIndex: maxZ + 1,
+    };
+
+    dispatchHistory({
+      type: 'COMMIT',
+      updater: (prev) => ({
+        ...prev,
+        [tab]: normalizeTabZOrder([...prev[tab], pasted]),
+      }),
+    });
+    setSelectedId(pasteId);
+    showClipboardNotice(`붙여넣기 완료: ${pasted.name}`);
+  }, [copiedElement, layouts, showClipboardNotice]);
+
+  // 편집 모드 키보드 단축키 (Ctrl+Z/Y, Ctrl+C/V, 화살표 이동, Delete 삭제)
   useEffect(() => {
     if (!stageEditable) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -326,6 +416,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
         if ((lower === 'z' && e.shiftKey) || lower === 'y') {
           e.preventDefault();
           dispatchHistory({ type: 'REDO' });
+          return;
+        }
+        if (lower === 'c' && selectedId) {
+          e.preventDefault();
+          handleCopyElement(selectedId);
+          return;
+        }
+        if (lower === 'v' && copiedElement) {
+          e.preventDefault();
+          handlePasteElement();
           return;
         }
       }
@@ -404,7 +504,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [stageEditable, selectedId, snapGrid, layouts]);
+  }, [
+    stageEditable,
+    selectedId,
+    snapGrid,
+    layouts,
+    copiedElement,
+    handleCopyElement,
+    handlePasteElement,
+  ]);
 
   const currentElements = layouts[activeTab];
   const selectedElement = useMemo(
@@ -412,16 +520,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     [currentElements, selectedId]
   );
   const diffSummary = useMemo(() => computeLayoutChanges(layouts), [layouts]);
-
-  const handleTabChange = useCallback(
-    (nextTab: HomeTabType) => {
-      setActiveTab(nextTab);
-      const nextList = layouts[nextTab];
-      const topEl = [...nextList].sort((a, b) => b.zIndex - a.zIndex)[0] ?? null;
-      setSelectedId(topEl?.id ?? null);
-    },
-    [layouts]
-  );
 
   const handleUpdateElement = useCallback((id: string, patch: Partial<HomeLayoutElement>) => {
     const tab = activeTabRef.current;
@@ -510,33 +608,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
     [layouts]
   );
 
-  const handleDuplicateElement = useCallback(
-    (id: string) => {
-      const tab = activeTabRef.current;
-      const src = layouts[tab].find((el) => el.id === id);
-      if (!src) return;
-      const dupId = `${tab.toLowerCase()}-dup-${Date.now().toString(36)}`;
-      const maxZ = layouts[tab].reduce((m, el) => Math.max(m, el.zIndex), 0);
-      const rect = clampElementRect({ x: src.x + 12, y: src.y + 12, w: src.w, h: src.h });
-      const duplicated: HomeLayoutElement = {
-        ...src,
-        ...rect,
-        id: dupId,
-        name: `${src.name} 사본`,
-        zIndex: maxZ + 1,
-      };
-      dispatchHistory({
-        type: 'COMMIT',
-        updater: (prev) => ({
-          ...prev,
-          [tab]: normalizeTabZOrder([...prev[tab], duplicated]),
-        }),
-      });
-      setSelectedId(dupId);
-    },
-    [layouts]
-  );
-
   const handleDeleteElement = useCallback(
     (id: string) => {
       const tab = activeTabRef.current;
@@ -589,18 +660,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setSelectedId(topEl?.id ?? null);
   }, []);
 
-  // 전역 포인터 드래그/리사이즈 핸들러 (모바일 스케일 보정 + 드래그 종료 시 단일 Undo 스텝 커밋)
+  // 전역 포인터 드래그/리사이즈 핸들러 (5px 이동 임계값 + 모바일 스케일 보정 + 드래그 종료 시 단일 Undo 커밋)
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
       const drag = dragRef.current;
       if (!drag) return;
 
-      const scale = stageScaleRef.current || 1;
-      const dx = (e.clientX - drag.startClientX) / scale;
-      const dy = (e.clientY - drag.startClientY) / scale;
-      const tab = activeTabRef.current;
+      const rawDx = e.clientX - drag.startClientX;
+      const rawDy = e.clientY - drag.startClientY;
 
       if (drag.mode === 'MOVE') {
+        if (!drag.hasMoved) {
+          if (Math.hypot(rawDx, rawDy) < DRAG_MOVE_THRESHOLD_PX) {
+            return;
+          }
+          drag.hasMoved = true;
+        }
+
+        const scale = stageScaleRef.current || 1;
+        const dx = rawDx / scale;
+        const dy = rawDy / scale;
+        const tab = activeTabRef.current;
         const next = clampElementRect(
           {
             x: drag.origX + dx,
@@ -621,6 +701,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
       }
 
       // 8방향 리사이즈 계산
+      const scale = stageScaleRef.current || 1;
+      const dx = rawDx / scale;
+      const dy = rawDy / scale;
+      const tab = activeTabRef.current;
+
       let nx = drag.origX;
       let ny = drag.origY;
       let nw = drag.origW;
@@ -678,12 +763,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
     };
   }, [snapPx]);
 
+  // 선택 전용 vs 선택 후 이동 분리:
+  // 아직 선택되지 않은 요소를 클릭/터치하면 선택만 하고 드래그를 시작하지 않음!
+  // 이미 선택된 상태일 때만 5px 임계값 이후 이동 가능!
   const handleSelectMouseDown = useCallback(
     (e: React.PointerEvent, elementId: string) => {
       e.stopPropagation();
       const target = currentElements.find((el) => el.id === elementId);
       if (!target) return;
-      setSelectedId(elementId);
+
+      if (selectedId !== elementId) {
+        setSelectedId(elementId);
+        dragRef.current = null;
+        return;
+      }
+
       try {
         (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       } catch {
@@ -698,10 +792,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
         origY: target.y,
         origW: target.w,
         origH: target.h,
+        hasMoved: false,
         startLayouts: cloneLayoutMap(layouts),
       };
     },
-    [currentElements, layouts]
+    [currentElements, layouts, selectedId]
   );
 
   const handleResizeHandleDown = useCallback(
@@ -737,15 +832,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
   );
 
   const stageHeightPx = useMemo(() => {
-    const maxBottom = currentElements.reduce((m, el) => Math.max(m, el.y + el.h + 24), 580);
-    return Math.max(580, maxBottom);
+    const maxBottom = currentElements.reduce((m, el) => Math.max(m, el.y + el.h + 10), 652);
+    return Math.max(652, maxBottom);
   }, [currentElements]);
 
   const tabMeta = HOME_TAB_META[activeTab];
 
   return (
     <div className="absolute inset-0 bg-slate-100 flex items-center justify-center select-none z-20 overflow-hidden">
-      {/* 1. 좌측 여백: UI 레이어/요소 목록 & 생성 & Undo/Redo 패널 (데스크톱 >= 840px) */}
+      {/* 1. 좌측 여백: UI 레이어/요소 목록 & 복사·붙여넣기 & Undo/Redo 패널 (데스크톱 >= 840px) */}
       {isDesktopViewport && (
         <div className="flex-1 h-full flex justify-end overflow-hidden">
           <LeftLayerPanel
@@ -753,10 +848,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
             onTabChange={handleTabChange}
             elements={currentElements}
             selectedId={selectedId}
+            copiedElementName={copiedElement?.name ?? null}
             onSelect={setSelectedId}
             onCreateElement={handleCreateElement}
             onDeleteElement={handleDeleteElement}
-            onDuplicateElement={handleDuplicateElement}
+            onCopyElement={handleCopyElement}
+            onPasteElement={handlePasteElement}
             onLayerAction={handleLayerAction}
             onResetTab={handleResetTab}
             isPreviewMode={isPreviewMode}
@@ -815,10 +912,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <div
             role="toolbar"
             aria-label="모바일 UI 편집 툴바"
-            className="w-full px-2 py-1.5 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between gap-1 shrink-0 z-30"
+            className="w-full px-2 py-1.5 border-b border-slate-200 bg-slate-50/90 flex flex-col gap-1 shrink-0 z-30"
           >
             {!isMobileEditMode ? (
-              <>
+              <div className="w-full flex items-center justify-between gap-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -861,79 +958,110 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     <span>플레이</span>
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="w-full flex items-center justify-between gap-1">
-                <button
-                  type="button"
-                  onClick={() => setIsMobileEditMode(false)}
-                  className="h-8 px-2 rounded-lg border-2 border-slate-900 bg-slate-900 text-white text-[11px] font-black flex items-center gap-0.5 shrink-0"
-                >
-                  <Check size={12} />
-                  <span>완료</span>
-                </button>
-
-                <div className="flex items-center gap-1 shrink-0">
+              <>
+                <div className="w-full flex items-center justify-between gap-1">
                   <button
                     type="button"
-                    disabled={!canUndo}
-                    onClick={handleUndo}
-                    aria-label="실행 취소"
-                    title="실행 취소"
-                    className="w-7 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"
+                    onClick={() => setIsMobileEditMode(false)}
+                    className="h-8 px-2 rounded-lg border-2 border-slate-900 bg-slate-900 text-white text-[11px] font-black flex items-center gap-0.5 shrink-0"
                   >
-                    <Undo2 size={13} />
+                    <Check size={12} />
+                    <span>완료</span>
                   </button>
+
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      disabled={!canUndo}
+                      onClick={handleUndo}
+                      aria-label="실행 취소"
+                      title="실행 취소"
+                      className="w-7 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"
+                    >
+                      <Undo2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canRedo}
+                      onClick={handleRedo}
+                      aria-label="다시 실행"
+                      title="다시 실행"
+                      className="w-7 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"
+                    >
+                      <Redo2 size={13} />
+                    </button>
+                  </div>
+
                   <button
                     type="button"
-                    disabled={!canRedo}
-                    onClick={handleRedo}
-                    aria-label="다시 실행"
-                    title="다시 실행"
-                    className="w-7 h-8 rounded-lg border border-slate-300 bg-white text-slate-800 disabled:opacity-30 flex items-center justify-center active:bg-slate-100"
+                    onClick={() => setMobileLayerOpen(true)}
+                    className="h-8 px-1.5 rounded-lg border border-slate-400 bg-white text-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0"
                   >
-                    <Redo2 size={13} />
+                    <Layers size={12} />
+                    <span>레이어+</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSnapGrid((v) => !v)}
+                    className={`h-8 px-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-0.5 shrink-0 ${
+                      snapGrid
+                        ? 'border-slate-800 bg-slate-200/70 text-slate-900'
+                        : 'border-slate-300 bg-white text-slate-500'
+                    }`}
+                  >
+                    <Grid size={12} />
+                    <span>{snapGrid ? '스냅' : '자유'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSyncModalMode('EXPORT')}
+                    className="h-8 px-1.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-[11px] font-black flex items-center gap-0.5 shrink-0"
+                  >
+                    <FileCode2 size={12} />
+                    <span>
+                      반영{diffSummary.totalChanges > 0 ? `(${diffSummary.totalChanges})` : ''}
+                    </span>
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setMobileLayerOpen(true)}
-                  className="h-8 px-1.5 rounded-lg border border-slate-400 bg-white text-slate-800 text-[11px] font-bold flex items-center gap-1 shrink-0"
-                >
-                  <Layers size={12} />
-                  <span>레이어+</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSnapGrid((v) => !v)}
-                  className={`h-8 px-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-0.5 shrink-0 ${
-                    snapGrid
-                      ? 'border-slate-800 bg-slate-200/70 text-slate-900'
-                      : 'border-slate-300 bg-white text-slate-500'
-                  }`}
-                >
-                  <Grid size={12} />
-                  <span>{snapGrid ? '스냅' : '자유'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSyncModalMode('EXPORT')}
-                  className="h-8 px-1.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700 text-[11px] font-black flex items-center gap-0.5 shrink-0"
-                >
-                  <FileCode2 size={12} />
-                  <span>
-                    반영{diffSummary.totalChanges > 0 ? `(${diffSummary.totalChanges})` : ''}
-                  </span>
-                </button>
-              </div>
+                {/* 모바일 편집 중 상단 5탭 빠른 전환 스트립 (하단 탭 에셋을 자유롭게 편집하면서도 1탭 전환 가능) */}
+                <div className="w-full grid grid-cols-5 gap-1">
+                  {TAB_ORDER.map((t) => {
+                    const meta = HOME_TAB_META[t];
+                    const isActive = activeTab === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => handleTabChange(t)}
+                        className={`h-6 rounded-md border text-[10px] font-bold truncate ${
+                          isActive
+                            ? 'border-slate-900 bg-slate-900 text-white'
+                            : 'border-slate-300 bg-white text-slate-600'
+                        }`}
+                      >
+                        {meta.num}.{meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {/* 2.2 중앙 탭 캔버스 (개별 와이어프레임 UI 요소 배치 영역) */}
+        {/* 복사/붙여넣기 알림 토스트 */}
+        {clipboardNotice && (
+          <div className="mx-3 mt-1 px-2.5 py-1 rounded-lg border border-emerald-600 bg-emerald-50 text-emerald-800 text-[10px] font-bold text-center shrink-0 z-30">
+            {clipboardNotice}
+          </div>
+        )}
+
+        {/* 2.2 중앙 탭 캔버스 (상단 HUD + 탭 본문 + 하단 5대 탭 에셋 전체) */}
         <main
           onPointerDown={() => {
             if (stageEditable) setSelectedId(null);
@@ -964,18 +1092,37 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <WireframeElementBox
                   key={el.id}
                   element={el}
+                  activeTab={activeTab}
                   isSelected={stageEditable && el.id === selectedId}
                   editable={stageEditable}
                   onSelectMouseDown={handleSelectMouseDown}
                   onResizeHandleDown={handleResizeHandleDown}
                   onTriggerPlay={onStartGame}
+                  onTriggerTabChange={handleNavPreviewTabChange}
                 />
               ))}
             </div>
           </div>
         </main>
 
-        {/* 2.2b 모바일 편집 모드: 선택 요소 플로팅 퀵 액션 바 */}
+        {/* 2.2b 모바일 편집 모드: 붙여넣기 바 (복사된 요소가 있을 때 모든 탭에서 즉시 1탭 붙여넣기) */}
+        {!isDesktopViewport && isMobileEditMode && copiedElement && (
+          <div className="w-full px-2.5 py-1 border-t border-emerald-200 bg-emerald-50/95 flex items-center justify-between gap-2 shrink-0 z-30">
+            <span className="text-[10px] font-bold text-emerald-900 truncate">
+              클립보드: {copiedElement.name}
+            </span>
+            <button
+              type="button"
+              onClick={handlePasteElement}
+              className="h-7 px-2.5 rounded-lg border border-emerald-700 bg-emerald-600 text-white text-[11px] font-black flex items-center gap-1 shrink-0 active:bg-emerald-700"
+            >
+              <ClipboardPaste size={12} />
+              <span>여기에 붙여넣기</span>
+            </button>
+          </div>
+        )}
+
+        {/* 2.2c 모바일 편집 모드: 선택 요소 플로팅 퀵 액션 바 */}
         {!isDesktopViewport && isMobileEditMode && selectedElement && (
           <div className="w-full px-2.5 py-1.5 border-t border-blue-200 bg-blue-50/95 flex items-center justify-between gap-1.5 shrink-0 z-30">
             <button
@@ -1016,10 +1163,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => handleDuplicateElement(selectedElement.id)}
+                onClick={() => handleCopyElement(selectedElement.id)}
                 className="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-700 flex items-center justify-center active:bg-slate-100"
-                aria-label="선택 요소 복제"
-                title="복제"
+                aria-label="선택 요소 복사"
+                title="복사 (다른 탭에 붙여넣기)"
               >
                 <Copy size={12} />
               </button>
@@ -1035,9 +1182,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
           </div>
         )}
-
-        {/* 2.3 하단 5대 탭 네비게이션 */}
-        <BottomTabBar activeTab={activeTab} onTabChange={handleTabChange} />
       </div>
 
       {/* 3. 우측 여백: 선택 요소 이름/설명/크기/순서/내보내기 인스펙터 (데스크톱 >= 840px) */}
@@ -1046,10 +1190,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
           <RightInspectorPanel
             activeTab={activeTab}
             selectedElement={selectedElement}
+            copiedElementName={copiedElement?.name ?? null}
             allLayouts={layouts}
             onUpdateElement={handleUpdateElement}
             onLayerAction={handleLayerAction}
-            onDuplicateElement={handleDuplicateElement}
+            onCopyElement={handleCopyElement}
+            onPasteElement={handlePasteElement}
             onDeleteElement={handleDeleteElement}
             onResetAll={handleResetAll}
             onOpenSyncModal={(mode) => setSyncModalMode(mode)}
@@ -1063,10 +1209,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
           activeTab={activeTab}
           elements={currentElements}
           selectedId={selectedId}
+          copiedElementName={copiedElement?.name ?? null}
           onSelect={setSelectedId}
           onCreateElement={handleCreateElement}
           onDeleteElement={handleDeleteElement}
-          onDuplicateElement={handleDuplicateElement}
+          onCopyElement={handleCopyElement}
+          onPasteElement={handlePasteElement}
           onLayerAction={handleLayerAction}
           onResetTab={handleResetTab}
           onClose={() => setMobileLayerOpen(false)}
@@ -1078,9 +1226,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
         <MobileInspectorSheet
           activeTab={activeTab}
           selectedElement={selectedElement}
+          copiedElementName={copiedElement?.name ?? null}
           onUpdateElement={handleUpdateElement}
           onLayerAction={handleLayerAction}
-          onDuplicateElement={handleDuplicateElement}
+          onCopyElement={handleCopyElement}
+          onPasteElement={handlePasteElement}
           onDeleteElement={handleDeleteElement}
           onClose={() => setMobileInspectorOpen(false)}
         />

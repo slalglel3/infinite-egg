@@ -9,7 +9,7 @@ import {
 export const MOBILE_STAGE_WIDTH = 390;
 export const ELEMENT_MIN_WIDTH = 16;
 export const ELEMENT_MIN_HEIGHT = 14;
-const LAYOUT_STORAGE_KEY = 'infinite_egg_home_layout_v3';
+const LAYOUT_STORAGE_KEY = 'infinite_egg_home_layout_v4';
 
 export const WIREFRAME_KIND_OPTIONS: Array<{ value: WireframeElementKind; label: string }> = [
   { value: 'card', label: '패널 / 카드' },
@@ -37,7 +37,16 @@ export const HOME_TAB_META: Record<HomeTabType, { num: number; label: string; en
 };
 
 // BEGIN_LAYOUT_HELPERS
-function createCommonStageElements(prefix: string): HomeLayoutElement[] {
+function createCommonStageElements(prefix: string, activeTab: HomeTabType): HomeLayoutElement[] {
+  const navActiveXMap = {
+    SHOP: 8,
+    SKINS: 84,
+    MAIN: 160,
+    MISSIONS: 236,
+    CHALLENGE: 312,
+  };
+  const activeNavX = navActiveXMap[activeTab] ?? 160;
+
   return [
     {
       id: `${prefix}-bg-barn`,
@@ -47,7 +56,7 @@ function createCommonStageElements(prefix: string): HomeLayoutElement[] {
       x: 0,
       y: 0,
       w: 390,
-      h: 576,
+      h: 650,
       zIndex: 1,
     },
     {
@@ -58,7 +67,7 @@ function createCommonStageElements(prefix: string): HomeLayoutElement[] {
       x: 0,
       y: 56,
       w: 390,
-      h: 500,
+      h: 510,
       zIndex: 2,
     },
     {
@@ -204,6 +213,150 @@ function createCommonStageElements(prefix: string): HomeLayoutElement[] {
       h: 22,
       zIndex: 12,
     },
+    // 하단 5대 네비게이션 탭 & 배경 에셋 (컨셉 이미지 공통)
+    {
+      id: `${prefix}-nav-bar-bg`,
+      name: '하단 탭바 나무판 배경',
+      description: '하단 5개 탭 전체를 받치는 나뭇잎·지푸라기 장식 목재 배경판 에셋',
+      kind: 'asset-slot',
+      x: 0,
+      y: 582,
+      w: 390,
+      h: 68,
+      zIndex: 10,
+    },
+    {
+      id: `${prefix}-nav-home-nest-bg`,
+      name: '중앙 홈 원형 둥지 에셋',
+      description: '3번 홈 탭 아이콘 뒤에서 바 위로 돌출되는 짚 둥지 원형 배경 에셋',
+      kind: 'asset-slot',
+      x: 158,
+      y: 560,
+      w: 74,
+      h: 62,
+      zIndex: 11,
+    },
+    {
+      id: `${prefix}-nav-active-back`,
+      name: '선택 탭 뒤쪽 발광 백플레이트',
+      description: '현재 활성화된 하단 탭(아이콘·라벨) 뒤에 배치되는 +4px 발광 하이라이트 백플레이트',
+      kind: 'active-backing',
+      x: activeNavX,
+      y: 571,
+      w: 70,
+      h: 72,
+      zIndex: 11,
+    },
+    {
+      id: `${prefix}-nav-tab1-icon`,
+      name: '상점 탭 아이콘',
+      description: '1번 상점 탭 천막 가게 아이콘 에셋',
+      kind: 'asset-slot',
+      x: 24,
+      y: 575,
+      w: 38,
+      h: 36,
+      zIndex: 12,
+    },
+    {
+      id: `${prefix}-nav-tab1-btn`,
+      name: '상점',
+      description: '1번 상점 탭 라벨 나무 버튼 (활성 시 주황 전환)',
+      kind: 'button',
+      x: 12,
+      y: 614,
+      w: 62,
+      h: 24,
+      zIndex: 13,
+    },
+    {
+      id: `${prefix}-nav-tab2-icon`,
+      name: '스킨 탭 아이콘',
+      description: '2번 스킨 탭 계란·의상 아이콘 에셋',
+      kind: 'asset-slot',
+      x: 100,
+      y: 575,
+      w: 38,
+      h: 36,
+      zIndex: 12,
+    },
+    {
+      id: `${prefix}-nav-tab2-btn`,
+      name: '스킨',
+      description: '2번 스킨 탭 라벨 나무 버튼 (활성 시 주황 전환)',
+      kind: 'button',
+      x: 88,
+      y: 614,
+      w: 62,
+      h: 24,
+      zIndex: 13,
+    },
+    {
+      id: `${prefix}-nav-tab3-icon`,
+      name: '홈 탭 아이콘',
+      description: '3번 홈 탭 둥지 위 집 모양 아이콘 에셋',
+      kind: 'asset-slot',
+      x: 176,
+      y: 575,
+      w: 38,
+      h: 36,
+      zIndex: 12,
+    },
+    {
+      id: `${prefix}-nav-tab3-btn`,
+      name: '홈',
+      description: '3번 홈 탭 라벨 나무 버튼 (활성 시 주황 전환)',
+      kind: 'button',
+      x: 164,
+      y: 614,
+      w: 62,
+      h: 24,
+      zIndex: 13,
+    },
+    {
+      id: `${prefix}-nav-tab4-icon`,
+      name: '미션 탭 아이콘',
+      description: '4번 미션 탭 클립보드·깃털·토마토 아이콘 에셋',
+      kind: 'asset-slot',
+      x: 252,
+      y: 575,
+      w: 38,
+      h: 36,
+      zIndex: 12,
+    },
+    {
+      id: `${prefix}-nav-tab4-btn`,
+      name: '미션',
+      description: '4번 미션 탭 라벨 나무 버튼 (활성 시 주황 전환)',
+      kind: 'button',
+      x: 240,
+      y: 614,
+      w: 62,
+      h: 24,
+      zIndex: 13,
+    },
+    {
+      id: `${prefix}-nav-tab5-icon`,
+      name: '도전 탭 아이콘',
+      description: '5번 도전 탭 교차 검 아이콘 에셋',
+      kind: 'asset-slot',
+      x: 328,
+      y: 575,
+      w: 38,
+      h: 36,
+      zIndex: 12,
+    },
+    {
+      id: `${prefix}-nav-tab5-btn`,
+      name: '도전',
+      description: '5번 도전 탭 라벨 나무 버튼 (활성 시 주황 전환)',
+      kind: 'button',
+      x: 316,
+      y: 614,
+      w: 62,
+      h: 24,
+      zIndex: 13,
+    },
   ];
 }
 // END_LAYOUT_HELPERS
@@ -211,7 +364,7 @@ function createCommonStageElements(prefix: string): HomeLayoutElement[] {
 // BEGIN_DEFAULT_HOME_LAYOUTS_RAW
 const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
   SHOP: [
-    ...createCommonStageElements('shop'),
+    ...createCommonStageElements('shop', 'SHOP'),
     {
       id: 'shop-sign-ropes',
       name: '상점 현판 밧줄',
@@ -610,7 +763,7 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
     },
   ],
   SKINS: [
-    ...createCommonStageElements('skin'),
+    ...createCommonStageElements('skin', 'SKINS'),
     {
       id: 'skin-stat-ropes',
       name: '스탯 팻말 나뭇가지·밧줄',
@@ -727,9 +880,9 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
       description: '하단 4×2 스킨 슬롯들을 감싸는 밧줄 테두리 목재 보드 에셋',
       kind: 'asset-slot',
       x: 14,
-      y: 332,
+      y: 330,
       w: 362,
-      h: 232,
+      h: 222,
       zIndex: 3,
     },
     {
@@ -881,9 +1034,9 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
       description: '우주인·꼬꼬 에그 및 미해금 스킨이 이어지는 4열 스크롤 그리드',
       kind: 'slot-grid',
       x: 28,
-      y: 454,
+      y: 452,
       w: 244,
-      h: 98,
+      h: 90,
       zIndex: 5,
     },
     {
@@ -892,9 +1045,9 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
       description: '미해금 스킨 슬롯의 어두운 배경 카드 템플릿',
       kind: 'card',
       x: 280,
-      y: 454,
+      y: 452,
       w: 76,
-      h: 98,
+      h: 90,
       zIndex: 5,
     },
     {
@@ -903,9 +1056,9 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
       description: '미해금 스킨 위에 표시되는 자물쇠 아이콘 에셋',
       kind: 'asset-slot',
       x: 298,
-      y: 470,
+      y: 465,
       w: 40,
-      h: 40,
+      h: 38,
       zIndex: 6,
     },
     {
@@ -914,14 +1067,14 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
       description: '미해금 상태 표기 텍스트',
       kind: 'text',
       x: 290,
-      y: 516,
+      y: 509,
       w: 56,
       h: 22,
       zIndex: 6,
     },
   ],
   MAIN: [
-    ...createCommonStageElements('home'),
+    ...createCommonStageElements('home', 'MAIN'),
     {
       id: 'home-egg-name-plate',
       name: '계란 이름 명패 배경',
@@ -1034,7 +1187,7 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
     },
   ],
   MISSIONS: [
-    ...createCommonStageElements('mission'),
+    ...createCommonStageElements('mission', 'MISSIONS'),
     {
       id: 'mission-tabs-board',
       name: '미션 카테고리 나무판',
@@ -1378,7 +1531,7 @@ const DEFAULT_HOME_LAYOUTS_RAW: HomeTabsLayoutMap = {
     },
   ],
   CHALLENGE: [
-    ...createCommonStageElements('challenge'),
+    ...createCommonStageElements('challenge', 'CHALLENGE'),
     {
       id: 'challenge-sign-ropes',
       name: '도전 모드 현판 밧줄',
